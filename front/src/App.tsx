@@ -14,9 +14,9 @@ import QnaMainPage from "./pages/qna/QnaMainPage";
 import QnaDetailPage from "./pages/qna/QnaDetailPage";
 import SignUpPage from "./pages/auth/SignUpPage";
 import LoginPage from "./pages/auth/LoginPage";
-import UserDashboardPage from "./pages/user/UserDashboardPage";
 import MyLibraryPage from "./pages/user/MyLibraryPage";
 import WishlistPage from "./pages/user/WishlistPage";
+import UserTastePage from "./pages/user/UserTastePage";
 import MyReviewsPage from "./pages/user/MyReviewsPage";
 import UserEditProfilePage from "./pages/user/UserEditProfilePage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
@@ -42,7 +42,8 @@ function App() {
         </Route>
 
         <Route path="/user" element={<UserLayout />}>
-          <Route index element={<UserDashboardPage />} />
+          <Route index element={<UserTastePage />} />
+          <Route path="taste-analysis" element={<UserTastePage />} />
           <Route path="library" element={<MyLibraryPage />} />
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="reviews" element={<MyReviewsPage />} />
