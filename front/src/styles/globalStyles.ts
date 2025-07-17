@@ -44,7 +44,6 @@ export const GlobalStyle = createGlobalStyle`
     border-spacing: 0;
   }
 
-  /* Box Sizing (모든 요소에 border-box 적용) */
   *, *:before, *:after {
     box-sizing: border-box;
   }
@@ -75,15 +74,15 @@ export const GlobalStyle = createGlobalStyle`
   input, textarea, select {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     padding: 8px 12px;
-    border: 1px solid ${({ theme }) =>
-      theme.colors.borderColor}; /* 테마의 borderColor 사용 */
-    border-radius: 4px; /* 테마에 borderRadius.sm이 있다면 그것을 사용 */
+    border: 1px solid ${({ theme }) => theme.colors.borderColor};
+    border-radius: 4px;
     outline: none;
-    &:focus {
-      border-color: ${({ theme }) =>
-        theme.colors.strongOrange}; /* 메인 오렌지 색상 사용 */
-      box-shadow: 0 0 0 0.15rem ${({ theme }) =>
-        theme.colors.amazonOrange}40; /* 오렌지 계열 그림자 (투명도 조정) */
-    }
   }
 `;
+
+// &:focus {
+//   border-color: ${({ theme }) =>
+//     theme.colors.strongOrange}; /* 메인 오렌지 색상 사용 */
+//   box-shadow: 0 0 0 0.15rem ${({ theme }) =>
+//     theme.colors.amazonOrange}40; /* 오렌지 계열 그림자 (투명도 조정) */
+// }
