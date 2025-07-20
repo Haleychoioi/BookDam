@@ -34,7 +34,7 @@ const Button: React.FC<ButtonProps> = ({
   ...props // 나머지 모든 HTML 속성들 (children, onClick, to, type 등)
 }) => {
   // 기본값 (검은색 버튼 디자인을 기반)
-  const defaultBgColor = "bg-mild";
+  const defaultBgColor = "bg-accent";
   const defaultHoverBgColor = "hover:bg-primary";
   const defaultTextColor = "text-white";
 
@@ -44,7 +44,7 @@ const Button: React.FC<ButtonProps> = ({
   const finalTextColor = textColor || defaultTextColor;
 
   // 기본 버튼 스타일 (하드코딩된 색상 클래스 제거하고 동적으로 적용)
-  const baseStyles = `${finalBgColor} ${finalTextColor} px-5 py-2 font-medium ${finalHoverBgColor} transition-colors duration-200`;
+  const baseStyles = `${finalBgColor} ${finalTextColor} px-5 py-3 font-medium ${finalHoverBgColor} transition-colors duration-200`;
   // 비활성화 상태 스타일
   const disabledStyles = "opacity-50 cursor-not-allowed";
 

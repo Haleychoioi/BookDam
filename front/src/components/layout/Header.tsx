@@ -21,7 +21,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white py-4">
+    <header className="bg-white shadow-md py-4 fixed top-0 w-full z-50">
       <div className="container mx-auto flex justify-between items-center px-4">
         {/* 좌측 링크 섹션 (데스크탑 뷰) */}
         <nav className="flex-1 hidden md:flex items-center space-x-4">
@@ -109,14 +109,12 @@ const Header: React.FC = () => {
             // 로그인 전: 로그인, 가입하기 버튼
             <div className="flex items-center space-x-4">
               {/* ✨ 로그인 Link를 Button 컴포넌트로 대체 ✨ */}
-              <Button to="/login" bgColor="bg-mild">
-                로그인
-              </Button>
+              <Button to="/login">로그인</Button>
               {/* ✨ 가입하기 Button 컴포넌트로 텍스트 변경 ✨ */}
               <Button
                 to="/register"
                 bgColor="bg-primary"
-                hoverBgColor="hover:bg-accent"
+                hoverBgColor="hover:bg-mild"
               >
                 가입하기
               </Button>
