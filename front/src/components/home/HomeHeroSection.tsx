@@ -73,9 +73,7 @@ const HomeHeroSection: React.FC = () => {
                 ? `/search/books?q=${encodeURIComponent(searchTerm)}`
                 : "/search/books"
             }
-            className="h-12"
-            bgColor="bg-primary"
-            hoverBgColor="hover:bg-accent"
+            className="h-12 rounded-none"
             disabled={!searchTerm && false}
           >
             검색

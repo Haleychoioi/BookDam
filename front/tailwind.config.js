@@ -7,9 +7,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#FF9900", // Strong Orange를 주 색상으로 지정
-        accent: "#F2AC29", // Classic Orange를 강조 색상으로 지정
-        mild: "#FFC87A", // Amazon Orange(#FF9900)보다 연한 느낌의 색상
+        main: "#FFBD42",
+        apply: "#FFD23C", // star
+        category: "#FFE7C8",
+        delete: "#FF4242",
+        categoryText: "#FFA228",
       },
       fontFamily: {
         sans: ["Noto Sans KR", "sans-serif"], // 기본 sans 폰트 (한글 폰트 우선 적용)

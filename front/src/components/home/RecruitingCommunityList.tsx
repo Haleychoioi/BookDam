@@ -91,7 +91,11 @@ const RecruitingCommunityList: React.FC = () => {
               </h3>
               <p className="text-gray-600 text-sm">{community.description}</p>
             </div>
-            <Button to={`/communities/${community.id}`} className="px-6 py-2">
+            <Button
+              to={`/communities/${community.id}`}
+              className="px-6 py-2"
+              bgColor="bg-apply"
+            >
               참여하기
             </Button>
           </div>
