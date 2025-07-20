@@ -6,16 +6,11 @@ module.exports = {
   ],
   theme: {
     extend: {
-      // 커스텀 색상
-      // colors: {
-      //   primary: "#5C6BC0", // 메인 브랜드 색상
-      //   secondary: "#8BC34A", // 보조 색상
-      //   accent: "#FFC107", // 강조 색상
-      //   "gray-100": "#f7fafc",
-      //   "gray-200": "#edf2f7",
-      //   // ... 더 많은 커스텀 색상
-      // },
-      // 커스텀 폰트
+      colors: {
+        primary: "#FF9900", // Strong Orange를 주 색상으로 지정
+        accent: "#F2AC29", // Classic Orange를 강조 색상으로 지정
+        mild: "#FFC87A", // Amazon Orange(#FF9900)보다 연한 느낌의 색상
+      },
       fontFamily: {
         sans: ["Noto Sans KR", "sans-serif"], // 기본 sans 폰트 (한글 폰트 우선 적용)
         serif: ["Merriweather", "serif"],

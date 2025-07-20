@@ -25,6 +25,7 @@ import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import ErrorPage from "./pages/ErrorPage";
+import MyPage from "./pages/mypage/MyPage";
 
 function App() {
   return (
@@ -67,7 +68,8 @@ function App() {
             MyPage 컴포넌트를 부모 라우트 element로 설정하고,
             MyPage 컴포넌트 내부에서 Outlet을 렌더링하여 하위 라우트를 표시
           */}
-          <Route path="mypage" element={<MyCommunitiesParticipatingPage />}>
+          <Route path="mypage" element={<MyPage />}>
+            <Route index element={<MyCommunitiesParticipatingPage />} />
             <Route
               path="communities/participating"
               element={<MyCommunitiesParticipatingPage />}
@@ -91,12 +93,11 @@ function App() {
             <Route path="my-comments" element={<MyCommentsPage />} />
             <Route path="profile-edit" element={<ProfileEditPage />} />
           </Route>
-        </Route>
 
-        {/* 메인 레이아웃이 적용되지 않는 독립적인 페이지들 */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="*" element={<ErrorPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="*" element={<ErrorPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
