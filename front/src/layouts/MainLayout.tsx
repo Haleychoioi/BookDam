@@ -1,17 +1,14 @@
 import { Outlet } from "react-router-dom";
-import NavBar from "../components/NavBar";
-import Footer from "../components/Footer";
-import SearchBar from "../components/SearchBar";
+
+import Header from "../components/layout/Header";
+import Footer from "../components/layout/Footer";
 
 const MainLayout: React.FC = () => {
   return (
-    <div>
-      <header>
-        <NavBar />
-        <SearchBar />
-      </header>
+    <div className="flex flex-col min-h-screen bg-white">
+      <Header />
 
-      <main>
+      <main className="flex-grow pt-20">
         <Outlet />
       </main>
 

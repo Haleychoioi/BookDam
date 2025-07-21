@@ -1,62 +1,103 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
-// Layouts import
 import MainLayout from "./layouts/MainLayout";
-import AuthLayout from "./layouts/AuthLayout";
-import UserLayout from "./layouts/UserLayout";
-import AdminLayout from "./layouts/AdminLayout";
-
-// Pages import
 import HomePage from "./pages/HomePage";
-import BookSearchPage from "./pages/books/BookSearchPage";
+import BookSearchResultsPage from "./pages/search/BookSearchResultsPage";
 import BookDetailPage from "./pages/books/BookDetailPage";
-import QnaMainPage from "./pages/qna/QnaMainPage";
-import QnaDetailPage from "./pages/qna/QnaDetailPage";
-import SignUpPage from "./pages/auth/SignUpPage";
+import CommunityBoardPage from "./pages/communities/CommunityBoardPage";
+import CommunityPostDetailPage from "./pages/communities/CommunityPostDetailPage";
+import CommunityPostWritePage from "./pages/communities/CommunityPostWritePage";
+import GeneralBoardPage from "./pages/posts/GeneralBoardPage";
+import GeneralPostDetailPage from "./pages/posts/GeneralPostDetailPage";
+import GeneralPostWritePage from "./pages/posts/GeneralPostWritePage";
+import FAQPage from "./pages/FAQPage";
+import AboutPage from "./pages/AboutPage";
+import MyCommunitiesParticipatingPage from "./pages/mypage/MyCommunitiesParticipatingPage";
+import MyCommunitiesRecruitingPage from "./pages/mypage/MyCommunitiesRecruitingPage";
+import CommunityApplicationsPage from "./pages/mypage/CommunityApplicantsPage";
+import MyCommunitiesAppliedPage from "./pages/mypage/MyCommunitiesAppliedPage";
+import TasteAnalysisPage from "./pages/mypage/TasteAnalysisPage";
+import MyLibraryPage from "./pages/mypage/MyLibraryPage";
+import WishlistPage from "./pages/mypage/WishlistPage";
+import MyPostsPage from "./pages/mypage/MyPostsPage";
+import MyCommentsPage from "./pages/mypage/MyCommentsPage";
+import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import LoginPage from "./pages/auth/LoginPage";
-import MyLibraryPage from "./pages/user/MyLibraryPage";
-import WishlistPage from "./pages/user/WishlistPage";
-import UserTastePage from "./pages/user/UserTastePage";
-import MyReviewsPage from "./pages/user/MyReviewsPage";
-import UserEditProfilePage from "./pages/user/UserEditProfilePage";
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
-import InquiryManagementPage from "./pages/admin/InquiryManagementPage";
-import UserSanctionPage from "./pages/admin/UserSanctionPage";
+import RegisterPage from "./pages/auth/RegisterPage";
 import ErrorPage from "./pages/ErrorPage";
+import MyPage from "./pages/mypage/MyPage";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<MainLayout />}>
+          {/* 홈페이지(루트 경로) */}
           <Route index element={<HomePage />} />
-          <Route path="books" element={<BookSearchPage />} />
-          <Route path="books/:id" element={<BookDetailPage />} />
-          <Route path="qna" element={<QnaMainPage />} />
-          <Route path="qna/:id" element={<QnaDetailPage />} />
-        </Route>
 
-        <Route path="/auth" element={<AuthLayout />}>
-          <Route path="signup" element={<SignUpPage />} />
-          <Route path="login" element={<LoginPage />} />
-        </Route>
+          {/* 책 검색 및 상세 */}
+          <Route path="search/books" element={<BookSearchResultsPage />} />
+          <Route path="books/:bookId" element={<BookDetailPage />} />
 
-        <Route path="/user" element={<UserLayout />}>
-          <Route index element={<UserTastePage />} />
-          <Route path="taste-analysis" element={<UserTastePage />} />
-          <Route path="library" element={<MyLibraryPage />} />
-          <Route path="wishlist" element={<WishlistPage />} />
-          <Route path="reviews" element={<MyReviewsPage />} />
-          <Route path="edit-profile" element={<UserEditProfilePage />} />
-        </Route>
+          {/* 커뮤니티 게시판 */}
+          <Route path="communities" element={<CommunityBoardPage />} />
+          <Route
+            path="communities/:postId"
+            element={<CommunityPostDetailPage />}
+          />
+          {/* 게시물 생성/수정 */}
+          <Route path="communities/new" element={<CommunityPostWritePage />} />
+          <Route
+            path="communities/:postId/edit"
+            element={<CommunityPostWritePage />}
+          />
 
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboardPage />} />
-          <Route path="inquiry" element={<InquiryManagementPage />} />
-          <Route path="sanction" element={<UserSanctionPage />} />
-        </Route>
+          {/* 전체 게시판 */}
+          <Route path="posts" element={<GeneralBoardPage />} />
+          <Route path="posts/:postId" element={<GeneralPostDetailPage />} />
+          {/* 게시물 생성/수정 */}
+          <Route path="posts/new" element={<GeneralPostWritePage />} />
+          <Route path="posts/:postId/edit" element={<GeneralPostWritePage />} />
 
-        <Route path="*" element={<ErrorPage />} />
+          {/* 기타 고정 페이지 */}
+          <Route path="faq" element={<FAQPage />} />
+          <Route path="about" element={<AboutPage />} />
+
+          {/*
+            마이페이지 섹션 (중첩 라우트)
+            MyPage 컴포넌트를 부모 라우트 element로 설정하고,
+            MyPage 컴포넌트 내부에서 Outlet을 렌더링하여 하위 라우트를 표시
+          */}
+          <Route path="mypage" element={<MyPage />}>
+            <Route index element={<MyCommunitiesParticipatingPage />} />
+            <Route
+              path="communities/participating"
+              element={<MyCommunitiesParticipatingPage />}
+            />
+            <Route
+              path="communities/recruiting"
+              element={<MyCommunitiesRecruitingPage />}
+            />
+            <Route
+              path="communities/recruiting/:communityId/applicants"
+              element={<CommunityApplicationsPage />}
+            />
+            <Route
+              path="communities/applied"
+              element={<MyCommunitiesAppliedPage />}
+            />
+            <Route path="taste-analysis" element={<TasteAnalysisPage />} />
+            <Route path="my-library" element={<MyLibraryPage />} />
+            <Route path="wishlist" element={<WishlistPage />} />
+            <Route path="my-posts" element={<MyPostsPage />} />
+            <Route path="my-comments" element={<MyCommentsPage />} />
+            <Route path="profile-edit" element={<ProfileEditPage />} />
+          </Route>
+
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="*" element={<ErrorPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
