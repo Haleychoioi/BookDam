@@ -56,7 +56,6 @@ model User {
   comments           Comment[]
   myBooks            MyLibrary[]
   bookmarks          Bookmark[]
-  passwordResetTokens PasswordResetToken[]
   bookReviews        BookReview[]
 
   @@map("users")
