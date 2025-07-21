@@ -1,5 +1,38 @@
-node_modules
-# Keep environment variables out of version control
-.env
+# 운영체제 관련 파일
+.DS_Store
+.localized
+Thumbs.db
 
-/src/generated/prisma
+# IDE 및 에디터 관련 파일
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.settings/
+.classpath
+
+# 빌드/패키지 매니저 관련 폴더
+node_modules/
+build/
+dist/
+target/
+out/
+*.jar
+*.war
+*.class
+
+# 로그 파일
+*.log
+log/
+logs/
+
+# 환경 변수 파일 (민감 정보 포함 가능성)
+.env
+.env.*
+
+# 임시 파일
+*.tmp
+*.swp
+*~
