@@ -43,7 +43,7 @@ model User {
   name         String       @map("name")
   nickname     String       @unique @map("nickname")
   phone        String       @map("phone")
-  oneLineIntro String?      @map("one_line_intro")
+  introduction String?      @map("introduction")
   role         UserRole     @default(USER) @map("role")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
