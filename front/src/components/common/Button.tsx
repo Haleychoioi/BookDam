@@ -7,6 +7,7 @@ interface BaseButtonProps {
   bgColor?: string; // 예: "bg-blue-500", "bg-red-600"
   hoverBgColor?: string; // 예: "hover:bg-blue-600", "hover:bg-red-700"
   textColor?: string; // 예: "text-white", "text-gray-900"
+  hoverTextColor?: string;
 }
 
 // 2. HTML <button> 태그로 렌더링될 때의 Props
@@ -30,25 +31,27 @@ const Button: React.FC<ButtonProps> = ({
   bgColor,
   hoverBgColor,
   textColor,
+  hoverTextColor,
   ...props
 }) => {
   // 기본값 (검은색 버튼 디자인을 기반)
   const defaultBgColor = "bg-main";
   const defaultHoverBgColor = "hover:bg-apply";
   const defaultTextColor = "text-white";
+  const defaultHoverTextColor = "hover:text-white";
 
   // 최종 적용될 배경색, 호버색, 텍스트색
   const finalBgColor = bgColor || defaultBgColor;
   const finalHoverBgColor = hoverBgColor || defaultHoverBgColor;
   const finalTextColor = textColor || defaultTextColor;
+  const finalHoverTextColor = hoverTextColor || defaultHoverTextColor;
 
-  // ✨ 여기가 수정된 부분입니다! ✨
   // className에 rounded-none 또는 다른 rounded- 접두사를 가진 클래스가 있는지 확인
   const hasCustomBorderRadius = /(^|\s)rounded(-\w+)?/.test(className);
 
   // 기본 버튼 스타일 (하드코딩된 색상 클래스 제거하고 동적으로 적용)
   // hasCustomBorderRadius가 false일 때만 rounded-xl을 추가
-  const baseStyles = `${finalBgColor} ${finalTextColor} px-5 py-3 font-medium ${finalHoverBgColor} transition-colors duration-200 ${
+  const baseStyles = `${finalBgColor} ${finalTextColor} px-5 py-3 font-medium ${finalHoverBgColor} ${finalHoverTextColor} transition-colors duration-200 ${
     hasCustomBorderRadius ? "" : "rounded-xl" // 이미 rounded 관련 클래스가 없으면 기본 rounded-xl 적용
   }`;
 

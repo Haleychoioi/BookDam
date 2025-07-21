@@ -43,11 +43,21 @@ const SearchBar: React.FC<SearchBarProps> = ({
   }, []);
 
   const executeSearch = () => {
+    const processedSearchTerm = searchTerm.replace(/\s/g, ""); // 모든 공백 제거
+
+    // ✨ 여기서 2글자 미만 검색어 처리 ✨
+    if (processedSearchTerm.length < 2 && processedSearchTerm.length > 0) {
+      alert("검색어는 최소 두 글자 이상이어야 합니다.");
+      return; // 검색 실행 중단
+    }
+    // 검색어가 아예 비어있으면 (processedSearchTerm.length === 0) 검색 실행 (모든 결과 표시)
+    // 이것은 현재 로직과 동일하게 유지됩니다.
+
     if (onSearch) {
-      onSearch(searchTerm);
+      onSearch(processedSearchTerm);
     } else {
-      const searchPath = searchTerm
-        ? `/search/books?q=${encodeURIComponent(searchTerm)}`
+      const searchPath = processedSearchTerm
+        ? `/search/books?q=${encodeURIComponent(processedSearchTerm)}`
         : "/search/books";
       navigate(searchPath);
     }

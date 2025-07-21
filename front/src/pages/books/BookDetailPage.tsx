@@ -158,33 +158,6 @@ const BookDetailPage: React.FC = () => {
     setSelectedCommunityForApply(null);
   };
 
-  // 커뮤니티 가입 신청 처리 (API 호출)
-  const handleCommunityApply = async (
-    communityId: string,
-    applicationMessage: string
-  ) => {
-    console.log(`신청 커뮤니티 ID: ${communityId}`);
-    console.log(`신청 메시지: ${applicationMessage}`);
-    try {
-      // const userId = "현재_로그인된_사용자_ID";
-      // const response = await fetch(`/communities/${communityId}/apply`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ userId, applicationMessage }),
-      // });
-      // if (response.ok) {
-      alert("커뮤니티 가입 신청이 완료되었습니다!");
-      handleApplyModalClose();
-      // } else {
-      //   const errorData = await response.json();
-      //   alert(`커뮤니티 가입 신청 실패: ${errorData.message}`);
-      // }
-    } catch (error) {
-      console.error("커뮤니티 가입 신청 중 오류 발생:", error);
-      alert("커뮤니티 가입 신청 중 오류가 발생했습니다. 다시 시도해주세요.");
-    }
-  };
-
   // ✨ 커뮤니티 생성 모달 열기 ✨
   const handleCreateCommunityClick = (bookId: string) => {
     setBookIdForCreate(bookId);
@@ -278,7 +251,6 @@ const BookDetailPage: React.FC = () => {
             isOpen={isApplyModalOpen}
             onClose={handleApplyModalClose}
             communityId={selectedCommunityForApply.id}
-            onApply={handleCommunityApply}
           />
         )}
 

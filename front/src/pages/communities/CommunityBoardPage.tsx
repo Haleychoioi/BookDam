@@ -1,20 +1,12 @@
 // front/src/pages/communities/CommunityBoardPage.tsx
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom"; // Link는 CommunityPostList에서 사용하므로 여기서는 제거
-import Pagination from "../../components/common/Pagination";
-import Button from "../../components/common/Button";
-import CommunityPostList from "../../components/communities/CommunityPostList"; // ✨ CommunityPostList 임포트 ✨
-
-// 게시글 데이터 인터페이스 (CommunityPostList와 동일)
-interface CommunityPost {
-  id: string;
-  title: string;
-  commentCount: number;
-}
+import { useParams, useNavigate } from "react-router-dom";
+import BoardTemplate from "../../components/posts/BoardTemplate";
+import type { Post } from "../../types";
 
 // mockdata: 커뮤니티 ID에 따라 다른 게시글 목록을 제공하는 더미 데이터
-const communityPostsMockData: { [key: string]: CommunityPost[] } = {
+const communityPostsMockData: { [key: string]: Post[] } = {
   comm1: Array.from({ length: 15 }, (_, i) => ({
     id: `comm1-post-${i + 1}`,
     title: `[해리포터] ${i + 1}번째 독서 스터디 논의점`,
@@ -94,6 +86,8 @@ const CommunityBoardPage: React.FC = () => {
   };
 
   const handleWritePostClick = () => {
+    // API 명세서에 따르면 커뮤니티 게시물 작성은 POST /communities/{id}/posts [cite: 5]
+    // 따라서 새로운 게시물 작성 페이지로 이동하는 경로는 /communities/:communityId/posts/new
     navigate(`/communities/${communityId}/posts/new`);
   };
 
@@ -109,10 +103,7 @@ const CommunityBoardPage: React.FC = () => {
       </div>
     );
   }
-  if (
-    !currentCommunityInfo ||
-    totalPosts === 0 // communityPostsMockData[communityId]는 allPostsForCurrentCommunity가 대신함
-  ) {
+  if (!currentCommunityInfo || totalPosts === 0) {
     return (
       <div className="text-center py-12 text-xl text-gray-700">
         해당 커뮤니티를 찾을 수 없거나 게시글이 없습니다.
@@ -121,41 +112,16 @@ const CommunityBoardPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-full py-10 bg-white">
-      <div className="container mx-auto px-4 lg:px-20 xl:px-32">
-        {/* 커뮤니티 정보 헤더 (게시판 상단) */}
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-12 mt-24">
-          {currentCommunityInfo.bookTitle} | {currentCommunityInfo.hostName} :{" "}
-          {currentCommunityInfo.communityTopic}
-        </h1>
-        <hr className="border-t border-gray-300 w-full mb-8" />
-
-        {/* 게시글 목록 및 작성 버튼 */}
-        <div className="relative mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">게시글</h2>
-          <div className="absolute top-0 right-0">
-            <Button
-              onClick={handleWritePostClick}
-              bgColor="bg-main"
-              textColor="text-white"
-              hoverBgColor="hover:bg-apply"
-              className="px-5 py-2 rounded-lg text-base"
-            >
-              게시물 작성
-            </Button>
-          </div>
-
-          {/* ✨ 분리된 CommunityPostList 컴포넌트 사용 ✨ */}
-          <CommunityPostList posts={displayedPosts} communityId={communityId} />
-        </div>
-
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
-      </div>
-    </div>
+    <BoardTemplate
+      bookTitle={currentCommunityInfo.bookTitle}
+      communityTopic={currentCommunityInfo.communityTopic}
+      posts={displayedPosts}
+      currentPage={currentPage}
+      totalPages={totalPages}
+      onPageChange={handlePageChange}
+      onWritePostClick={handleWritePostClick}
+      boardTitle="게시글" // 커뮤니티 게시판의 게시글 섹션 제목
+    />
   );
 };
 
