@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa"; // 화살표 아이콘
+import { Link } from "react-router-dom";
 
 interface BookCarouselProps {
   title: string;
@@ -37,8 +38,8 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
   const canGoNext = currentIndex + itemsPerPage < books.length;
 
   return (
-    <div>
-      <h2 className="text-2xl text-gray-800 text-center">{title}</h2>
+    <div className="mb-48">
+      <h2 className="text-2xl text-gray-800 text-center mb-8">{title}</h2>
       <div className="flex items-center justify-center space-x-4 mt-20">
         {/* 왼쪽 화살표 */}
         <button
@@ -52,12 +53,13 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
         </button>
 
         {/* 책 목록 */}
-        <div className="flex flex-grow justify-center space-x-10">
+        <div className="flex flex-grow justify-center space-x-8 ">
           {/* overflow-hidden 추가 */}
           {visibleBooks.map((book) => (
-            <div
+            <Link
               key={book.id}
-              className="w-40 h-64 rounded-md shadow-md flex-shrink-0"
+              to={`/books/${book.id}`}
+              className="w-60 h-80 rounded-md shadow-md flex-shrink-0"
             >
               <img
                 src={book.coverImage}
@@ -65,7 +67,7 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
                 className="w-full h-full object-cover rounded-md"
               />
               {/* <div className="p-2 text-sm text-center font-semibold">{book.title}</div> */}
-            </div>
+            </Link>
           ))}
           {/* visibleBooks의 개수가 itemsPerPage보다 적을 경우 빈 플레이스홀더를 채워 정렬 유지 (선택 사항) */}
           {visibleBooks.length < itemsPerPage &&
@@ -74,7 +76,7 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
               .map((_, i) => (
                 <div
                   key={`placeholder-${i}`}
-                  className="w-40 h-64 flex-shrink-0"
+                  className="w-60 h-80 flex-shrink-0"
                 />
               ))}
         </div>

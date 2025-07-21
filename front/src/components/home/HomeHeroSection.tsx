@@ -45,7 +45,7 @@ const HomeHeroSection: React.FC = () => {
   }, []); // 빈 배열은 컴포넌트가 마운트될 때 한 번만 실행됨
 
   return (
-    <section className="bg-gray-500 py-40">
+    <section className="bg-gray-500 py-32">
       <div className="container mx-auto px-4">
         <h1 className="text-4xl md:text-5xl text-gray-50 mb-6">
           독서와 사람을 연결하는 플랫폼

@@ -1,4 +1,6 @@
-import Button from "./Button"; // Button 컴포넌트 임포트
+// front/src/components/common/Pagination.tsx
+import React from "react";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa"; // 화살표 아이콘 임포트
 
 interface PaginationProps {
   currentPage: number;
@@ -11,95 +13,78 @@ const Pagination: React.FC<PaginationProps> = ({
   totalPages,
   onPageChange,
 }) => {
-  const pageNumbers = [];
-  // 보여줄 페이지 번호 범위를 조정할 수 있습니다 (예: 현재 페이지 기준 좌우 2칸)
-  const maxPageButtons = 5; // 한 번에 보여줄 페이지 버튼 최대 개수
-  let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
-  const endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+  const pageNumbers: number[] = [];
+  const pagesPerBlock = 5; // ✨ 한 블록에 보여줄 페이지 번호 개수 (5개) ✨
 
-  // 끝 페이지가 부족할 경우 시작 페이지 조정
-  if (endPage - startPage + 1 < maxPageButtons) {
-    startPage = Math.max(1, endPage - maxPageButtons + 1);
-  }
+  // 현재 블록의 시작 페이지 계산
+  // 예: currentPage가 1,2,3,4,5 중 하나면 startBlockPage = 1
+  //     currentPage가 6,7,8,9,10 중 하나면 startBlockPage = 6
+  const startBlockPage =
+    Math.floor((currentPage - 1) / pagesPerBlock) * pagesPerBlock + 1;
+  const endBlockPage = Math.min(totalPages, startBlockPage + pagesPerBlock - 1);
 
-  for (let i = startPage; i <= endPage; i++) {
+  // 현재 블록의 페이지 번호를 배열에 추가
+  for (let i = startBlockPage; i <= endBlockPage; i++) {
     pageNumbers.push(i);
   }
 
+  // '이전' 블록으로 이동 가능한지
+  const canGoPrevBlock = startBlockPage > 1;
+  // '다음' 블록으로 이동 가능한지
+  const canGoNextBlock = endBlockPage < totalPages;
+
+  // '이전' 버튼 클릭 시
+  const handlePrevBlock = () => {
+    // 현재 블록의 첫 페이지 - 1 (혹은 이전 블록의 마지막 페이지)로 이동
+    onPageChange(startBlockPage - 1);
+  };
+
+  // '다음' 버튼 클릭 시
+  const handleNextBlock = () => {
+    // 현재 블록의 마지막 페이지 + 1 (혹은 다음 블록의 첫 페이지)로 이동
+    onPageChange(endBlockPage + 1);
+  };
+
   return (
-    <nav className="flex justify-center items-center space-x-2">
-      {/* 이전 버튼 */}
-      <Button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        bgColor="bg-gray-200"
-        textColor="text-gray-800"
-        hoverBgColor="hover:bg-gray-300"
-        className="px-4 py-2 text-sm"
+    <div className="flex justify-center items-center space-x-4 mt-12 mb-8">
+      {/* 이전 블록 버튼 */}
+      <button
+        onClick={handlePrevBlock}
+        disabled={!canGoPrevBlock} // 이전 블록으로 갈 수 없으면 비활성화
+        className={`p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center
+          ${!canGoPrevBlock ? "opacity-50 cursor-not-allowed" : ""}`}
+        aria-label="Previous Block"
       >
-        이전
-      </Button>
+        <FaChevronLeft className="w-4 h-4 text-gray-700" />
+      </button>
 
       {/* 페이지 번호들 */}
-      {startPage > 1 && (
-        <>
-          <Button
-            onClick={() => onPageChange(1)}
-            bgColor="bg-gray-200"
-            textColor="text-gray-800"
-            hoverBgColor="hover:bg-gray-300"
-            className="px-4 py-2 text-sm"
-          >
-            1
-          </Button>
-          {startPage > 2 && <span className="text-gray-600">...</span>}
-        </>
-      )}
-
-      {pageNumbers.map((number) => (
-        <Button
-          key={number}
-          onClick={() => onPageChange(number)}
-          bgColor={currentPage === number ? "bg-blue-600" : "bg-gray-200"}
-          textColor={currentPage === number ? "text-white" : "text-gray-800"}
-          hoverBgColor={
-            currentPage === number ? "hover:bg-blue-700" : "hover:bg-gray-300"
-          }
-          className="w-10 h-10 flex items-center justify-center text-sm"
+      {pageNumbers.map((page) => (
+        <button
+          key={page}
+          onClick={() => onPageChange(page)} // 클릭 시 해당 페이지로 이동
+          className={`px-3 py-1.5 rounded-md font-medium text-lg transition-colors duration-200
+            ${
+              currentPage === page
+                ? "text-main" // 현재 페이지: 텍스트 색상만 main 컬러로 변경
+                : "text-gray-700 hover:text-main" // 다른 페이지: 기본 텍스트 색상, 호버 시 main 컬러
+            }`}
         >
-          {number}
-        </Button>
+          {page}
+        </button>
       ))}
 
-      {endPage < totalPages && (
-        <>
-          {endPage < totalPages - 1 && (
-            <span className="text-gray-600">...</span>
-          )}
-          <Button
-            onClick={() => onPageChange(totalPages)}
-            bgColor="bg-gray-200"
-            textColor="text-gray-800"
-            hoverBgColor="hover:bg-gray-300"
-            className="px-4 py-2 text-sm"
-          >
-            {totalPages}
-          </Button>
-        </>
-      )}
-
-      {/* 다음 버튼 */}
-      <Button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        bgColor="bg-gray-200"
-        textColor="text-gray-800"
-        hoverBgColor="hover:bg-gray-300"
-        className="px-4 py-2 text-sm"
+      {/* 다음 블록 버튼 */}
+      <button
+        onClick={handleNextBlock}
+        disabled={!canGoNextBlock} // 다음 블록으로 갈 수 없으면 비활성화
+        className={`p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center
+          ${!canGoNextBlock ? "opacity-50 cursor-not-allowed" : ""}`}
+        aria-label="Next Block"
       >
-        다음
-      </Button>
-    </nav>
+        <FaChevronRight className="w-4 h-4 text-gray-700" />
+      </button>
+    </div>
   );
 };
 

@@ -2,10 +2,9 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import MainLayout from "./layouts/MainLayout";
 import HomePage from "./pages/HomePage";
-import BookSearchResultsPage from "./pages/search/BookSearchResultsPage";
+import BookSearchResultPage from "./pages/books/BookSearchResultPage";
 import BookDetailPage from "./pages/books/BookDetailPage";
 import CommunityBoardPage from "./pages/communities/CommunityBoardPage";
-import CommunityPostDetailPage from "./pages/communities/CommunityPostDetailPage";
 import CommunityPostWritePage from "./pages/communities/CommunityPostWritePage";
 import GeneralBoardPage from "./pages/posts/GeneralBoardPage";
 import GeneralPostDetailPage from "./pages/posts/GeneralPostDetailPage";
@@ -36,21 +35,40 @@ function App() {
           <Route index element={<HomePage />} />
 
           {/* 책 검색 및 상세 */}
-          <Route path="search/books" element={<BookSearchResultsPage />} />
+          <Route path="search/books" element={<BookSearchResultPage />} />
           <Route path="books/:bookId" element={<BookDetailPage />} />
 
-          {/* 커뮤니티 게시판 */}
-          <Route path="communities" element={<CommunityBoardPage />} />
+          {/* ✨ 커뮤니티 라우트 (API 명세 기반 조정) ✨ */}
+          {/* 1. 커뮤니티 목록 조회 (GET /communities) */}
           <Route
-            path="communities/:postId"
-            element={<CommunityPostDetailPage />}
+            path="communities"
+            element={<CommunityBoardPage /* 혹은 CommunityListPage */ />}
           />
-          {/* 게시물 생성/수정 */}
-          <Route path="communities/new" element={<CommunityPostWritePage />} />
+
+          {/* 2. 특정 커뮤니티의 게시물 목록 조회 (GET /communities/id/posts) */}
           <Route
-            path="communities/:postId/edit"
+            path="communities/:communityId/posts"
+            element={<CommunityBoardPage />}
+          />
+
+          {/* 3. 특정 커뮤니티에 게시물 작성 (POST /communities/id/posts) */}
+          <Route
+            path="communities/:communityId/posts/new"
             element={<CommunityPostWritePage />}
           />
+
+          {/* ✨ 전체 게시판 라우트 (API 명세와 일치) ✨ */}
+          {/* 1. 전체 게시판 게시물 목록 조회 (GET /posts) */}
+          <Route path="posts" element={<GeneralBoardPage />} />
+
+          {/* 2. 특정 게시물 상세 (GET /posts/id) - 커뮤니티 게시물 상세도 이 경로를 사용해야 함 */}
+          <Route path="posts/:postId" element={<GeneralPostDetailPage />} />
+
+          {/* 3. 특정 게시물 수정 (PUT /posts/id) */}
+          <Route path="posts/:postId/edit" element={<GeneralPostWritePage />} />
+
+          {/* 4. 특정 게시물 작성 (POST /posts) */}
+          <Route path="posts/new" element={<GeneralPostWritePage />} />
 
           {/* 전체 게시판 */}
           <Route path="posts" element={<GeneralBoardPage />} />
@@ -65,8 +83,6 @@ function App() {
 
           {/*
             마이페이지 섹션 (중첩 라우트)
-            MyPage 컴포넌트를 부모 라우트 element로 설정하고,
-            MyPage 컴포넌트 내부에서 Outlet을 렌더링하여 하위 라우트를 표시
           */}
           <Route path="mypage" element={<MyPage />}>
             <Route index element={<MyCommunitiesParticipatingPage />} />
@@ -94,8 +110,8 @@ function App() {
             <Route path="profile-edit" element={<ProfileEditPage />} />
           </Route>
 
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/auth/login" element={<LoginPage />} />
+          <Route path="/auth/register" element={<RegisterPage />} />
           <Route path="*" element={<ErrorPage />} />
         </Route>
       </Routes>

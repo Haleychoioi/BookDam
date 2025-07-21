@@ -1,7 +1,6 @@
 import { Link, type LinkProps } from "react-router-dom";
 
 // 1. 모든 버튼 타입이 공통적으로 가질 수 있는 기본 Props
-// children과 onClick 등은 각 HTML 요소 타입에서 가져오므로 여기서는 정의하지 않습니다.
 interface BaseButtonProps {
   className?: string; // Tailwind CSS 클래스를 추가로 적용
   disabled?: boolean; // 버튼 비활성화 여부
@@ -14,12 +13,12 @@ interface BaseButtonProps {
 interface NativeButtonProps
   extends BaseButtonProps,
     React.ButtonHTMLAttributes<HTMLButtonElement> {
-  to?: never; // 'to' prop은 여기서는 절대로 없어야 함
+  to?: never;
 }
 
 // 3. React Router Link 컴포넌트로 렌더링될 때의 Props
 interface LinkButtonProps extends BaseButtonProps, LinkProps {
-  to: string; // 'to' prop은 Link일 경우 반드시 있어야 함
+  to: string;
 }
 
 // 4. 최종 Button 컴포넌트 Props 타입 (판별 가능한 유니언)
@@ -28,10 +27,10 @@ type ButtonProps = NativeButtonProps | LinkButtonProps;
 const Button: React.FC<ButtonProps> = ({
   className = "",
   disabled = false,
-  bgColor, // ✨ 직접 받은 배경색 ✨
-  hoverBgColor, // ✨ 직접 받은 호버 배경색 ✨
-  textColor, // ✨ 직접 받은 텍스트색 ✨
-  ...props // 나머지 모든 HTML 속성들 (children, onClick, to, type 등)
+  bgColor,
+  hoverBgColor,
+  textColor,
+  ...props
 }) => {
   // 기본값 (검은색 버튼 디자인을 기반)
   const defaultBgColor = "bg-main";
@@ -43,8 +42,16 @@ const Button: React.FC<ButtonProps> = ({
   const finalHoverBgColor = hoverBgColor || defaultHoverBgColor;
   const finalTextColor = textColor || defaultTextColor;
 
+  // ✨ 여기가 수정된 부분입니다! ✨
+  // className에 rounded-none 또는 다른 rounded- 접두사를 가진 클래스가 있는지 확인
+  const hasCustomBorderRadius = /(^|\s)rounded(-\w+)?/.test(className);
+
   // 기본 버튼 스타일 (하드코딩된 색상 클래스 제거하고 동적으로 적용)
-  const baseStyles = `${finalBgColor} ${finalTextColor} px-5 py-3 font-medium rounded-xl ${finalHoverBgColor} transition-colors duration-200`;
+  // hasCustomBorderRadius가 false일 때만 rounded-xl을 추가
+  const baseStyles = `${finalBgColor} ${finalTextColor} px-5 py-3 font-medium ${finalHoverBgColor} transition-colors duration-200 ${
+    hasCustomBorderRadius ? "" : "rounded-xl" // 이미 rounded 관련 클래스가 없으면 기본 rounded-xl 적용
+  }`;
+
   // 비활성화 상태 스타일
   const disabledStyles = "opacity-50 cursor-not-allowed";
 
@@ -54,8 +61,6 @@ const Button: React.FC<ButtonProps> = ({
   }`;
 
   if ("to" in props && typeof props.to === "string") {
-    // LinkProps 타입에 필요한 속성들만 추출하여 Link 컴포넌트에 전달
-    // children과 onClick은 props에서 바로 추출하여 Link에 전달
     const { to, children, onClick, ...rest } = props as LinkButtonProps;
     return (
       <Link to={to} className={combinedStyles} onClick={onClick} {...rest}>
@@ -63,7 +68,6 @@ const Button: React.FC<ButtonProps> = ({
       </Link>
     );
   } else {
-    // NativeButtonProps 타입에 필요한 속성들만 추출하여 button 태그에 전달
     const {
       type = "button",
       children,
