@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-// import { FaSearch } from "react-icons/fa"; // ✨ 돋보기 아이콘은 이미지에 없으므로 임포트 제거 ✨
+import Button from "../common/Button"; // ✨ Button 컴포넌트 임포트 유지 ✨
 
 interface SearchBarProps {
   initialQuery?: string;
@@ -11,7 +11,7 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({
   initialQuery = "",
-  placeholder = "검색어를 입력해주세요", // 이미지의 플레이스홀더 텍스트
+  placeholder = "검색어를 입력해주세요", // ✨ placeholder 유지 ✨
   className = "",
   onSearch,
 }) => {
@@ -43,12 +43,21 @@ const SearchBar: React.FC<SearchBarProps> = ({
   }, []);
 
   const executeSearch = () => {
+    const processedSearchTerm = searchTerm.replace(/\s/g, ""); // ✨ 모든 공백 제거 로직 유지 ✨
+
+    // ✨ 검색어가 비어있을 때만 alert를 띄우고 중단 ✨
+    if (processedSearchTerm.length === 0) {
+      alert("검색어를 입력해주세요."); // 검색어가 없다는 메시지로 변경
+      return; // 검색 실행 중단
+    }
+
+    // 1글자 이상이면 모두 검색 실행
     if (onSearch) {
-      onSearch(searchTerm);
+      onSearch(processedSearchTerm);
     } else {
-      const searchPath = searchTerm
-        ? `/search/books?q=${encodeURIComponent(searchTerm)}`
-        : "/search/books";
+      const searchPath = `/search/books?q=${encodeURIComponent(
+        processedSearchTerm
+      )}`;
       navigate(searchPath);
     }
   };
@@ -68,21 +77,24 @@ const SearchBar: React.FC<SearchBarProps> = ({
         ref={inputRef}
         type="text"
         placeholder={placeholder}
-        className="flex-grow p-3 mr-3 focus:outline-none focus:ring-0 focus:border-gray-300 border border-gray-300 rounded-xl pl-5 pr-3" // border-none 대신 border 추가, rounded-full 대신 rounded-l-md, shadow-sm
+        className="flex-grow p-3 mr-3 focus:outline-none focus:ring-0 focus:border-gray-300 border border-gray-300 rounded-xl pl-5 pr-3"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         onKeyDown={handleKeyDown}
       />
 
       {/* 검색 버튼 */}
-      <button
+      <Button // ✨ Button 컴포넌트 사용 유지 ✨
         onClick={executeSearch}
-        // ✨ 버튼 스타일 변경: 노란색 배경, 텍스트 "검색", border-l-0, rounded-r-md, padding 조정 ✨
-        className="flex-shrink-0 h-full px-6 py-2 bg-main text-white font-medium rounded-xl hover:bg-apply focus:outline-none focus:ring-0 focus:border-transparent"
+        // Button 컴포넌트의 프롭스로 스타일을 전달
+        bgColor="bg-main"
+        textColor="text-white"
+        hoverBgColor="hover:bg-apply"
+        className="flex-shrink-0 h-full px-6 py-2 font-medium rounded-xl focus:outline-none focus:ring-0 focus:border-transparent"
         aria-label="검색"
       >
         검색
-      </button>
+      </Button>
     </div>
   );
 };

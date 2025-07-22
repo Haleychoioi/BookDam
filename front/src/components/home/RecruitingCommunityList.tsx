@@ -1,73 +1,97 @@
 import { useState } from "react";
 import Button from "../common/Button";
+import ApplyToCommunityModal from "../../components/modals/ApplyToCommunityModal"; // ✨ ApplyToCommunityModal 임포트 ✨
+
+interface Community {
+  id: string; // ID를 문자열로 통일
+  title: string;
+  description: string;
+}
 
 const RecruitingCommunityList: React.FC = () => {
   // 현재는 하드코딩된 데이터로 UI만 보여줍니다.
   const dummyCommunities = [
     {
-      id: 1,
+      id: "1",
       title: "혼모노 | 성해나 : 깊은 토론하실 분 구합니다",
       description: "간단 커뮤니티 소개글입니다.",
     },
     {
-      id: 2,
+      id: "2",
       title: "혼모노 | 성해나 : 깊은 토론하실 분 구합니다",
       description: "간단 커뮤니티 소개글입니다.",
     },
     {
-      id: 3,
+      id: "3",
       title: "혼모노 | 성해나 : 깊은 토론하실 분 구합니다",
       description: "간단 커뮤니티 소개글입니다.",
     },
     {
-      id: 4,
+      id: "4",
       title: "혼모노 | 성해나 : 깊은 토론하실 분 구합니다",
       description: "간단 커뮤니티 소개글입니다.",
     },
     {
-      id: 5,
+      id: "5",
       title: "혼모노 | 성해나 : 깊은 토론하실 분 구합니다",
       description: "간단 커뮤니티 소개글입니다.",
     },
     {
-      id: 6,
+      id: "6",
       title: "혼모노 | 성해나 : 깊은 토론하실 분 구합니다",
       description: "간단 커뮤니티 소개글입니다.",
     },
     {
-      id: 7,
+      id: "7",
       title: "추가 커뮤니티 | 07 : 스터디 그룹원 모집",
       description: "새롭게 추가된 커뮤니티입니다.",
     }, // 추가 데이터 예시
     {
-      id: 8,
+      id: "8",
       title: "추가 커뮤니티 | 08 : 독서 모임 참가자 구함",
       description: "더 많은 내용을 보여줍니다.",
     }, // 추가 데이터 예시
     {
-      id: 9,
+      id: "9",
       title: "추가 커뮤니티 | 09 : 영어 원서 읽기",
       description: "계속해서 추가됩니다.",
     }, // 추가 데이터 예시
     {
-      id: 10,
+      id: "10",
       title: "추가 커뮤니티 | 10 : 고전 문학 토론",
       description: "마지막 추가 커뮤니티입니다.",
     }, // 추가 데이터 예시
   ];
 
-  // ✨ 초기 보여줄 아이템 개수와 더보기 클릭 시 추가할 개수를 정의합니다. ✨
   const initialDisplayCount = 6;
-  const loadMoreIncrement = 3; // '더보기' 클릭 시 3개씩 추가
+  const loadMoreIncrement = 3;
 
   const [displayedCount, setDisplayedCount] = useState(initialDisplayCount);
 
-  // '더보기' 버튼 클릭 핸들러
+  // 모달 관련 상태
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(
+    null
+  );
+
   const handleLoadMore = () => {
     setDisplayedCount((prevCount) => prevCount + loadMoreIncrement);
   };
 
-  // 모든 아이템이 로드되었는지 확인
+  const handleJoinClick = (community: Community) => {
+    setSelectedCommunityId(community.id);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedCommunityId(null);
+    // ✨ 모달이 닫힌 후 필요한 추가 로직 (예: 커뮤니티 목록 새로고침) ✨
+    // 여기서는 Mock 데이터이므로 새로고침은 하지 않습니다.
+  };
+
+  // ✨ handleApplyToCommunity 함수 제거 ✨
+
   const allItemsLoaded = displayedCount >= dummyCommunities.length;
 
   return (
@@ -92,7 +116,7 @@ const RecruitingCommunityList: React.FC = () => {
               <p className="text-gray-600 text-sm">{community.description}</p>
             </div>
             <Button
-              to={`/communities/${community.id}`}
+              onClick={() => handleJoinClick(community)}
               className="px-6 py-2"
               bgColor="bg-apply"
             >
@@ -110,6 +134,13 @@ const RecruitingCommunityList: React.FC = () => {
           </Button>
         </div>
       )}
+
+      {/* ✨ ApplyToCommunityModal 렌더링 (프롭스 조정) ✨ */}
+      <ApplyToCommunityModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        communityId={selectedCommunityId || ""} // null일 경우를 대비하여 기본값
+      />
     </section>
   );
 };

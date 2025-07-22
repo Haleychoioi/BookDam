@@ -2,14 +2,9 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import MainLayout from "./layouts/MainLayout";
 import HomePage from "./pages/HomePage";
-import BookSearchResultsPage from "./pages/search/BookSearchResultsPage";
+import BookSearchResultPage from "./pages/books/BookSearchResultPage";
 import BookDetailPage from "./pages/books/BookDetailPage";
 import CommunityBoardPage from "./pages/communities/CommunityBoardPage";
-import CommunityPostDetailPage from "./pages/communities/CommunityPostDetailPage";
-import CommunityPostWritePage from "./pages/communities/CommunityPostWritePage";
-import GeneralBoardPage from "./pages/posts/GeneralBoardPage";
-import GeneralPostDetailPage from "./pages/posts/GeneralPostDetailPage";
-import GeneralPostWritePage from "./pages/posts/GeneralPostWritePage";
 import FAQPage from "./pages/FAQPage";
 import AboutPage from "./pages/AboutPage";
 import MyCommunitiesParticipatingPage from "./pages/mypage/MyCommunitiesParticipatingPage";
@@ -25,7 +20,10 @@ import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import ErrorPage from "./pages/ErrorPage";
-import MyPage from "./pages/mypage/MyPage";
+import MyPageLayout from "./layouts/MyPageLayout";
+import PostDetailPage from "./pages/posts/PostDetailPage";
+import PostWritePage from "./pages/posts/PostWritePage";
+import GeneralBoardPage from "./pages/communities/GeneralBoardPage";
 
 function App() {
   return (
@@ -36,40 +34,44 @@ function App() {
           <Route index element={<HomePage />} />
 
           {/* 책 검색 및 상세 */}
-          <Route path="search/books" element={<BookSearchResultsPage />} />
+          <Route path="search/books" element={<BookSearchResultPage />} />
           <Route path="books/:bookId" element={<BookDetailPage />} />
 
-          {/* 커뮤니티 게시판 */}
-          <Route path="communities" element={<CommunityBoardPage />} />
+          {/* 커뮤니티 목록 조회 (GET /communities) */}
           <Route
-            path="communities/:postId"
-            element={<CommunityPostDetailPage />}
+            path="communities"
+            element={<CommunityBoardPage /* 혹은 CommunityListPage */ />}
           />
-          {/* 게시물 생성/수정 */}
-          <Route path="communities/new" element={<CommunityPostWritePage />} />
+
+          {/* 특정 커뮤니티의 게시물 목록 조회 (GET /communities/id/posts) */}
           <Route
-            path="communities/:postId/edit"
-            element={<CommunityPostWritePage />}
+            path="communities/:communityId/posts"
+            element={<CommunityBoardPage />}
           />
+
+          {/* 특정 게시물 상세 (GET /posts/id) - 커뮤니티 게시물 상세도 이 경로를 사용해야 함 */}
+          <Route path="posts/:postId" element={<PostDetailPage />} />
 
           {/* 전체 게시판 */}
           <Route path="posts" element={<GeneralBoardPage />} />
-          <Route path="posts/:postId" element={<GeneralPostDetailPage />} />
-          {/* 게시물 생성/수정 */}
-          <Route path="posts/new" element={<GeneralPostWritePage />} />
-          <Route path="posts/:postId/edit" element={<GeneralPostWritePage />} />
 
           {/* 기타 고정 페이지 */}
           <Route path="faq" element={<FAQPage />} />
           <Route path="about" element={<AboutPage />} />
 
-          {/*
-            마이페이지 섹션 (중첩 라우트)
-            MyPage 컴포넌트를 부모 라우트 element로 설정하고,
-            MyPage 컴포넌트 내부에서 Outlet을 렌더링하여 하위 라우트를 표시
-          */}
-          <Route path="mypage" element={<MyPage />}>
+          {/* ✨ 마이페이지 섹션 (MyPageLayout 사용) ✨ */}
+          <Route path="mypage" element={<MyPageLayout />}>
+            {/* 마이페이지 기본 경로 (index) */}
             <Route index element={<MyCommunitiesParticipatingPage />} />
+            {/* 내 정보 */}
+            <Route path="profile-edit" element={<ProfileEditPage />} />
+            <Route path="taste-analysis" element={<TasteAnalysisPage />} />
+            {/* 내 활동 */}
+            <Route path="my-library" element={<MyLibraryPage />} />
+            <Route path="wishlist" element={<WishlistPage />} />
+            <Route path="my-posts" element={<MyPostsPage />} />
+            <Route path="my-comments" element={<MyCommentsPage />} />
+            {/* 커뮤니티 관련 */}
             <Route
               path="communities/participating"
               element={<MyCommunitiesParticipatingPage />}
@@ -86,18 +88,18 @@ function App() {
               path="communities/applied"
               element={<MyCommunitiesAppliedPage />}
             />
-            <Route path="taste-analysis" element={<TasteAnalysisPage />} />
-            <Route path="my-library" element={<MyLibraryPage />} />
-            <Route path="wishlist" element={<WishlistPage />} />
-            <Route path="my-posts" element={<MyPostsPage />} />
-            <Route path="my-comments" element={<MyCommentsPage />} />
-            <Route path="profile-edit" element={<ProfileEditPage />} />
           </Route>
-
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="*" element={<ErrorPage />} />
         </Route>
+        <Route path="/auth/login" element={<LoginPage />} />
+        <Route path="/auth/register" element={<RegisterPage />} />
+        <Route path="*" element={<ErrorPage />} />
+
+        {/* 4. 특정 게시물 작성 (POST /posts) */}
+        <Route path="posts/new" element={<PostWritePage />} />
+        <Route
+          path="communities/:communityId/posts/new"
+          element={<PostWritePage />}
+        />
       </Routes>
     </BrowserRouter>
   );

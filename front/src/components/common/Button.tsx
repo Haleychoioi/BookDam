@@ -1,4 +1,5 @@
 import { Link, type LinkProps } from "react-router-dom";
+import React from "react"; // React 임포트가 없었다면 추가
 
 // 1. 모든 버튼 타입이 공통적으로 가질 수 있는 기본 Props
 interface BaseButtonProps {
@@ -7,6 +8,7 @@ interface BaseButtonProps {
   bgColor?: string; // 예: "bg-blue-500", "bg-red-600"
   hoverBgColor?: string; // 예: "hover:bg-blue-600", "hover:bg-red-700"
   textColor?: string; // 예: "text-white", "text-gray-900"
+  hoverTextColor?: string; // ✨ hoverTextColor 프롭스 유지 ✨
 }
 
 // 2. HTML <button> 태그로 렌더링될 때의 Props
@@ -30,27 +32,35 @@ const Button: React.FC<ButtonProps> = ({
   bgColor,
   hoverBgColor,
   textColor,
+  hoverTextColor, // ✨ hoverTextColor 프롭스 구조분해 할당 유지 ✨
   ...props
 }) => {
   // 기본값 (검은색 버튼 디자인을 기반)
   const defaultBgColor = "bg-main";
   const defaultHoverBgColor = "hover:bg-apply";
   const defaultTextColor = "text-white";
+  const defaultHoverTextColor = "hover:text-white"; // ✨ 기본 hoverTextColor 정의 유지 ✨
 
   // 최종 적용될 배경색, 호버색, 텍스트색
   const finalBgColor = bgColor || defaultBgColor;
   const finalHoverBgColor = hoverBgColor || defaultHoverBgColor;
   const finalTextColor = textColor || defaultTextColor;
+  const finalHoverTextColor = hoverTextColor || defaultHoverTextColor; // ✨ 최종 hoverTextColor 적용 유지 ✨
 
-  // ✨ 여기가 수정된 부분입니다! ✨
-  // className에 rounded-none 또는 다른 rounded- 접두사를 가진 클래스가 있는지 확인
+  // ✨ hasCustomBorderRadius 중복 선언 제거, 첫 번째 선언만 유지 ✨
   const hasCustomBorderRadius = /(^|\s)rounded(-\w+)?/.test(className);
 
   // 기본 버튼 스타일 (하드코딩된 색상 클래스 제거하고 동적으로 적용)
-  // hasCustomBorderRadius가 false일 때만 rounded-xl을 추가
-  const baseStyles = `${finalBgColor} ${finalTextColor} px-5 py-3 font-medium ${finalHoverBgColor} transition-colors duration-200 ${
-    hasCustomBorderRadius ? "" : "rounded-xl" // 이미 rounded 관련 클래스가 없으면 기본 rounded-xl 적용
-  }`;
+  const baseStyles = `
+    ${finalBgColor}
+    ${finalTextColor}
+    px-5 py-3
+    font-medium
+    ${finalHoverBgColor}
+    ${finalHoverTextColor}
+    transition-colors duration-200
+    ${hasCustomBorderRadius ? "" : "rounded-xl"}
+  `.trim();
 
   // 비활성화 상태 스타일
   const disabledStyles = "opacity-50 cursor-not-allowed";
