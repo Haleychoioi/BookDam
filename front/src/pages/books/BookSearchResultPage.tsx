@@ -14,13 +14,13 @@ interface Book {
   author: string;
 }
 
-// ✨ 더미 책 데이터 배열 (총 200개를 가정) ✨
+// 더미 책 데이터 배열 (총 200개를 가정)
 const allDummyBooks: Book[] = Array.from({ length: 200 }, (_, i) => ({
   id: `book-${i + 1}`,
   coverImage: `https://via.placeholder.com/160x256/F0F0F0/B0B0B0?text=Book+${
     i + 1
   }`,
-  title: `집 가자 ${i + 1}`,
+  title: `집 가자 ${i + 1}`, // 제목에 공백이 있습니다.
   author: `작가 ${i + 1}`,
 }));
 
@@ -42,25 +42,51 @@ const BookSearchResultPage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const totalBooks = 200;
   const itemsPerPage = 12;
-  const totalPages = Math.ceil(totalBooks / itemsPerPage);
 
   const displayedBooks = useMemo(() => {
     let filteredBooks = allDummyBooks;
 
     if (currentSearchTerm) {
-      filteredBooks = filteredBooks.filter(
-        (book) =>
-          book.title.includes(currentSearchTerm) ||
-          book.author.includes(currentSearchTerm)
-      );
+      // currentSearchTerm은 SearchBar에서 이미 모든 공백이 제거된 상태입니다.
+      const processedSearchTerm = currentSearchTerm;
+
+      filteredBooks = filteredBooks.filter((book) => {
+        // ✨ 책 제목과 저자에서도 공백을 제거한 후 검색어와 비교 ✨
+        const processedBookTitle = book.title.replace(/\s/g, "");
+        const processedBookAuthor = book.author.replace(/\s/g, "");
+
+        return (
+          processedBookTitle.includes(processedSearchTerm) ||
+          processedBookAuthor.includes(processedSearchTerm)
+        );
+      });
     }
 
+    // 페이지네이션 적용
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return filteredBooks.slice(startIndex, endIndex);
   }, [currentPage, itemsPerPage, currentSearchTerm]);
+
+  // 필터링된 결과의 총 페이지 수
+  const totalFilteredBooks = useMemo(() => {
+    let countFilteredBooks = allDummyBooks;
+    if (currentSearchTerm) {
+      const processedSearchTerm = currentSearchTerm;
+      countFilteredBooks = countFilteredBooks.filter((book) => {
+        const processedBookTitle = book.title.replace(/\s/g, "");
+        const processedBookAuthor = book.author.replace(/\s/g, "");
+        return (
+          processedBookTitle.includes(processedSearchTerm) ||
+          processedBookAuthor.includes(processedSearchTerm)
+        );
+      });
+    }
+    return countFilteredBooks.length;
+  }, [currentSearchTerm]);
+
+  const totalPages = Math.ceil(totalFilteredBooks / itemsPerPage);
 
   const handleSearchSubmit = (term: string) => {
     setCurrentSearchTerm(term);

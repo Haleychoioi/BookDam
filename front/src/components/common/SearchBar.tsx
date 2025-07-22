@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-// import { FaSearch } from "react-icons/fa"; // ✨ 돋보기 아이콘은 이미지에 없으므로 임포트 제거 ✨
+import Button from "../common/Button"; // Button 컴포넌트 임포트 확인
 
 interface SearchBarProps {
   initialQuery?: string;
@@ -11,7 +11,7 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({
   initialQuery = "",
-  placeholder = "검색어를 입력해주세요", // 이미지의 플레이스홀더 텍스트
+  placeholder = "검색어를 입력해주세요",
   className = "",
   onSearch,
 }) => {
@@ -45,20 +45,19 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const executeSearch = () => {
     const processedSearchTerm = searchTerm.replace(/\s/g, ""); // 모든 공백 제거
 
-    // ✨ 여기서 2글자 미만 검색어 처리 ✨
-    if (processedSearchTerm.length < 2 && processedSearchTerm.length > 0) {
-      alert("검색어는 최소 두 글자 이상이어야 합니다.");
+    // ✨ 검색어가 아예 비어있을 때만 alert를 띄우고 중단 ✨
+    if (processedSearchTerm.length === 0) {
+      alert("검색어를 입력해주세요."); // 검색어가 없다는 메시지로 변경
       return; // 검색 실행 중단
     }
-    // 검색어가 아예 비어있으면 (processedSearchTerm.length === 0) 검색 실행 (모든 결과 표시)
-    // 이것은 현재 로직과 동일하게 유지됩니다.
 
+    // 1글자 이상이면 모두 검색 실행
     if (onSearch) {
       onSearch(processedSearchTerm);
     } else {
-      const searchPath = processedSearchTerm
-        ? `/search/books?q=${encodeURIComponent(processedSearchTerm)}`
-        : "/search/books";
+      const searchPath = `/search/books?q=${encodeURIComponent(
+        processedSearchTerm
+      )}`;
       navigate(searchPath);
     }
   };
@@ -85,14 +84,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
       />
 
       {/* 검색 버튼 */}
-      <button
+      <Button
         onClick={executeSearch}
-        // ✨ 버튼 스타일 변경: 노란색 배경, 텍스트 "검색", border-l-0, rounded-r-md, padding 조정 ✨
-        className="flex-shrink-0 h-full px-6 py-2 bg-main text-white font-medium rounded-xl hover:bg-apply focus:outline-none focus:ring-0 focus:border-transparent"
+        // Button 컴포넌트의 프롭스로 스타일을 전달
+        bgColor="bg-main"
+        textColor="text-white"
+        hoverBgColor="hover:bg-apply"
+        className="flex-shrink-0 h-full px-6 py-2 font-medium rounded-xl focus:outline-none focus:ring-0 focus:border-transparent"
         aria-label="검색"
       >
         검색
-      </button>
+      </Button>
     </div>
   );
 };

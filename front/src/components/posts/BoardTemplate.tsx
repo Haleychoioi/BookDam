@@ -6,14 +6,15 @@ import type { Post } from "../../types";
 
 interface BoardTemplateProps {
   // 동적으로 변경될 수 있는 내용들
-  bookTitle: string; // 커뮤니티 정보 또는 전체 게시판 제목 등
-  communityTopic: string;
+  bookTitle?: string; // ✨ 선택적으로 변경 (전체 게시판에서 안 쓸 수 있도록) ✨
+  communityTopic?: string; // ✨ 선택적으로 변경 (전체 게시판에서 안 쓸 수 있도록) ✨
   posts: Post[]; // PostList에 전달할 게시글 데이터
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
   onWritePostClick: () => void; // 게시물 작성 버튼 클릭 핸들러
   boardTitle: string; // "게시글"과 같은 섹션 제목
+  headerContent?: React.ReactNode; // ✨ 추가: 커스텀 헤더 내용을 받을 수 있도록 ✨
 }
 
 const BoardTemplate: React.FC<BoardTemplateProps> = ({
@@ -25,14 +26,21 @@ const BoardTemplate: React.FC<BoardTemplateProps> = ({
   onPageChange,
   onWritePostClick,
   boardTitle,
+  headerContent,
 }) => {
   return (
     <div className="min-h-full py-10">
       <div className="container mx-auto px-4 lg:px-20 xl:px-32">
-        {/* 동적으로 전달받는 헤더 내용 (커뮤니티 정보 또는 전체 게시판 제목) */}
-        <h1 className="text-4xl md:text-4xl font-bold text-gray-800 mb-36 mt-24">
-          {communityTopic} | {bookTitle}
-        </h1>
+        {/* ✨ headerContent가 있으면 그것을 렌더링하고, 없으면 기존 bookTitle/communityTopic 사용 ✨ */}
+        {headerContent ? (
+          <div className="mb-36 mt-24">{headerContent}</div>
+        ) : (
+          <h1 className="text-4xl md:text-4xl font-bold text-gray-800 mb-36 mt-24">
+            {communityTopic && bookTitle
+              ? `${communityTopic} | ${bookTitle}`
+              : communityTopic || bookTitle}
+          </h1>
+        )}
 
         {/* 게시글 목록 및 작성 버튼 */}
         <div className="relative mb-8">

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Button from "../common/Button";
 
 // Enter 키 입력 시 검색 실행
 const HomeHeroSection: React.FC = () => {
@@ -13,13 +12,13 @@ const HomeHeroSection: React.FC = () => {
   const executeSearch = () => {
     const processedSearchTerm = searchTerm.replace(/\s/g, ""); // 모든 공백 제거
 
-    // ✨ 검색어가 비어있거나 2글자 미만일 때 처리 로직 ✨
-    if (processedSearchTerm.length < 2) {
-      alert("검색어는 최소 두 글자 이상이어야 합니다.");
-      return; // 여기서 함수 실행을 확실히 중단합니다.
+    // ✨ 검색어가 아예 비어있을 때만 alert를 띄우고 중단 ✨
+    if (processedSearchTerm.length === 0) {
+      alert("검색어를 입력해주세요."); // 검색어가 없다는 메시지로 변경
+      return; // 검색 실행 중단
     }
 
-    // 검색어가 2글자 이상인 경우에만 검색 실행
+    // 1글자 이상이면 모두 검색 실행
     const searchPath = `/search/books?q=${encodeURIComponent(
       processedSearchTerm
     )}`;
@@ -56,9 +55,6 @@ const HomeHeroSection: React.FC = () => {
     };
   }, []);
 
-  const isSearchButtonVisuallyDisabled =
-    searchTerm.replace(/\s/g, "").length < 2;
-
   return (
     <section className="bg-category py-32">
       <div className="container mx-auto px-4">
@@ -82,15 +78,22 @@ const HomeHeroSection: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={handleSearchOnEnter}
           />
-          <Button
+          <button
             onClick={executeSearch}
-            className={`h-12 rounded-r-xl ${
-              isSearchButtonVisuallyDisabled ? "cursor-not-allowed" : ""
-            }`} // ✨ disabled 속성 제거, 클래스만 남김 ✨
-            // disabled={searchTerm.replace(/\s/g, "").length === 0} // ✨ 이 줄을 제거합니다. ✨
+            className="h-12
+              px-6
+              py-2
+              bg-main
+              text-white
+              font-medium
+              rounded-r-xl
+              rounded-none
+              focus:outline-none
+              focus:ring-0
+              focus:border-transparent "
           >
             검색
-          </Button>
+          </button>
         </div>
       </div>
     </section>

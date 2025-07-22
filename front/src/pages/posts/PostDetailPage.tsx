@@ -82,6 +82,24 @@ console.log("코드 블록");
     authorId: "user123",
     createdAt: "2025년 07월 15일",
     content: `노인과 바다의 첫 번째 깊은 이야기.`,
+  }, // ✨ GeneralBoardPage에서 사용할 게시물 추가 ✨
+  "general-post-1": {
+    id: "general-post-1",
+    title: "[전체] 1번째 흥미로운 이야기",
+    commentCount: 5,
+    author: "전체 게시판 유저1",
+    authorId: "user456", // Mock authorId
+    createdAt: "2025년 07월 21일",
+    content: `이것은 전체 게시판의 1번째 게시물 상세 내용입니다.`,
+  },
+  "general-post-2": {
+    id: "general-post-2",
+    title: "[전체] 2번째 흥미로운 이야기",
+    commentCount: 10,
+    author: "전체 게시판 유저2",
+    authorId: "user123", // user123으로 수정 테스트 가능
+    createdAt: "2025년 07월 20일",
+    content: `이것은 전체 게시판의 2번째 게시물 상세 내용입니다.`,
   },
 };
 
@@ -334,7 +352,7 @@ const PostDetailPage: React.FC = () => {
       isPostAuthor={isPostAuthor} // ✨ isPostAuthor 프롭스 전달 ✨
     >
       {/* 댓글 섹션은 수정 모드와 관계없이 항상 표시 */}
-      <div className="mt-12">
+      <div className="mt-12 px-10">
         <h3 className="text-xl font-bold text-gray-800 mb-4">댓글</h3>
         <CommentInput onAddComment={handleAddComment} />
         <CommentList
