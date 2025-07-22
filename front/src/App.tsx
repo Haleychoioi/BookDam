@@ -20,7 +20,7 @@ import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import ErrorPage from "./pages/ErrorPage";
-import MyPage from "./pages/mypage/MyPage";
+import MyPageLayout from "./layouts/MyPageLayout";
 import PostDetailPage from "./pages/posts/PostDetailPage";
 import PostWritePage from "./pages/posts/PostWritePage";
 import GeneralBoardPage from "./pages/communities/GeneralBoardPage";
@@ -58,11 +58,20 @@ function App() {
           {/* 기타 고정 페이지 */}
           <Route path="faq" element={<FAQPage />} />
           <Route path="about" element={<AboutPage />} />
-          {/*
-            마이페이지 섹션 (중첩 라우트)
-          */}
-          <Route path="mypage" element={<MyPage />}>
+
+          {/* ✨ 마이페이지 섹션 (MyPageLayout 사용) ✨ */}
+          <Route path="mypage" element={<MyPageLayout />}>
+            {/* 마이페이지 기본 경로 (index) */}
             <Route index element={<MyCommunitiesParticipatingPage />} />
+            {/* 내 정보 */}
+            <Route path="profile-edit" element={<ProfileEditPage />} />
+            <Route path="taste-analysis" element={<TasteAnalysisPage />} />
+            {/* 내 활동 */}
+            <Route path="my-library" element={<MyLibraryPage />} />
+            <Route path="wishlist" element={<WishlistPage />} />
+            <Route path="my-posts" element={<MyPostsPage />} />
+            <Route path="my-comments" element={<MyCommentsPage />} />
+            {/* 커뮤니티 관련 */}
             <Route
               path="communities/participating"
               element={<MyCommunitiesParticipatingPage />}
@@ -79,17 +88,12 @@ function App() {
               path="communities/applied"
               element={<MyCommunitiesAppliedPage />}
             />
-            <Route path="taste-analysis" element={<TasteAnalysisPage />} />
-            <Route path="my-library" element={<MyLibraryPage />} />
-            <Route path="wishlist" element={<WishlistPage />} />
-            <Route path="my-posts" element={<MyPostsPage />} />
-            <Route path="my-comments" element={<MyCommentsPage />} />
-            <Route path="profile-edit" element={<ProfileEditPage />} />
           </Route>
-          <Route path="/auth/login" element={<LoginPage />} />
-          <Route path="/auth/register" element={<RegisterPage />} />
-          <Route path="*" element={<ErrorPage />} />
         </Route>
+        <Route path="/auth/login" element={<LoginPage />} />
+        <Route path="/auth/register" element={<RegisterPage />} />
+        <Route path="*" element={<ErrorPage />} />
+
         {/* 4. 특정 게시물 작성 (POST /posts) */}
         <Route path="posts/new" element={<PostWritePage />} />
         <Route
