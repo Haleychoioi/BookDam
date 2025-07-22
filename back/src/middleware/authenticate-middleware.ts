@@ -38,8 +38,11 @@ export default function(req: Request, res: Response, next: NextFunction) {
         return next(new Error("TokenNotMatched"));
     }
     
+    // 여기서는 verifiedToken이 JWTPayload임이 보장됨
+    console.log('verifiedToken.userId:', verifiedToken.userId); 
     console.log('토큰 검증 성공, req.user 설정');
     req.user = verifiedToken.userId;
+    console.log('req.user 설정 후:', req.user);
     next();
 }
 

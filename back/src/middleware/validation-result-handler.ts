@@ -29,9 +29,9 @@ export const loginValidator: ValidationChain[] = [
         .notEmpty().withMessage('비밀번호가 없습니다.')
 ];
 
-export const userValidator: ValidationChain[] = [
+export const updateProfileValidator: ValidationChain[] = [
     body('nickname')
-        .optional()
+        .notEmpty().withMessage("닉네임을 작성해주세요.")
         .isLength({ min: 1, max: 10 }).withMessage("닉네임은 1~10자로 입력해주세요.")
 ];
 
@@ -39,7 +39,6 @@ export const getUserValidator: ValidationChain[] = [
     param('userId')
         .isInt().withMessage("userId를 숫자로 입력해주세요.")
 ];
-
 
 export const handleValidationResult = (req: Request, res: Response, next: NextFunction) => {
     const result = validationResult(req);

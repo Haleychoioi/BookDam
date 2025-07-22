@@ -14,12 +14,17 @@ export default function (
    case "InputValidation":
    case "PasswordValidation":
      return res.status(400).send({
-       errorMessage: "잘못된 입력"
+       errorMessage: "잘못된 입력입니다"
      });
 
    case "ExistEmail": 
      return res.status(400).send({
        errorMessage: "가입된 이메일 존재"
+     });
+
+     case "ExistNickname": 
+     return res.status(400).send({
+       errorMessage: "사용중인 닉네임"
      });
 
    case "Forbidden": 

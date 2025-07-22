@@ -18,7 +18,5 @@ router.post('/login',
     userController.login
 );
 
-// 내 정보 조회 - api명세에 없는 기능
-router.get('/me', userController.getProfile)
 
 export default router;

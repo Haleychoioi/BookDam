@@ -13,7 +13,13 @@ class UserService {
     // 1. 이메일 중복 확인
     const existingEmailUser = await userRepository.findByEmail(email);
     if (existingEmailUser) {
-      throw new Error('ExistEmail');  // 에러 미들웨어에서 처리
+      throw new Error('ExistEmail');
+    }
+
+    // 2. 닉네임 중복 확인
+    const existingNickname = await userRepository.findByNickname(nickname);
+    if (existingNickname) {
+        throw new Error('ExistNickname');
     }
 
     // 3. 비밀번호 해싱
@@ -50,13 +56,13 @@ class UserService {
         // 1. 사용자 존재 확인
         const user = await userRepository.findByEmail(email);
         if (!user) {
-            throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.');
+            throw new Error('UserNotFound');
         }
 
         // 2. 비밀번호 검증
         const isValidPassword = await bcrypt.compare(password, user.password);
         if (!isValidPassword) {
-            throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.');
+            throw new Error('PasswordValidation');
         }
 
         // 3. JWT 토큰 생성
@@ -86,7 +92,7 @@ class UserService {
     async getMyProfile(userId: number) {
         const user = await userRepository.findById(userId);
         if (!user) {
-            throw new Error('사용자를 찾을 수 없습니다.');
+            throw new Error('UserNotFound');
         }
 
         // 비밀번호 제외하고 반환
@@ -94,13 +100,14 @@ class UserService {
         return userWithoutPassword;
     }
 
-    // 프로필 업데이트
+    // 회원정보 수정
     async updateProfile(userId: number, updateData: UpdateProfileRequest) {
+        
         // 닉네임 중복 체크 (변경하려는 경우)
         if (updateData.nickname) {
             const existingUser = await userRepository.findByNickname(updateData.nickname);
             if (existingUser && existingUser.userId !== userId) {
-                throw new Error('이미 존재하는 닉네임입니다.');
+                throw new Error('ExistNickname');
             }
         }
 
@@ -111,6 +118,41 @@ class UserService {
         return userWithoutPassword;
     }
 
+
+    // 유저 삭제
+    async deleteUser(userId: number) {
+        const existingUser = await userRepository.findById(userId);
+
+        if (!existingUser) {
+            throw new Error('UserNotFound');
+        }
+
+        await userRepository.deleteUser(userId);
+
+        return {
+            message: "유저 삭제"
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     // 비밀번호 변경
     // async changePassword(userId: number, oldPassword: string, newPassword: string) {
     //     // 1. 현재 사용자 정보 조회

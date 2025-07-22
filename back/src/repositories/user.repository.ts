@@ -34,19 +34,18 @@ class UserRepository {
     });
   }
 
-  // 닉네임 중복 체크
-  async isNicknameExists(nickname: string) {
-    const user = await prisma.user.findFirst({
-      where: { nickname }
-    });
-    return !!user;
-  }
-
   // 사용자 ID로 사용자 찾기
   async findById(userId: number) {
     return await prisma.user.findUnique({
       where: { userId }
     });
+  }
+
+  // 비밀번호 찾기
+  async findByPassword(userId: number) {
+    return await prisma.user.findUnique({
+      where: { userId }
+    })
   }
 
   // 새 사용자 생성
@@ -59,13 +58,13 @@ class UserRepository {
       password: userData.password,
       role: userData.role || UserRole.USER,
       nickname: userData.nickname,
+      agreement: userData.agreement,
       introduction: userData.introduction,
     }
   });
 }
 
-
-
+  // 유저 정보 수정
   async updateUser(userId: number, updateData: UserUpdateData) {
   return await prisma.user.update({
     where: { userId },
