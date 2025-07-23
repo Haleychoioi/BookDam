@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 // import { Link } from "react-router-dom"; // Link는 더 이상 여기서 직접 사용되지 않음
 import CommunityCard from "../../components/mypage/ParticipatingCommunityCard";
-import MyPageHeader from "../../components/mypage/myPageHeader"; // ✨ MyPageHeader 임포트 ✨
+import MyPageHeader from "../../components/mypage/MyPageHeader"; // ✨ MyPageHeader 임포트 ✨
 
 interface ParticipatingCommunity {
   id: string;

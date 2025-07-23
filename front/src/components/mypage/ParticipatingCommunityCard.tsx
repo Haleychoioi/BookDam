@@ -26,29 +26,37 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
 
   return (
     <div className="bg-gray-100 p-6 flex flex-col justify-between">
-      <div className="flex flex-col items-start mb-6">
-        <h3 className="text-xl font-bold text-gray-800 mb-1">
-          {community.bookTitle}
-        </h3>
-        <p className="text-md text-gray-600 mb-4">
-          {isHost && <span className="font-medium mr-1">호스트: </span>}
-          {community.hostNickname}
-        </p>
-        <hr className="border-t border-gray-300 w-full mb-4" />
-        <p className="text-gray-700 text-lg font-light leading-relaxed">
-          {community.description}
-        </p>
-      </div>
-
-      <div className="flex justify-between items-center mt-auto">
-        <div className="flex items-center text-gray-600 text-base">
-          <FaUserFriends className="w-5 h-5 mr-1 text-gray-500" />
-          <span>
-            {community.currentMembers}/{community.maxMembers}명
-          </span>
+      <div className="flex flex-col items-start mb-14">
+        <div className="flex items-center justify-between w-full">
+          <div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-800 mb-1">
+                {community.bookTitle}
+              </h3>
+            </div>
+            <p className="text-md text-gray-600 mb-4">
+              {isHost && <span className="font-medium mr-1">호스트: </span>}
+              {community.hostNickname}
+            </p>
+          </div>
+          <div className="flex items-center text-gray-600 text-sm">
+            <FaUserFriends className="w-5 h-5 mr-1 text-gray-500" />
+            <span>
+              {community.currentMembers}/{community.maxMembers}명
+            </span>
+          </div>
         </div>
 
-        <div className="flex space-x-2">
+        <hr className="border-t border-gray-300 w-full mb-4" />
+        <div>
+          <p className="text-gray-700 text-md font-light leading-relaxed">
+            {community.description}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-auto">
+        <div className="flex space-x-2 justify-between items-center">
           <Link
             to={`/communities/${community.id}/posts`} // 해당 커뮤니티의 게시판으로 이동 [cite: 1]
           >

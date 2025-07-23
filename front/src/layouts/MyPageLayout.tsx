@@ -126,22 +126,13 @@ const MyPageLayout: React.FC = () => {
               </li>
               <li className="mb-2">
                 <Link
-                  to="/mypage/my-posts"
-                  className={`${getNavLinkClass("/mypage/my-posts")} text-sm`}
-                  onClick={toggleMobileMenu}
-                >
-                  내가 작성한 글
-                </Link>
-              </li>
-              <li className="mb-2">
-                <Link
-                  to="/mypage/my-comments"
+                  to="/mypage/my-activities"
                   className={`${getNavLinkClass(
-                    "/mypage/my-comments"
+                    "/mypage/my-activities"
                   )} text-sm`}
                   onClick={toggleMobileMenu}
                 >
-                  내가 작성한 댓글
+                  내 활동 기록
                 </Link>
               </li>
             </ul>

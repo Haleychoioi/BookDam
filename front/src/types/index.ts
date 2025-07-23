@@ -2,6 +2,9 @@ export interface Post {
   id: string;
   title: string;
   commentCount: number;
+  createdAt: string;
+  updatedAt?: string;
+  type: "community" | "general"; // 'community' 또는 'general'
 }
 
 export interface Comment {
@@ -11,6 +14,10 @@ export interface Comment {
   createdAt: string;
   content: string;
   isEdited?: boolean; // 수정되었는지 여부 (선택 사항)
+  postId: string; // ✨ 추가: 댓글이 달린 게시물 ID ✨
+  postTitle: string; // ✨ 추가: 댓글이 달린 게시물 제목 ✨
+  postType: "community" | "general"; // ✨ 추가: 게시물 타입 ('community' 또는 'general') ✨
+  communityId?: string; // ✨ 추가: communityId (선택적) ✨
 }
 
 export interface Community {

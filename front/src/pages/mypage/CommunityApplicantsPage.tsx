@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import MyPageHeader from "../../components/mypage/myPageHeader";
+import MyPageHeader from "../../components/mypage/MyPageHeader";
 import ApplicantCard from "../../components/mypage/ApplicantCard";
 import CommunityHistoryModal from "../../components/modals/CommunityHistoryModal";
 import { type Applicant, type CommunityHistoryEntry } from "../../types";
@@ -235,7 +235,7 @@ const CommunityApplicationsPage: React.FC = () => {
         description={`'${communityId}' 커뮤니티에 신청한 사용자 목록입니다.`}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
         {applicants.length > 0 ? (
           applicants.map((applicant) => (
             <ApplicantCard

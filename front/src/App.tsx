@@ -14,7 +14,6 @@ import MyCommunitiesAppliedPage from "./pages/mypage/MyCommunitiesAppliedPage";
 import TasteAnalysisPage from "./pages/mypage/TasteAnalysisPage";
 import MyLibraryPage from "./pages/mypage/MyLibraryPage";
 import WishlistPage from "./pages/mypage/WishlistPage";
-import MyPostsAndCommentsPage from "./pages/mypage/MyPostsAndCommentsPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -23,6 +22,7 @@ import MyPageLayout from "./layouts/MyPageLayout";
 import PostDetailPage from "./pages/posts/PostDetailPage";
 import PostWritePage from "./pages/posts/PostWritePage";
 import GeneralBoardPage from "./pages/communities/GeneralBoardPage";
+import MyActivitiesPage from "./pages/mypage/MyActivitiesPage";
 
 function App() {
   return (
@@ -68,7 +68,7 @@ function App() {
             {/* 내 활동 */}
             <Route path="my-library" element={<MyLibraryPage />} />
             <Route path="wishlist" element={<WishlistPage />} />
-            <Route path="my-posts" element={<MyPostsAndCommentsPage />} />
+            <Route path="my-activities" element={<MyActivitiesPage />} />
 
             {/* 커뮤니티 관련 */}
             <Route

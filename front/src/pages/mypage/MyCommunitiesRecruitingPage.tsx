@@ -1,7 +1,7 @@
 // front/src/pages/mypage/MyCommunitiesRecruitingPage.tsx
 
 import React, { useState, useEffect, useMemo } from "react";
-import MyPageHeader from "../../components/mypage/myPageHeader"; // MyPageHeader 재활용
+import MyPageHeader from "../../components/mypage/MyPageHeader"; // MyPageHeader 재활용
 import RecruitingCommunityCard from "../../components/mypage/RecruitingCommunityCard"; // RecruitingCommunityCard 재활용
 import Pagination from "../../components/common/Pagination"; // 페이지네이션 컴포넌트 임포트
 
@@ -227,7 +227,7 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {paginatedCommunities.length > 0 ? (
           paginatedCommunities.map((community) => (
             <RecruitingCommunityCard

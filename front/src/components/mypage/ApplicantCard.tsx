@@ -17,7 +17,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({
 }) => {
   return (
     <div className="p-4 flex flex-col justify-between border bg-gray-100">
-      <div className="flex flex-col mb-4">
+      <div className="flex flex-col mb-5">
         <div className="flex justify-between items-center mb-2">
           <h4 className="text-lg font-semibold text-gray-800">
             {applicant.nickname}

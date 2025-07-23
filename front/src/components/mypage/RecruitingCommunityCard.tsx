@@ -55,49 +55,62 @@ const RecruitingCommunityCard: React.FC<RecruitingCommunityCardProps> = ({
   ]);
 
   return (
-    // ✨ 이제 Link 태그가 카드 전체를 감싸지 않고, '신청 내역 보기' 버튼에만 적용됩니다. ✨
-    // 카드 자체는 div로 변경하여 클릭이 불가능하도록 함.
     <div className="bg-gray-100 p-6 flex flex-col justify-between">
       <div className="flex flex-col items-start mb-6">
-        <h3 className="text-xl font-bold text-gray-800 mb-1">
-          {community.title}
-        </h3>
-        <div className="flex items-center text-gray-600 text-base mb-1">
-          <FaUserFriends className="w-5 h-5 mr-1 text-gray-500" />
-          <span>
-            {community.currentMembers}/{community.maxMembers}명
-          </span>
+        <div className="flex justify-between items-start w-full">
+          <div>
+            <h3 className="text-md font-bold text-gray-800 mb-1">
+              {community.title}
+            </h3>
+          </div>
+          <div className="flex items-center text-gray-600 text-sm mb-1">
+            <FaUserFriends className="w-5 h-5 mr-1 text-gray-500" />
+            <span>
+              {community.currentMembers}/{community.maxMembers}명
+            </span>
+          </div>
         </div>
         <hr className="border-t border-gray-300 w-full mb-4" />
-        <p className="text-gray-700 text-lg font-light leading-relaxed">
+        <p className="text-gray-700 text-md font-light leading-relaxed">
           {community.description}
         </p>
       </div>
 
-      <div className="flex justify-between items-center mt-auto">
-        <Link to={`/mypage/communities/recruiting/${community.id}/applicants`}>
-          <Button
-            bgColor="bg-gray-200" // 이미지에 보이는 회색 버튼 색상
-            textColor="text-gray-700" // 이미지에 보이는 텍스트 색상
-            hoverBgColor="hover:bg-gray-300" // 호버 시 색상
-            className="px-2 py-2 text-sm"
+      <div className="flex flex-col items-end mt-auto w-full space-y-2">
+        {/* 신청 내역 보기 버튼 */}
+        <div className="w-full">
+          <Link
+            to={`/mypage/communities/recruiting/${community.id}/applicants`}
           >
-            신청 내역 보기
-          </Button>
-        </Link>
+            <Button
+              bgColor="bg-gray-200"
+              textColor="text-gray-700"
+              hoverBgColor="hover:bg-gray-300"
+              className="w-full px-2 py-2 text-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              신청 내역 보기
+            </Button>
+          </Link>
+        </div>
 
-        <Button
-          onClick={handleEndRecruitmentClick}
-          bgColor={isRecruitmentEnded ? "bg-gray-400" : "bg-main"}
-          textColor="text-white"
-          hoverBgColor={
-            isRecruitmentEnded ? "hover:bg-gray-500" : "hover:bg-apply"
-          }
-          className="ml-1 px-2 py-2 text-sm" // ml-2 추가하여 간격 조정
-          disabled={isRecruitmentEnded}
-        >
-          {isRecruitmentEnded ? "모집 종료됨" : "모집 종료"}
-        </Button>
+        {/* 모집 종료 버튼 */}
+        <div className="w-full">
+          <Button
+            onClick={handleEndRecruitmentClick}
+            bgColor={isRecruitmentEnded ? "bg-gray-400" : "bg-main"}
+            textColor="text-white"
+            hoverBgColor={
+              isRecruitmentEnded ? "hover:bg-gray-500" : "hover:bg-apply"
+            }
+            className="w-full px-2 py-2 text-sm"
+            disabled={isRecruitmentEnded}
+          >
+            {isRecruitmentEnded ? "모집 종료됨" : "모집 종료"}
+          </Button>
+        </div>
       </div>
     </div>
   );

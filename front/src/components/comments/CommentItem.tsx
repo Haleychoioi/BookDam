@@ -1,144 +1,61 @@
-import React, { useState } from "react"; // ✨ KeyboardEvent는 React에서 바로 가져옵니다. ✨
-import Button from "../common/Button";
+// front/src/components/comments/CommentItem.tsx
+
+import React from "react"; // useState 제거
 import type { Comment } from "../../types";
+import { Link } from "react-router-dom"; // Link 임포트
 
 interface CommentItemProps {
   comment: Comment;
-  onUpdateComment: (commentId: string, newContent: string) => void;
-  onDeleteComment: (commentId: string) => void;
-  currentUserId: string;
+  postLink?: string; // 댓글이 속한 게시물로 이동할 링크
 }
 
-const CommentItem: React.FC<CommentItemProps> = ({
-  comment,
-  onUpdateComment,
-  onDeleteComment,
-  currentUserId,
-}) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState(comment.content);
-
-  const isCommentAuthor = comment.authorId === currentUserId;
-
-  const handleEditClick = () => {
-    setIsEditing(true);
-  };
-
-  const handleCancelClick = () => {
-    setIsEditing(false);
-    setEditedContent(comment.content); // 원본 내용으로 복원
-  };
-
-  const handleSaveClick = () => {
-    const trimmedEditedContent = editedContent.trim();
-    const trimmedOriginalContent = comment.content.trim();
-
-    // 1. 내용이 완전히 비어있을 경우
-    if (!trimmedEditedContent) {
-      alert("댓글 내용을 입력해주세요.");
-      return; // 저장 로직 중단
+const CommentItem: React.FC<CommentItemProps> = ({ comment, postLink }) => {
+  // Link 컴포넌트로 감싸기 위한 Wrapper
+  // ✨ postLink가 없어도 hover 효과를 주기 위한 div는 유지 ✨
+  const OuterWrapper: React.FC<{ children: React.ReactNode }> = ({
+    children,
+  }) => {
+    if (postLink) {
+      return (
+        <Link
+          to={postLink}
+          className="block hover:bg-gray-50 transition-colors duration-200 rounded-lg"
+        >
+          {children}
+        </Link>
+      );
     }
-
-    // ✨ 2. 수정 내용이 원본과 동일할 경우 ✨
-    if (trimmedEditedContent === trimmedOriginalContent) {
-      setIsEditing(false); // 수정 모드 종료 (변화 없으므로 저장할 필요 없음)
-      return; // 저장 로직 중단
-    }
-
-    // 3. 내용이 변경되었고 유효할 경우에만 업데이트 호출
-    onUpdateComment(comment.id, trimmedEditedContent);
-    setIsEditing(false);
-  };
-
-  const handleDeleteClick = () => {
-    if (window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) {
-      onDeleteComment(comment.id);
-    }
-  };
-
-  // ✨ KeyboardEvent 타입 사용 시, React.KeyboardEvent<HTMLTextAreaElement> ✨
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSaveClick();
-    } else if (e.key === "Escape") {
-      handleCancelClick();
-    }
+    // postLink가 없을 경우, 단순히 div로 감싸지만, 클릭 가능하지는 않음
+    return (
+      <div className="block bg-white hover:bg-gray-50 transition-colors duration-200 rounded-lg">
+        {children}
+      </div>
+    );
   };
 
   return (
-    <div className="mb-4 pb-4 border-b border-gray-100 last:border-b-0">
-      <div className="flex justify-between items-center mb-1">
-        <span className="font-semibold text-gray-700">{comment.author}</span>
-        <span className="text-gray-500 text-sm">
-          {comment.createdAt}
-          {comment.isEdited && " (수정됨)"}
-        </span>
-      </div>
-      {isEditing ? (
-        <textarea
-          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-main focus:border-transparent mb-2"
-          rows={3}
-          value={editedContent}
-          onChange={(e) => setEditedContent(e.target.value)}
-          onKeyDown={handleKeyDown}
-          autoFocus
-        ></textarea>
-      ) : (
+    <OuterWrapper>
+      <div className="mb-4 pb-4 border-b border-gray-100 last:border-b-0 p-4">
+        {/* padding 추가하여 클릭 영역 확보 */}
+        <div className="flex justify-between items-center mb-1">
+          <span className="font-semibold text-gray-700">{comment.author}</span>
+          <span className="text-gray-500 text-sm">
+            {comment.createdAt}
+            {/* comment.isEdited && " (수정됨)" 제거 (수정 기능 없으므로) */}
+          </span>
+        </div>
+        {/* ✨ 수정 모드 textarea 제거, 항상 p 태그만 렌더링 ✨ */}
         <p className="text-gray-800 mb-2 whitespace-pre-wrap">
           {comment.content}
         </p>
-      )}
-
-      {/* ✨ isCommentAuthor 조건에 따라 버튼 렌더링 ✨ */}
-      {isCommentAuthor && (
-        <div className="flex justify-end space-x-2">
-          {isEditing ? (
-            <>
-              <Button
-                onClick={handleSaveClick}
-                bgColor="bg-blue-500"
-                textColor="text-white"
-                hoverBgColor="hover:bg-blue-600"
-                className="px-3 py-1 text-sm rounded"
-              >
-                저장
-              </Button>
-              <Button
-                onClick={handleCancelClick}
-                bgColor="bg-gray-400"
-                textColor="text-white"
-                hoverBgColor="hover:bg-gray-500"
-                className="px-3 py-1 text-sm rounded"
-              >
-                취소
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                onClick={handleEditClick}
-                bgColor="bg-gray-200"
-                textColor="text-gray-700"
-                hoverTextColor="hover:text-gray-800"
-                className="text-sm"
-              >
-                수정
-              </Button>
-              <Button
-                onClick={handleDeleteClick}
-                bgColor="bg-gray-200"
-                textColor="text-gray-700 hover:text-white"
-                hoverBgColor="hover:bg-red-600"
-                className="text-sm"
-              >
-                삭제
-              </Button>
-            </>
-          )}
-        </div>
-      )}
-    </div>
+        {/* ✨ 게시물 제목 표시 (클릭 가능하도록) ✨ */}
+        {postLink && (
+          <p className="text-sm text-main mt-2">
+            <span className="font-medium">원문:</span> {comment.postTitle}
+          </p>
+        )}
+      </div>
+    </OuterWrapper>
   );
 };
 
