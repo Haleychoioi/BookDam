@@ -106,7 +106,7 @@ const CommunityBoardPage: React.FC = () => {
   if (!currentCommunityInfo || totalPosts === 0) {
     return (
       <div className="text-center py-12 text-xl text-gray-700">
-        해당 커뮤니티를 찾을 수 없거나 게시글이 없습니다.
+        해당 커뮤니티를 찾을 수 없습니다.
       </div>
     );
   }

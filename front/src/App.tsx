@@ -14,8 +14,7 @@ import MyCommunitiesAppliedPage from "./pages/mypage/MyCommunitiesAppliedPage";
 import TasteAnalysisPage from "./pages/mypage/TasteAnalysisPage";
 import MyLibraryPage from "./pages/mypage/MyLibraryPage";
 import WishlistPage from "./pages/mypage/WishlistPage";
-import MyPostsPage from "./pages/mypage/MyPostsPage";
-import MyCommentsPage from "./pages/mypage/MyCommentsPage";
+import MyPostsAndCommentsPage from "./pages/mypage/MyPostsAndCommentsPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -69,8 +68,8 @@ function App() {
             {/* 내 활동 */}
             <Route path="my-library" element={<MyLibraryPage />} />
             <Route path="wishlist" element={<WishlistPage />} />
-            <Route path="my-posts" element={<MyPostsPage />} />
-            <Route path="my-comments" element={<MyCommentsPage />} />
+            <Route path="my-posts" element={<MyPostsAndCommentsPage />} />
+
             {/* 커뮤니티 관련 */}
             <Route
               path="communities/participating"

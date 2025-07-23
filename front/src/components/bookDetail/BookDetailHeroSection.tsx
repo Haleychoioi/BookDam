@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Button from "../common/Button";
 
 import { FaCaretDown, FaQuestionCircle } from "react-icons/fa"; // ✨ FaQuestionCircle 임포트 ✨
-import HeartButton from "./HeartButton";
+import HeartButton from "../common/HeartButton";
 
 interface BookDetailHeroSectionProps {
   book: {

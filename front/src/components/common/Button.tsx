@@ -51,7 +51,7 @@ const Button: React.FC<ButtonProps> = ({
 
   // 기본 버튼 스타일 (하드코딩된 색상 클래스 제거하고 동적으로 적용)
   // hasCustomBorderRadius가 false일 때만 rounded-xl을 추가
-  const baseStyles = `${finalBgColor} ${finalTextColor} px-5 py-3 font-medium ${finalHoverBgColor} ${finalHoverTextColor} transition-colors duration-200 ${
+  const baseStyles = `${finalBgColor} ${finalTextColor} px-5 py-3 font-normal ${finalHoverBgColor} ${finalHoverTextColor} transition-colors duration-200 ${
     hasCustomBorderRadius ? "" : "rounded-xl" // 이미 rounded 관련 클래스가 없으면 기본 rounded-xl 적용
   }`;
 
