@@ -101,6 +101,7 @@ model Book {
   createdAt     DateTime @default(now()) @map("created_at")    // 등록일시
 
   // 관계 설정
+  posts             Post[]
   teams             TeamCommunity[]                              // 이 책을 읽는 독서팀들
   myBooks           MyLibrary[]                                // 이 책을 개인 라이브러리에 추가한 사용자들
   wishLists         WishList[]           @relation("BookWishLists") // 이 책을 위시리스트에 추가한 사용자들
@@ -113,46 +114,51 @@ model Book {
 // 퍼블릭 커뮤니티 게시글 (일반글 + 모집글)
 model Post {
   postId      Int               @id @default(autoincrement()) @map("post_id")
-  userId      Int               @map("user_id")               // 작성자 ID
-  type        PostType          @default(GENERAL) @map("type") // 게시글 타입 (기본: 일반글)
-  title       String            @map("title")                 // 제목
-  content     String            @db.Text @map("content")      // 내용
-  maxMembers  Int?              @map("max_members")           // 모집 인원 (RECRUITMENT 타입일 때만 사용)
-  createdAt   DateTime          @default(now()) @map("created_at") // 작성일시
-  updatedAt   DateTime          @updatedAt @map("updated_at") // 수정일시
+  userId      Int               @map("user_id")               
+  type        PostType          @default(GENERAL) @map("type") 
+  title       String            @map("title")                 
+  content     String            @db.Text @map("content")      
+  maxMembers  Int?              @map("max_members")           
+  isbn13      String?           @map("isbn13")
+  createdAt   DateTime          @default(now()) @map("created_at") 
+  updatedAt   DateTime          @updatedAt @map("updated_at") 
 
   // 관계 설정
-  user        User              @relation(fields: [userId], references: [userId], onDelete: Cascade) // 사용자 삭제 시 게시글도 삭제
-  comments    Comment[]                                       // 댓글들 (게시글 삭제 시 댓글도 삭제)
-  applications TeamApplication[]                              // 모집글에 대한 지원서들 (게시글 삭제 시 지원서도 삭제)
-  team        TeamCommunity?    @relation("RecruitmentPost") // 이 모집글로 만들어진 팀
+  user        User              @relation(fields: [userId], references: [userId], onDelete: Cascade) 
+  book        Book?             @relation(fields: [isbn13], references: [isbn13], onDelete: SetNull) 
+  comments    Comment[]                                       
+  applications TeamApplication[]                              
+  team        TeamCommunity?    @relation("RecruitmentPost") 
 
-  @@index([userId])   // 사용자별 게시글 조회 최적화
-  @@index([type])     // 게시글 타입별 조회 최적화
+  @@index([userId])   
+  @@index([type])     
+  @@index([isbn13])
   @@map("posts")
 }
-
 // ============ 독서팀 관련 모델 ============
 
 // 독서팀 (Private Community)
 model TeamCommunity {
   teamId         Int              @id @default(autoincrement()) @map("team_id")
-  postId         Int              @unique @map("post_id")       // 모집글 ID (필수 - 모집글을 통해서만 팀 생성)
-  bookIsbn13     String?          @map("book_isbn13")           // 팀에서 읽을 책 (팀 구성 후 선택)
+  postId         Int?              @unique @map("post_id")       // 모집글 ID (필수 - 모집글을 통해서만 팀 생성)
+  isbn13         String?          @map("isbn13")                // 팀에서 읽을 책 (모집글에서 자동 상속)
+  // Post에서 복사해온 정보
+  title          String           @map("title")                 // 모집글 제목 복사
+  content        String           @db.Text @map("content")      // 모집글 내용 복사
   status         CommunityStatus  @default(RECRUITING) @map("status") // 팀 상태 (기본: 모집중)
   createdAt      DateTime         @default(now()) @map("created_at") // 생성일시
   updatedAt      DateTime         @updatedAt @map("updated_at") // 수정일시
 
   // 관계 설정
-  recruitmentPost Post            @relation("RecruitmentPost", fields: [postId], references: [postId], onDelete: Cascade) // 모집글 삭제 시 팀도 삭제
-  book           Book?            @relation(fields: [bookIsbn13], references: [isbn13], onDelete: SetNull) // 책 삭제 시 NULL로 설정
+  recruitmentPost Post?            @relation("RecruitmentPost", fields: [postId], references: [postId], onDelete: SetNull) // 모집글 삭제 시 postId만 NULL로 설정
+  book           Book?            @relation(fields: [isbn13], references: [isbn13], onDelete: SetNull) // 책 삭제 시 NULL로 설정
   members        TeamMember[]                                    // 팀 멤버들 (팀 삭제 시 멤버십도 삭제)
   teamPosts      TeamPost[]                                      // 팀 내 게시글들 (팀 삭제 시 게시글도 삭제)
 
+  @@index([isbn13])  // 책별 팀 조회 최적화
   @@map("team_communities")
 }
 
-// 팀 멤버십 (사용자-팀 다대다 관계)
 model TeamMember {
   userId        Int               @map("user_id")               // 사용자 ID
   teamId        Int               @map("team_id")               // 팀 ID
