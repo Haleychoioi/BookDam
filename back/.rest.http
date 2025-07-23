@@ -1,0 +1,13 @@
+### 커뮤니티 생성 (모집글 작성 후 팀 생성)
+
+POST http://localhost:3000/communities
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImlhdCI6MTc1MzI1NDcwMSwiZXhwIjoxNzUzMjkwNzAxfQ.VXhreHUTAKInF8VRhevFTRPlDerw5RzxE1LoTdXo86M
+
+{
+  "bookId": "9791190090001",
+  "name": "새로운 독서 커뮤니티",
+  "description": "이 커뮤니티는 특정 도서를 기반으로 함께 독서할 멤버를 모집합니다.",
+  "category": "소설",
+  "maxMembers": 7
+}
