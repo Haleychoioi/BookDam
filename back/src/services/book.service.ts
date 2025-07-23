@@ -1,84 +1,57 @@
+// book.service.ts
 import { bookRepository } from '../repositories/book.repository';
-import { 
-  BookSearchParams, 
-  BookSearchResponse,
-  BookSummary,
-  AladinBookItem,
-  AladinQueryType,
-  AladinSearchTarget,
-  AladinSortType
-} from '../types/book.type';
+import { aladinApiService } from './aladin-api.service';
+import { AladinBookItem, BookCreateData } from '../types/book.type';
 
 export class BookService {
 
-  // ===== 검색 관련 메서드들 =====
+  // 상품조회 = aladin에서 getBookDetail안만듦
+  // async getBookDetail(isbn13: string) {
+  //   let book = await bookRepository.findByIsbn(isbn13);
+  //   if (!book) {
+  //     const response = await aladinApiService.getBookDetail({
+  //       ItemId: isbn13,
+  //       OptResult: ['Toc', 'Story']
+  //     });
+  //     book = await this.saveBook(response.item[0]);
+  //   }
 
-  // 도서 검색
-  async searchBooks(params: BookSearchParams): Promise<BookSearchResponse> {
-    try {
-      // 사용자 파라미터를 알라딘 API 파라미터로 변환
-      const aladinParams = {
-        Query: params.query,
-        QueryType: this.mapQueryType(params.queryType),
-        SearchTarget: AladinSearchTarget.BOOK,
-        Start: params.page || 1,
-        MaxResults: Math.min(params.limit || 10, 50), // 최대 50개 제한
-        Sort: this.mapSortType(params.sort)
-      };
+  //   return book;
+  // }
 
-      const response = await bookRepository.searchBooks(aladinParams);
-      
-      // 알라딘 응답을 클라이언트 응답으로 변환
-      return {
-        totalResults: response.totalResults,
-        currentPage: params.page || 1,
-        itemsPerPage: params.limit || 10,
-        books: response.item.map(this.toBookSummary)
-      };
 
-    } catch (error) {
-      console.error('도서 검색 서비스 오류:', error);
-      throw new Error('도서 검색 중 오류가 발생했습니다.');
+  //알라딘 책 정보 → DB에 이미 있는지 확인 → 없으면 우리 형식으로 변환해서 저장
+  // 책을 DB에 저장 => 책 캐싱
+  async saveBook(aladinBook: AladinBookItem) {
+    
+    // 이미 있는지 확인
+    const existingBook = await bookRepository.findByIsbn(aladinBook.isbn13);
+    if (existingBook) {
+      return existingBook;
     }
+
+    // 변환 후 저장
+    const bookData = this.toBookCreateData(aladinBook);
+    return await bookRepository.create(bookData);
   }
 
-  // ===== 데이터 변환 메서드들 =====
-
-  // 알라딘 도서 정보를 BookSummary로 변환
-  private toBookSummary = (aladinBook: AladinBookItem): BookSummary => {
+  // 알라딘 도서 정보를 BookCreateData로 변환
+  private toBookCreateData = (aladinBook: AladinBookItem): BookCreateData => {
     return {
       isbn13: aladinBook.isbn13,
       title: aladinBook.title,
       author: aladinBook.author,
       publisher: aladinBook.publisher,
       pubDate: aladinBook.pubDate || null,
+      description: aladinBook.description || null,
       cover: aladinBook.cover || null,
       category: this.mapCategory(aladinBook.categoryName),
-      description: aladinBook.description || null,
+      pageCount: aladinBook.subInfo?.itemPage || null,
+      toc: aladinBook.subInfo?.toc || null,
+      story: aladinBook.subInfo?.story || null,
     };
   }
 
-  // ===== 매핑 유틸리티 메서드들 =====
-
-  // 검색 타입 매핑
-  private mapQueryType(queryType?: string): AladinQueryType {
-    switch (queryType) {
-      case 'title': return AladinQueryType.TITLE;
-      case 'author': return AladinQueryType.AUTHOR;
-      case 'publisher': return AladinQueryType.PUBLISHER;
-      default: return AladinQueryType.KEYWORD;
-    }
-  }
-
-  // 정렬 타입 매핑
-  private mapSortType(sort?: string): AladinSortType {
-    switch (sort) {
-      case 'publishTime': return AladinSortType.PUBLISH_TIME;
-      case 'title': return AladinSortType.TITLE;
-      case 'salesPoint': return AladinSortType.SALES_POINT;
-      default: return AladinSortType.ACCURACY;
-    }
-  }
 
   // 카테고리 매핑 (알라딘 카테고리명 → 우리 카테고리)
   private mapCategory(aladinCategory: string): string | null {

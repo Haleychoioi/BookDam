@@ -145,7 +145,6 @@ export interface AladinBookItem {
   itemId: number;                   // 알라딘 상품 ID
   cover: string;                    // 표지 이미지 URL
   publisher: string;                // 출판사
-  salesPoint: number;               // 판매 지수
   adult: boolean;                   // 성인 등급 여부
   bestDuration?: string;            // 베스트셀러 기간 정보
   bestRank?: number;                // 베스트셀러 순위
@@ -166,6 +165,7 @@ export interface AladinBookItem {
     fullDescription?: string;       // 상세 설명
     fullDescription2?: string;      // 출판사 제공 설명
     toc?: string;                   // 목차
+    story?: string;                 // 줄거리
     // ... 기타 부가 정보들
   };
 }
@@ -282,6 +282,8 @@ export interface BookCreateData {
   cover?: string | null;
   category?: string | null;
   pageCount?: number | null;  // undefined → null로 변경 service에서 에러가 안남
+  toc?: string | null;
+  story?: string | null;
 }
 
 // 개인 도서관 추가/수정 요청

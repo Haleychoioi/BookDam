@@ -1,8 +1,8 @@
 // routes/book.routes.ts
 import express from 'express';
 import { bookController } from '../controllers/book.controller';
-// import { authenticate } from '../middlewares/authenticate'; // 실제 경로에 맞게 수정
-const authenticate = (req: any, res: any, next: any) => next(); // 임시 미들웨어
+// import { authenticate } from '../middlewares/authenticate'; 
+//const authenticate = (req: any, res: any, next: any) => next(); // 임시
 
 const router = express.Router();
 
@@ -14,8 +14,11 @@ router.get('/test', (req, res) => {
 });
 
 
-// 도서 검색
+// 도서 검색(aladin-api.service)
 router.get('/search', bookController.searchBooks);
+// 도서 리스트(aladin-api.service)
+
+// 도서 조회(book.service)
 
 
 

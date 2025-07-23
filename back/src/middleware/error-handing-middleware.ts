@@ -52,6 +52,11 @@ export default function (
      return res.status(401).send({
        errorMessage: "로그인을 해주세요"
      });
+     
+     case "Aladin" : 
+     return res.send({
+      errorMessage: "알라딘 API 오류"
+     });
 
    default: 
      return res.status(500).send({
