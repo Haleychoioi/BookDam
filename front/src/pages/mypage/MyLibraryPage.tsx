@@ -1,7 +1,7 @@
 // front/src/pages/mypage/MyLibraryPage.tsx
 
 import React, { useState, useEffect, useMemo } from "react";
-import MyPageHeader from "../../components/mypage/myPageHeader";
+import MyPageHeader from "../../components/mypage/MyPageHeader";
 import BookGridDisplay from "../../components/bookResults/BookGridDisplay"; // 경로 유지
 import Pagination from "../../components/common/Pagination";
 import { type MyLibraryBook } from "../../types";

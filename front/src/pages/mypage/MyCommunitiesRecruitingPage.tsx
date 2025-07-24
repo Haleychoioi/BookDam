@@ -1,7 +1,7 @@
 // front/src/pages/mypage/MyCommunitiesRecruitingPage.tsx
 
 import React, { useState, useEffect, useMemo } from "react";
-import MyPageHeader from "../../components/mypage/myPageHeader"; // MyPageHeader 재활용
+import MyPageHeader from "../../components/mypage/MyPageHeader"; // MyPageHeader 재활용
 import RecruitingCommunityCard from "../../components/mypage/RecruitingCommunityCard"; // RecruitingCommunityCard 재활용
 import Pagination from "../../components/common/Pagination"; // 페이지네이션 컴포넌트 임포트
 import type { Community } from "../../types"; // ✨ Community 타입 임포트 ✨

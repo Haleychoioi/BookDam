@@ -1,5 +1,3 @@
-// front/src/components/common/BookCarousel.tsx
-
 import React, { useState } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa"; // 화살표 아이콘
 import { Link } from "react-router-dom";

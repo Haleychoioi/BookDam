@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import CommunityCard from "../../components/mypage/ParticipatingCommunityCard";
-import MyPageHeader from "../../components/mypage/myPageHeader"; // ✨ MyPageHeader 임포트 ✨
+import MyPageHeader from "../../components/mypage/MyPageHeader"; // ✨ MyPageHeader 임포트 ✨
 import type { Community } from "../../types"; // ✨ Community 타입 임포트 ✨
 
 // ✨ dummyParticipatingCommunities 데이터에 Community 타입 명시 및 필드명 조정 ✨

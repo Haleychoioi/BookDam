@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // 페이지 이동을 위해 임포트
-import MyPageHeader from "../../components/mypage/myPageHeader"; // MyPageHeader 재활용
+import MyPageHeader from "../../components/mypage/MyPageHeader"; // MyPageHeader 재활용
 import Button from "../../components/common/Button"; // Button 컴포넌트 임포트
 import type { UserProfile } from "../../types"; // ✨ UserProfile 타입 임포트 ✨
 
