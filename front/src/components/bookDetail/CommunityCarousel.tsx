@@ -1,24 +1,13 @@
-// front/src/components/community/CommunityCarousel.tsx
-
 import React, { useState } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa"; // 화살표 아이콘
-import Button from "../common/Button"; // ✨ Button 컴포넌트 임포트 ✨
-import { FaUserFriends } from "react-icons/fa"; // ✨ 인원 아이콘 임포트 ✨
+import Button from "../common/Button";
+import { FaUserFriends } from "react-icons/fa";
 
-interface Community {
-  id: string;
-
-  title: string; // 커뮤니티 이름 (예: 해리포터 완독 챌린지)
-  description: string; // ✨ 커뮤니티 설명 (예: 함께 해리포터 전 시리즈를 읽고 토론하는 모임입니다.) ✨
-  hostName: string; // ✨ 이미지에 '산삼'으로 보이는 작성자/호스트 이름 추가 ✨
-  currentMembers: number; // 현재 모집된 인원
-  maxMembers: number; // 최대 모집 인원
-  // deadline: string; // ✨ 이미지에 보이지 않으므로 제거하거나 선택적으로 사용 ✨
-}
+import type { Community } from "../../types"; // ✨ Community 타입 임포트 ✨
 
 interface CommunityCarouselProps {
   title: string;
-  communities: Community[];
+  communities: Community[]; //
   onApplyClick: (communityId: string) => void;
 }
 

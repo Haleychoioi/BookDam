@@ -1,5 +1,3 @@
-// front/src/components/mypage/AppliedCommunityCard.tsx
-
 import React from "react";
 import Button from "../common/Button";
 import { FaUserFriends } from "react-icons/fa";
@@ -7,26 +5,25 @@ import { type AppliedCommunity } from "../../types";
 
 interface AppliedCommunityCardProps {
   community: AppliedCommunity;
-  // ✨ 신청 취소 버튼을 위한 prop 추가 ✨
   onCancelApplication: (communityId: string) => void;
 }
 
 const AppliedCommunityCard: React.FC<AppliedCommunityCardProps> = ({
   community,
-  onCancelApplication, // ✨ prop으로 받도록 추가 ✨
+  onCancelApplication,
 }) => {
-  // 신청 상태에 따른 스타일 및 텍스트
+  // ✨ 신청 상태에 따른 스타일 및 텍스트 - community.myApplicationStatus 참조 ✨
   const statusColorClass = {
     pending: "text-blue-600 bg-blue-100", // 대기 중
     accepted: "text-green-600 bg-green-100", // 수락됨
     rejected: "text-red-600 bg-red-100", // 거절됨
-  }[community.status];
+  }[community.myApplicationStatus]; // ✨ community.myApplicationStatus 사용 ✨
 
   const statusText = {
     pending: "신청 대기 중",
     accepted: "신청 수락됨",
     rejected: "신청 거절됨",
-  }[community.status];
+  }[community.myApplicationStatus]; // ✨ community.myApplicationStatus 사용 ✨
 
   return (
     <div className="bg-gray-100 p-6 flex flex-col justify-between">
@@ -64,7 +61,7 @@ const AppliedCommunityCard: React.FC<AppliedCommunityCardProps> = ({
 
       <div className="flex justify-end items-center mt-auto">
         <div className="flex items-end space-x-2">
-          {community.status === "pending" && ( // 신청 중일 때만 신청 취소 버튼 표시
+          {community.status === "모집중" && ( // 신청 중일 때만 신청 취소 버튼 표시
             <Button
               onClick={() => onCancelApplication(community.id)}
               bgColor="bg-red-400"

@@ -1,13 +1,12 @@
 import React from "react";
 import { type CommunityHistoryEntry } from "../../types";
-// import Modal from "../common/Modal"; // ✨ Modal 컴포넌트 임포트 제거 ✨
 import Button from "../common/Button"; // Button 컴포넌트 임포트
 
 interface CommunityHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   applicantNickname: string;
-  history: CommunityHistoryEntry[];
+  history: CommunityHistoryEntry[]; // ✨ 임포트한 CommunityHistoryEntry 사용 ✨
   loading: boolean;
   error: string | null;
 }

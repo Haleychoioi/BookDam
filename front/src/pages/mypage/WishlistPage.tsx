@@ -1,7 +1,7 @@
 // front/src/pages/mypage/WishlistPage.tsx
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import MyPageHeader from "../../components/mypage/MyPageHeader";
+import MyPageHeader from "../../components/mypage/myPageHeader";
 import BookGridDisplay from "../../components/bookResults/BookGridDisplay";
 import Pagination from "../../components/common/Pagination";
 import { type Book } from "../../types";

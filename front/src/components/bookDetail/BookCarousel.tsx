@@ -3,15 +3,11 @@
 import React, { useState } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa"; // 화살표 아이콘
 import { Link } from "react-router-dom";
+import type { Book } from "../../types"; // ✨ Book 타입 임포트 ✨
 
 interface BookCarouselProps {
   title: string;
-  books: Array<{
-    id: string;
-    coverImage: string;
-    title: string;
-    author: string;
-  }>;
+  books: Book[]; // ✨ inline 타입 정의 대신 임포트한 Book 사용 ✨
 }
 
 const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {

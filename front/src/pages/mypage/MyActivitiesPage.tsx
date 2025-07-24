@@ -13,6 +13,9 @@ const myPostsMockData: Post[] = Array.from({ length: 30 }, (_, i) => ({
   commentCount: Math.floor(Math.random() * 5),
   createdAt: new Date().toISOString(),
   type: i % 2 === 0 ? "general" : "community",
+  author: `작성자${i + 1}`, // ✨ author 추가 ✨
+  authorId: `user${i + 1}`, // ✨ authorId 추가 ✨
+  content: `이것은 내가 작성한 ${i + 1}번째 글의 상세 내용입니다.`, // ✨ content 추가 ✨
 }));
 
 // Mock 데이터: 내가 작성한 댓글 목록 (변경 없음)

@@ -2,16 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // 페이지 이동을 위해 임포트
-import MyPageHeader from "../../components/mypage/MyPageHeader"; // MyPageHeader 재활용
+import MyPageHeader from "../../components/mypage/myPageHeader"; // MyPageHeader 재활용
 import Button from "../../components/common/Button"; // Button 컴포넌트 임포트
+import type { UserProfile } from "../../types"; // ✨ UserProfile 타입 임포트 ✨
 
 // ✨ Mock Data: 현재 로그인된 사용자 정보 (실제로는 API에서 불러올 것) ✨
-interface UserProfile {
-  nickname: string;
-  introduction: string;
-}
-
 const dummyUserProfile: UserProfile = {
+  // ✨ UserProfile 타입 명시 ✨
   nickname: "기존닉네임123",
   introduction:
     "안녕하세요! 저는 독서를 좋아하고 웹 개발을 즐기는 사용자입니다. 함께 독서하고 소통해요!",

@@ -3,21 +3,14 @@ import Button from "../common/Button";
 import { Link } from "react-router-dom";
 import { FaUserFriends } from "react-icons/fa"; // 인원 아이콘 임포트 유지
 
-interface CommunityCardProps {
-  community: {
-    id: string;
-    bookTitle: string;
-    hostNickname: string;
-    description: string; // 커뮤니티 간단 소개
-    currentMembers: number;
-    maxMembers: number;
-    role: "host" | "member";
-  };
+import type { Community } from "../../types"; //
 
+interface ParticipatingCommunityCardProps {
+  community: Community; // ✨ 임포트한 Community 타입 사용 ✨
   onLeaveOrDelete: (communityId: string, role: "host" | "member") => void;
 }
 
-const CommunityCard: React.FC<CommunityCardProps> = ({
+const ParticipatingCommunityCard: React.FC<ParticipatingCommunityCardProps> = ({
   community,
 
   onLeaveOrDelete,
@@ -31,12 +24,12 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
           <div>
             <div>
               <h3 className="text-xl font-bold text-gray-800 mb-1">
-                {community.bookTitle}
+                {community.title}
               </h3>
             </div>
             <p className="text-md text-gray-600 mb-4">
               {isHost && <span className="font-medium mr-1">호스트: </span>}
-              {community.hostNickname}
+              {community.hostName}
             </p>
           </div>
           <div className="flex items-center text-gray-600 text-sm">
@@ -92,4 +85,4 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
   );
 };
 
-export default CommunityCard;
+export default ParticipatingCommunityCard;

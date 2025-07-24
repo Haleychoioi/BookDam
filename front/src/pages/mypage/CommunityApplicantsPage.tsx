@@ -3,13 +3,7 @@ import { useParams } from "react-router-dom";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import ApplicantCard from "../../components/mypage/ApplicantCard";
 import CommunityHistoryModal from "../../components/modals/CommunityHistoryModal";
-import { type Applicant, type CommunityHistoryEntry } from "../../types";
-
-// ✨ Mock Data: 특정 커뮤니티의 신청자 목록 (신청 상태 추가) ✨
-// Mock Data에 신청 상태를 나타내는 필드를 추가하여 수락/거절 상태를 관리할 수 있도록 합니다.
-interface ApplicantWithStatus extends Applicant {
-  status: "pending" | "accepted" | "rejected"; // 신청 상태 추가
-}
+import type { ApplicantWithStatus, CommunityHistoryEntry } from "../../types";
 
 const dummyApplicants: ApplicantWithStatus[] = [
   {
@@ -49,63 +43,56 @@ const dummyApplicants: ApplicantWithStatus[] = [
   },
 ];
 
-// ✨ Mock Data: 신청자별 커뮤니티 참여 이력 (기존과 동일) ✨
+// Mock Data: 신청자별 커뮤니티 참여 이력
 const dummyHistoryData: { [key: string]: CommunityHistoryEntry[] } = {
-  // ... (기존 dummyHistoryData 유지)
   "app-1": [
     {
-      communityId: "comm-a",
       communityName: "고전 문학 연구회",
-      role: "멤버",
+      role: "member", // role 타입을 "host" | "member"로 통일
       startDate: "2023-01-01",
       endDate: "2023-06-30",
-      status: "종료됨",
+      status: "활동종료", // status 타입을 "활동중" | "활동종료"로 통일
     },
     {
-      communityId: "comm-b",
       communityName: "SF 소설 클럽",
-      role: "멤버",
+      role: "member",
       startDate: "2023-07-15",
-      endDate: null,
+      endDate: undefined, // ✨ null 대신 undefined 사용 ✨
       status: "활동중",
     },
   ],
   "app-2": [
     {
-      communityId: "comm-c",
       communityName: "자기계발 독서 모임",
-      role: "멤버",
+      role: "member",
       startDate: "2024-03-01",
-      endDate: null,
+      endDate: undefined,
       status: "활동중",
     },
   ],
   "app-3": [
     {
-      communityId: "comm-d",
       communityName: "인문학 토론방",
-      role: "호스트",
+      role: "host",
       startDate: "2022-10-01",
       endDate: "2023-09-30",
-      status: "종료됨",
+      status: "활동종료",
     },
     {
-      communityId: "comm-e",
       communityName: "시 읽는 밤",
-      role: "멤버",
+      role: "member",
       startDate: "2024-01-01",
-      endDate: null,
+      endDate: undefined,
       status: "활동중",
     },
   ],
   "app-4": [], // 이력 없음
   "app-5": [
     {
-      communityId: "comm-f",
       communityName: "철학 스터디",
-      role: "멤버",
+      role: "member",
       startDate: "2023-11-01",
-      endDate: null,
+      endDate: undefined,
       status: "활동중",
     },
   ],
@@ -235,7 +222,7 @@ const CommunityApplicationsPage: React.FC = () => {
         description={`'${communityId}' 커뮤니티에 신청한 사용자 목록입니다.`}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
         {applicants.length > 0 ? (
           applicants.map((applicant) => (
             <ApplicantCard

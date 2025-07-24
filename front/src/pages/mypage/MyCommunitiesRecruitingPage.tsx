@@ -1,23 +1,13 @@
 // front/src/pages/mypage/MyCommunitiesRecruitingPage.tsx
 
 import React, { useState, useEffect, useMemo } from "react";
-import MyPageHeader from "../../components/mypage/MyPageHeader"; // MyPageHeader 재활용
+import MyPageHeader from "../../components/mypage/myPageHeader"; // MyPageHeader 재활용
 import RecruitingCommunityCard from "../../components/mypage/RecruitingCommunityCard"; // RecruitingCommunityCard 재활용
 import Pagination from "../../components/common/Pagination"; // 페이지네이션 컴포넌트 임포트
+import type { Community } from "../../types"; // ✨ Community 타입 임포트 ✨
 
-// API 응답 스키마와 UI 표시를 위해 RecruitableCommunity 인터페이스 정의
-interface RecruitableCommunity {
-  id: string;
-  title: string;
-  description: string;
-  hostName: string;
-  currentMembers: number;
-  maxMembers: number;
-  status: "모집중" | "모집종료"; // '모집중' 또는 '모집종료' 상태
-}
-
-// ✨ mockdata: 내가 모집 중인 커뮤니티 목록 ✨
-const dummyRecruitingCommunities: RecruitableCommunity[] = [
+// ✨ dummyRecruitingCommunities 데이터에 role 필드 추가 ✨
+const dummyRecruitingCommunities: Community[] = [
   {
     id: "rec-comm-1",
     title: "혼모노 깊은 토론 모임",
@@ -26,6 +16,7 @@ const dummyRecruitingCommunities: RecruitableCommunity[] = [
     currentMembers: 2,
     maxMembers: 8,
     status: "모집중",
+    role: "host", // ✨ role 필드 추가 ✨
   },
   {
     id: "rec-comm-2",
@@ -35,6 +26,7 @@ const dummyRecruitingCommunities: RecruitableCommunity[] = [
     currentMembers: 5,
     maxMembers: 10,
     status: "모집중",
+    role: "host",
   },
   {
     id: "rec-comm-3",
@@ -44,6 +36,7 @@ const dummyRecruitingCommunities: RecruitableCommunity[] = [
     currentMembers: 7,
     maxMembers: 7,
     status: "모집종료",
+    role: "host",
   },
   {
     id: "rec-comm-4",
@@ -53,6 +46,7 @@ const dummyRecruitingCommunities: RecruitableCommunity[] = [
     currentMembers: 1,
     maxMembers: 5,
     status: "모집중",
+    role: "host",
   },
   {
     id: "rec-comm-5",
@@ -62,6 +56,7 @@ const dummyRecruitingCommunities: RecruitableCommunity[] = [
     currentMembers: 3,
     maxMembers: 6,
     status: "모집중",
+    role: "host",
   },
   {
     id: "rec-comm-6",
@@ -71,6 +66,7 @@ const dummyRecruitingCommunities: RecruitableCommunity[] = [
     currentMembers: 4,
     maxMembers: 8,
     status: "모집중",
+    role: "host",
   },
   {
     id: "rec-comm-7",
@@ -80,6 +76,7 @@ const dummyRecruitingCommunities: RecruitableCommunity[] = [
     currentMembers: 2,
     maxMembers: 5,
     status: "모집중",
+    role: "host",
   },
   {
     id: "rec-comm-8",
@@ -89,6 +86,7 @@ const dummyRecruitingCommunities: RecruitableCommunity[] = [
     currentMembers: 5,
     maxMembers: 5,
     status: "모집종료",
+    role: "host",
   },
   {
     id: "rec-comm-9",
@@ -98,6 +96,7 @@ const dummyRecruitingCommunities: RecruitableCommunity[] = [
     currentMembers: 8,
     maxMembers: 8,
     status: "모집종료",
+    role: "host",
   },
   {
     id: "rec-comm-10",
@@ -107,11 +106,12 @@ const dummyRecruitingCommunities: RecruitableCommunity[] = [
     currentMembers: 3,
     maxMembers: 5,
     status: "모집중",
+    role: "host",
   },
 ];
 
 const MyCommunitiesRecruitingPage: React.FC = () => {
-  const [communities, setCommunities] = useState<RecruitableCommunity[]>([]);
+  const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"모집중" | "모집종료" | "전체">(

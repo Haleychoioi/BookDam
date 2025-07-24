@@ -6,13 +6,7 @@ import Pagination from "../../components/common/Pagination";
 import BookGridDisplay from "../../components/bookResults/BookGridDisplay";
 import BookCategoryFilter from "../../components/bookResults/BookCategoryFilter";
 
-// 더미 책 데이터 인터페이스
-interface Book {
-  id: string;
-  coverImage: string;
-  title: string;
-  author: string;
-}
+import type { Book } from "../../types";
 
 // 더미 책 데이터 배열 (총 200개를 가정)
 const allDummyBooks: Book[] = Array.from({ length: 200 }, (_, i) => ({
@@ -134,7 +128,10 @@ const BookSearchResultPage: React.FC = () => {
 
       {/* ✨ 분리된 책 검색 결과 그리드 컴포넌트 사용 ✨ */}
       <div className="container mx-auto px-4 lg:px-20 xl:px-32">
-        <BookGridDisplay books={displayedBooks} />
+        <BookGridDisplay
+          books={displayedBooks}
+          className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3"
+        />
       </div>
 
       {/* 페이지네이션 */}

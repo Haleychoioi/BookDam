@@ -1,22 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import Button from "../common/Button";
 
-import { FaCaretDown, FaQuestionCircle } from "react-icons/fa"; // ✨ FaQuestionCircle 임포트 ✨
+import { FaCaretDown, FaQuestionCircle } from "react-icons/fa";
 import HeartButton from "../common/HeartButton";
 
+import type { BookDetail } from "../../types"; // ✨ BookDetail 타입 임포트 ✨
+
 interface BookDetailHeroSectionProps {
-  book: {
-    id: string;
-    coverImage: string;
-    title: string;
-    author: string; // 이미지에 없음, 기존 유지
-    publisher: string; // 이미지에 없음, 기존 유지
-    pubDate: string; // 이미지에 없음, 기존 유지
-    averageRating: number; // 별점 표시용 (초기값)
-    description: string; // 이미지에 없음, 기존 유지
-    genre: string; // 카테고리/장르 태그
-    summary: string; // 이미지에 보이는 요약 부분
-  };
+  // ✨ inline 타입 정의 대신 임포트한 BookDetail 사용 ✨
+  book: BookDetail;
   onCreateCommunityClick: (bookId: string) => void;
 }
 

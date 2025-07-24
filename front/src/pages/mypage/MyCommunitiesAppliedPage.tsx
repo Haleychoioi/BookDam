@@ -6,7 +6,7 @@ import AppliedCommunityCard from "../../components/mypage/AppliedCommunityCard";
 import Pagination from "../../components/common/Pagination";
 import { type AppliedCommunity } from "../../types";
 
-// ✨ Mock Data: 내가 신청한 커뮤니티 목록 ✨
+// Mock Data: 내가 신청한 커뮤니티 목록
 const dummyAppliedCommunities: AppliedCommunity[] = [
   {
     id: "applied-comm-1",
@@ -15,7 +15,9 @@ const dummyAppliedCommunities: AppliedCommunity[] = [
     hostName: "SF매니아",
     currentMembers: 3,
     maxMembers: 7,
-    status: "pending", // 신청 대기 중
+    myApplicationStatus: "pending", // ✨ status 대신 myApplicationStatus 사용 ✨
+    role: "member", // Community 타입의 필수 필드 (없다면 추가)
+    status: "모집중", // Community 타입의 필수 필드 (없다면 추가)
   },
   {
     id: "applied-comm-2",
@@ -24,7 +26,9 @@ const dummyAppliedCommunities: AppliedCommunity[] = [
     hostName: "코드마스터",
     currentMembers: 5,
     maxMembers: 5,
-    status: "accepted", // 신청 수락됨
+    myApplicationStatus: "accepted", // ✨ status 대신 myApplicationStatus 사용 ✨
+    role: "member",
+    status: "모집종료",
   },
   {
     id: "applied-comm-3",
@@ -33,7 +37,9 @@ const dummyAppliedCommunities: AppliedCommunity[] = [
     hostName: "옛것좋아",
     currentMembers: 4,
     maxMembers: 8,
-    status: "rejected", // 신청 거절됨
+    myApplicationStatus: "rejected", // ✨ status 대신 myApplicationStatus 사용 ✨
+    role: "member",
+    status: "모집중",
   },
   {
     id: "applied-comm-4",
@@ -42,7 +48,9 @@ const dummyAppliedCommunities: AppliedCommunity[] = [
     hostName: "판타지왕",
     currentMembers: 2,
     maxMembers: 6,
-    status: "pending",
+    myApplicationStatus: "pending",
+    role: "member",
+    status: "모집중",
   },
   {
     id: "applied-comm-5",
@@ -51,7 +59,9 @@ const dummyAppliedCommunities: AppliedCommunity[] = [
     hostName: "이코노미스트",
     currentMembers: 5,
     maxMembers: 10,
-    status: "pending",
+    myApplicationStatus: "pending",
+    role: "member",
+    status: "모집중",
   },
   {
     id: "applied-comm-6",
@@ -60,7 +70,9 @@ const dummyAppliedCommunities: AppliedCommunity[] = [
     hostName: "그로스",
     currentMembers: 7,
     maxMembers: 10,
-    status: "accepted",
+    myApplicationStatus: "accepted",
+    role: "member",
+    status: "모집중",
   },
   {
     id: "applied-comm-7",
@@ -69,7 +81,9 @@ const dummyAppliedCommunities: AppliedCommunity[] = [
     hostName: "에코",
     currentMembers: 3,
     maxMembers: 6,
-    status: "rejected",
+    myApplicationStatus: "rejected",
+    role: "member",
+    status: "모집종료",
   },
 ];
 
@@ -79,9 +93,7 @@ const MyCommunitiesAppliedPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
     "pending" | "accepted" | "rejected" | "전체"
-  >(
-    "전체" // 기본 활성화 탭: 신청 대기 중
-  );
+  >("전체");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -105,7 +117,7 @@ const MyCommunitiesAppliedPage: React.FC = () => {
     if (activeTab === "전체") {
       return communities;
     }
-    return communities.filter((comm) => comm.status === activeTab);
+    return communities.filter((comm) => comm.myApplicationStatus === activeTab);
   }, [communities, activeTab]);
 
   const totalFilteredItems = filteredCommunities.length;

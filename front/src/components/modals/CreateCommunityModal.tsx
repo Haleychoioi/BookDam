@@ -26,12 +26,9 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
   if (!isOpen) return null; // isOpen이 false면 아무것도 렌더링하지 않음
 
   const handleSubmit = () => {
-    // ✨ 커뮤니티 이름 유효성 검사: 1자 미만 또는 20자 초과 (기존) AND 3자 미만 추가 ✨
-    if (
-      communityName.trim().length < 1 ||
-      communityName.trim().length < 3 ||
-      communityName.length > 20
-    ) {
+    // ✨ 커뮤니티 이름 유효성 검사 수정 ✨
+    const trimmedCommunityName = communityName.trim();
+    if (trimmedCommunityName.length < 3 || trimmedCommunityName.length > 20) {
       alert("커뮤니티 이름을 3자 이상 20자 이내로 입력해주세요.");
       return;
     }
@@ -42,22 +39,19 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
       return;
     }
 
-    // ✨ 커뮤니티 간단 소개 글 유효성 검사: 1자 미만 또는 50자 초과 (기존) AND 3자 미만 추가 ✨
-    if (
-      description.trim().length < 1 ||
-      description.trim().length < 3 ||
-      description.length > 50
-    ) {
+    // ✨ 커뮤니티 간단 소개 글 유효성 검사 수정 ✨
+    const trimmedDescription = description.trim();
+    if (trimmedDescription.length < 3 || trimmedDescription.length > 50) {
       alert("커뮤니티 소개를 3자 이상 50자 이내로 입력해주세요.");
       return;
     }
-    // 기존 유효성 검사 (공백만 있는 경우)는 length < 3에 포함되므로 제거 가능
-    // if (description.trim().length === 0 || description.length > 50) {
-    //   alert("커뮤니티 소개를 1자 이상 50자 이내로 입력해주세요.");
-    //   return;
-    // }
 
-    onCommunityCreate(bookId, communityName, parsedMaxMembers, description);
+    onCommunityCreate(
+      bookId,
+      trimmedCommunityName,
+      parsedMaxMembers,
+      trimmedDescription
+    );
     setCommunityName("");
     setMaxMembers("");
     setDescription("");

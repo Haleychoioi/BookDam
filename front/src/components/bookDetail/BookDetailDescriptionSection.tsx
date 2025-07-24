@@ -1,11 +1,9 @@
 import React from "react";
+import type { BookDetail } from "../../types"; // ✨ BookDetail 타입 임포트 ✨
 
 interface BookDetailDescriptionSectionProps {
-  book: {
-    description: string;
-    tableOfContents: string[];
-    commentaryContent: string;
-  };
+  // ✨ inline 타입 정의 대신 임포트한 BookDetail 사용 ✨
+  book: BookDetail;
 }
 
 const BookDetailDescriptionSection: React.FC<

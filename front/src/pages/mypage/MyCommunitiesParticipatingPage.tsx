@@ -1,58 +1,47 @@
 import React, { useState, useEffect } from "react";
-// import { Link } from "react-router-dom"; // Link는 더 이상 여기서 직접 사용되지 않음
 import CommunityCard from "../../components/mypage/ParticipatingCommunityCard";
-import MyPageHeader from "../../components/mypage/MyPageHeader"; // ✨ MyPageHeader 임포트 ✨
+import MyPageHeader from "../../components/mypage/myPageHeader"; // ✨ MyPageHeader 임포트 ✨
+import type { Community } from "../../types"; // ✨ Community 타입 임포트 ✨
 
-interface ParticipatingCommunity {
-  id: string;
-  title: string;
-  description: string;
-  role: "host" | "member";
-  bookTitle: string;
-  hostNickname: string;
-  currentMembers: number;
-  maxMembers: number;
-  coverImage?: string;
-}
-
-const dummyParticipatingCommunities: ParticipatingCommunity[] = [
+// ✨ dummyParticipatingCommunities 데이터에 Community 타입 명시 및 필드명 조정 ✨
+const dummyParticipatingCommunities: Community[] = [
   {
     id: "part-comm-1",
-    title: "혼모노 독서 모임",
+    title: "혼모노 독서 모임", // ✨ bookTitle -> title ✨
     description: "깊은 토론하실 다섯 분 구합니다",
     role: "member",
-    bookTitle: "혼모노",
-    hostNickname: "닉네임",
+    hostName: "닉네임", // ✨ hostNickname -> hostName ✨
     currentMembers: 3,
     maxMembers: 8,
-    coverImage: "https://via.placeholder.com/150x200/F0F0F0/B0B0B0?text=혼모노",
+    // coverImage는 Community 타입에 없으므로, 필요하면 types/index.ts의 Community에 추가하거나
+    // CommunityCardProps에서 별도의 필드로 받을지 결정해야 합니다. (일단 제거)
+    // coverImage: "https://via.placeholder.com/150x200/F0F0F0/B0B0B0?text=혼모노",
+    status: "모집중", // ✨ status 필드 추가 (Community에 필수) ✨
   },
   {
     id: "part-comm-2",
-    title: "도서명 독서 모임",
+    title: "도서명 독서 모임", // ✨ bookTitle -> title ✨
     description: "인문학 고전을 함께 읽고 토론",
     role: "host",
-    bookTitle: "도서명",
-    hostNickname: "내닉네임",
+    hostName: "내닉네임", // ✨ hostNickname -> hostName ✨
     currentMembers: 6,
     maxMembers: 8,
-    coverImage: "https://via.placeholder.com/150x200/F0F0F0/B0B0B0?text=도서명",
+    status: "모집중", // ✨ status 필드 추가 ✨
   },
   {
     id: "part-comm-3",
-    title: "제3의 커뮤니티",
+    title: "제3의 커뮤니티", // ✨ bookTitle -> title ✨
     description: "SF 소설 매니아 모임",
     role: "member",
-    bookTitle: "SF 도서",
-    hostNickname: "SF덕후",
+    hostName: "SF덕후", // ✨ hostNickname -> hostName ✨
     currentMembers: 2,
     maxMembers: 5,
-    coverImage: "https://via.placeholder.com/150x200/F0F0F0/B0B0B0?text=SF도서",
+    status: "모집종료", // ✨ status 필드 추가 ✨
   },
 ];
 
 const MyCommunitiesParticipatingPage: React.FC = () => {
-  const [communities, setCommunities] = useState<ParticipatingCommunity[]>([]);
+  const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

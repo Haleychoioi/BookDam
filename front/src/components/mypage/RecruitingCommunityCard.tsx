@@ -2,19 +2,10 @@ import React from "react";
 import Button from "../common/Button";
 import { Link } from "react-router-dom"; // Link 임포트 유지
 import { FaUserFriends } from "react-icons/fa"; // 인원 아이콘 임포트 유지
-
-interface RecruitableCommunity {
-  id: string;
-  title: string;
-  description: string;
-  hostName: string;
-  currentMembers: number;
-  maxMembers: number;
-  status: "모집중" | "모집종료";
-}
+import type { Community } from "../../types"; // ✨ Community 타입 임포트 ✨
 
 interface RecruitingCommunityCardProps {
-  community: RecruitableCommunity;
+  community: Community; // ✨ 임포트한 Community 타입 사용 ✨
   onEndRecruitment: (communityId: string) => void;
 }
 

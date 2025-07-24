@@ -39,8 +39,6 @@ const MyCommentsDisplay: React.FC<MyCommentsDisplayProps> = ({
 
   return (
     <div>
-      <p className="text-gray-600 mb-8">내가 작성한 댓글 목록입니다.</p>
-
       {comments.length === 0 ? (
         <p className="text-center text-gray-500 py-10">
           작성한 댓글이 없습니다.
