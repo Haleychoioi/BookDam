@@ -20,7 +20,7 @@ export class BookService {
   // }
 
 
-  //알라딘 책 정보 → DB에 이미 있는지 확인 → 없으면 우리 형식으로 변환해서 저장
+  //알라딘 책 정보 → DB에 이미 있는지 확인 → 없으면 DB컬럼 형식으로 변환해서 저장
   // 책을 DB에 저장 => 책 캐싱
   async saveBook(aladinBook: AladinBookItem) {
     

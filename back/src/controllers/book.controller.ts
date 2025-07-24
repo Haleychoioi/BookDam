@@ -1,7 +1,8 @@
 // book.controller.ts
 import { Request, Response, NextFunction } from 'express';
-import { AladinQueryType, AladinSortType, AladinSearchTarget } from '../types/book.type';
+import { AladinQueryType, AladinSortType, AladinSearchTarget, AladinListType, AladinLookupRequest, AladinCoverSize, AladinItemIdType } from '../types/book.type';
 import { aladinApiService } from '../services/aladin-api.service';
+import { parse } from 'path';
 
 class BookController {
 
@@ -30,7 +31,7 @@ class BookController {
         Start: page ? parseInt(page as string) : 1,
         MaxResults: Math.min(limit ? parseInt(limit as string) : 10, 50),
         Sort: this.mapSortType(sort as string),              // enum 변환
-        CategoryId: category ? parseInt(category as string) : 0
+        CategoryId: categoryId
       };
 
       // AladinApiService 직접 호출
@@ -48,9 +49,76 @@ class BookController {
   }
 
 
-  // 상품 리스트 
-  getBookList = async (req: Request, res: Response, next: NextFunction) => {
+  // 상품 리스트 -  베스트셀러
+  getBestSellers = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const { page, limit, categoryId} = req.query;
+
+      const aladinParams = {
+        QueryType: AladinListType.BESTSELLER,
+        Start: page ? parseInt(page as string) : 1,
+        MaxResults: Math.min(limit ? parseInt(limit as string) : 10, 50 ),
+        CategoryId: categoryId ? parseInt(categoryId as string) : 0
+      }
+
+      const result = await aladinApiService.getBookList(aladinParams);
+
+      res.status(200).json({
+        status: 'success',
+        message: '베스트셀러 조회 성공',
+        data: result
+      })
+
+    } catch(error) {
+      next(error);
+    }
+  }
+
+  // 상품 리스트 - 신간리스트
+  getNewBooks = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { page, limit, categoryId } = req.query;
+
+      const aladinParams = {
+        QueryType: AladinListType.NEW_ALL,
+        Start: page ? parseInt(page as string): 1,
+        MaxResult: Math.min(limit ? parseInt(limit as string): 10, 50),
+        CategoryId: categoryId ? parseInt(categoryId as string): 0
+      }
+
+      const result = await aladinApiService.getBookList(aladinParams);
+
+      res.status(200).json({
+        status: 'success',
+        message: '신간도서 조회 성공',
+        data: result
+      })
+
+    } catch(error) {
+      next(error);
+    }
+  }
+
+  // 상품 리스트 - 주목할 신간
+  getSpecialNewBooks = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+
+      const { page, limit, categoryId } = req.query;
+
+      const aladinParams = {
+        QueryType: AladinListType.NEW_SPECIAL,
+        Start: page ? parseInt(page as string): 1,
+        MaxResult: Math.min(limit ? parseInt(limit as string): 10, 50),
+        categoryId: categoryId ? parseInt(categoryId as string): 0
+      };
+
+      const result = await aladinApiService.getBookList(aladinParams);
+
+      res.status(200).json({
+        status: 'success',
+        message: '주목할 신간 조회 성공',
+        data: result
+      })
 
     } catch(error) {
       next(error);
@@ -58,12 +126,45 @@ class BookController {
   }
 
 
-
-
-
-
   // 상품 조회
+  getBookDetail = async (req: Request, res: Response, next: NextFunction) => {
+    try {
 
+      const { itemId } = req.params;
+
+      if (!itemId) {
+        return res.status(400).json({
+          status: 'error',
+          message: '도서 ISBN을 입력해주세요'
+        });
+      }
+
+      // 숫자가 아닌 경우 검증 -> validation 추가하가
+
+      //쿼리 파라미터에서 추가 옵션들 추출
+      const { Cover, OptResult } = req.query;
+
+      const lookUpParams: AladinLookupRequest = {
+        ItemId: itemId,
+        ItemIdType: itemId.length === 13 ? AladinItemIdType.ISBN13 : AladinItemIdType.ITEM_ID,
+        Cover: Cover as AladinCoverSize,
+        OptResult: OptResult
+          ? (OptResult as string).split(',')
+         : ['description', 'fulldescription', 'fulldescription2', 'toc', 'story', 'subInfo']
+      }
+
+      const result = await aladinApiService.getBookDetail(lookUpParams);
+
+      res.status(200).json({
+        status: 'success',
+        message: '도서 상세 조회 성공',
+        data: result
+      })
+
+    } catch(error) {
+      next(error);
+    }
+  }
 
 
 
