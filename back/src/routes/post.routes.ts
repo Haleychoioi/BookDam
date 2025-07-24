@@ -18,6 +18,6 @@ router.post(
   "/:postId/comments",
   authMiddleware,
   commentController.createComment
-); // 댓글 작성 (인증 필요)
+);
 
 export default router;
