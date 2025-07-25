@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import Button from "../../components/common/Button";
 
+import axios from "axios";
+
 const RegisterPage: React.FC = () => {
     const [form, setForm] = useState({
     name: "",
@@ -129,7 +131,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           </label>
         </div>
         <div className="text-center pt-4">
-          <Button>가입하기</Button>
+          <Button type="submit">가입하기</Button>
         </div>
       </form>
     </div>
