@@ -1,12 +1,9 @@
-// front/src/pages/mypage/MyCommunitiesRecruitingPage.tsx
+import { useState, useEffect, useMemo } from "react";
+import MyPageHeader from "../../components/mypage/MyPageHeader";
+import RecruitingCommunityCard from "../../components/mypage/RecruitingCommunityCard";
+import Pagination from "../../components/common/Pagination";
+import type { Community } from "../../types";
 
-import React, { useState, useEffect, useMemo } from "react";
-import MyPageHeader from "../../components/mypage/MyPageHeader"; // MyPageHeader 재활용
-import RecruitingCommunityCard from "../../components/mypage/RecruitingCommunityCard"; // RecruitingCommunityCard 재활용
-import Pagination from "../../components/common/Pagination"; // 페이지네이션 컴포넌트 임포트
-import type { Community } from "../../types"; // ✨ Community 타입 임포트 ✨
-
-// ✨ dummyRecruitingCommunities 데이터에 role 필드 추가 ✨
 const dummyRecruitingCommunities: Community[] = [
   {
     id: "rec-comm-1",
@@ -16,7 +13,7 @@ const dummyRecruitingCommunities: Community[] = [
     currentMembers: 2,
     maxMembers: 8,
     status: "모집중",
-    role: "host", // ✨ role 필드 추가 ✨
+    role: "host",
   },
   {
     id: "rec-comm-2",
@@ -153,9 +150,6 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
   }, [filteredCommunities, currentPage, itemsPerPage]);
 
   const handleEndRecruitment = async (communityId: string) => {
-    // ✨ MyCommunitiesRecruitingPage에서는 window.confirm 제거 ✨
-    // 최종 확인은 RecruitingCommunityCard에서 이미 처리됨
-    // 또는, 이 로직은 API 호출만을 담당하도록 변경.
     console.log("모집 종료 요청 (상위 컴포넌트에서 수신):", communityId);
     try {
       // TODO: DELETE /mypage/communities/recruiting/:communityId API 호출 (모집 취소)

@@ -1,9 +1,6 @@
-// front/src/components/books/BookGridDisplay.tsx
-
-import React from "react";
 import { Link } from "react-router-dom";
-import { type Book, type MyLibraryBook } from "../../types";
 import HeartButton from "../common/HeartButton";
+import { type Book, type MyLibraryBook } from "../../types";
 
 interface BookGridDisplayProps {
   books: (Book | MyLibraryBook)[];
@@ -47,26 +44,23 @@ const BookGridDisplay: React.FC<BookGridDisplayProps> = ({
 
           {/* 하트 버튼 */}
           {showWishlistButton && (
-            // ✨ HeartButton을 감싸는 button 태그에 onClick을 추가하여 Link로의 이벤트 전파를 막습니다. ✨
             <button
-              type="button" // 버튼의 기본 submit 동작 방지
+              type="button"
               onClick={(e) => {
-                e.preventDefault(); // 기본 동작 방지 (Link의 이동)
-                e.stopPropagation(); // 부모 Link로의 이벤트 전파 중단
+                e.preventDefault();
+                e.stopPropagation();
                 // 이제 HeartButton의 onClick은 handleHeartButtonClick을 호출
                 // HeartButton 자체의 onClick은 isWishlisted 인자만 제공하므로,
                 // 여기에 다시 한번 HeartButton을 렌더링하고 그 onClick을 활용
               }}
-              className="absolute top-64 right-2.5 p-0 bg-transparent border-none focus:outline-none" // 버튼 자체의 스타일 초기화
+              className="absolute top-64 right-2.5 p-0 bg-transparent border-none focus:outline-none"
             >
               <HeartButton
                 initialIsWishlisted={true}
-                // HeartButton 내부에서 isWishlisted가 이미 토글된 상태로 전달되므로,
-                // 여기서는 HeartButton의 onClick을 직접 handleHeartButtonClick에 연결
                 onClick={(isWishlisted) =>
                   handleHeartButtonClick(book, isWishlisted)
                 }
-                className="p-2 rounded-full shadow-md" // HeartButton 자체의 스타일
+                className="p-2 rounded-full shadow-md"
               />
             </button>
           )}

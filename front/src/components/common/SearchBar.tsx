@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Button from "../common/Button"; // Button 컴포넌트 임포트 확인
+import Button from "../common/Button";
 
 interface SearchBarProps {
   initialQuery?: string;
@@ -47,8 +47,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
     // ✨ 검색어가 아예 비어있을 때만 alert를 띄우고 중단 ✨
     if (processedSearchTerm.length === 0) {
-      alert("검색어를 입력해주세요."); // 검색어가 없다는 메시지로 변경
-      return; // 검색 실행 중단
+      alert("검색어를 입력해주세요.");
+      return;
     }
 
     // 1글자 이상이면 모두 검색 실행
@@ -86,7 +86,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
       {/* 검색 버튼 */}
       <Button
         onClick={executeSearch}
-        // Button 컴포넌트의 프롭스로 스타일을 전달
         bgColor="bg-main"
         textColor="text-white"
         hoverBgColor="hover:bg-apply"

@@ -1,14 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-// Enter 키 입력 시 검색 실행
 const HomeHeroSection: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // 검색 실행 로직 (SearchBar의 executeSearch 로직과 동일하게 적용)
-
+  // 검색 실행 로직
   const executeSearch = () => {
     const processedSearchTerm = searchTerm.replace(/\s/g, ""); // 모든 공백 제거
 
@@ -25,16 +23,16 @@ const HomeHeroSection: React.FC = () => {
     navigate(searchPath);
   };
 
-  // Enter 키 입력 시 검색 실행 (수정)
+  // Enter 키 입력 시 검색 실행
   const handleSearchOnEnter = (
     event: React.KeyboardEvent<HTMLInputElement>
   ) => {
     if (event.key === "Enter") {
-      executeSearch(); // ✨ executeSearch 함수 호출 ✨
+      executeSearch();
     }
   };
 
-  // ✨ document에 Enter 키 리스너 추가 (인풋에 포커스) - 수정 없음 ✨
+  // 인풋 포커스
   useEffect(() => {
     const handleGlobalEnterKey = (event: KeyboardEvent) => {
       if (event.key === "Enter") {

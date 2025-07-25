@@ -1,11 +1,8 @@
-// front/src/components/home/RecruitingCommunityList.tsx
-
-import React, { useState } from "react";
+import { useState } from "react";
 import Button from "../common/Button";
-import ApplyToCommunityModal from "../modals/ApplyToCommunityModal"; // ApplyToCommunityModal 임포트 (경로 확인)
-import type { Community } from "../../types"; // types에서 Community 임포트
+import ApplyToCommunityModal from "../modals/ApplyToCommunityModal";
+import type { Community } from "../../types";
 
-// dummyCommunities 데이터 (Community 타입에 맞춰 hostName, currentMembers, maxMembers 포함)
 const dummyCommunities: Community[] = [
   {
     id: "1",
@@ -14,6 +11,8 @@ const dummyCommunities: Community[] = [
     hostName: "성해나",
     currentMembers: 3,
     maxMembers: 6,
+    status: "모집중",
+    role: "member",
   },
   {
     id: "2",
@@ -22,6 +21,8 @@ const dummyCommunities: Community[] = [
     hostName: "김사랑",
     currentMembers: 5,
     maxMembers: 10,
+    status: "모집중",
+    role: "member",
   },
   {
     id: "3",
@@ -30,6 +31,8 @@ const dummyCommunities: Community[] = [
     hostName: "박지민",
     currentMembers: 7,
     maxMembers: 15,
+    status: "모집중",
+    role: "member",
   },
   {
     id: "4",
@@ -38,6 +41,8 @@ const dummyCommunities: Community[] = [
     hostName: "이형사",
     currentMembers: 3,
     maxMembers: 7,
+    status: "모집중",
+    role: "member",
   },
   {
     id: "5",
@@ -46,6 +51,8 @@ const dummyCommunities: Community[] = [
     hostName: "최다정",
     currentMembers: 4,
     maxMembers: 8,
+    status: "모집중",
+    role: "member",
   },
   {
     id: "6",
@@ -54,6 +61,8 @@ const dummyCommunities: Community[] = [
     hostName: "정석사",
     currentMembers: 6,
     maxMembers: 12,
+    status: "모집중",
+    role: "member",
   },
   {
     id: "7",
@@ -62,6 +71,8 @@ const dummyCommunities: Community[] = [
     hostName: "추가호스트1",
     currentMembers: 1,
     maxMembers: 5,
+    status: "모집중",
+    role: "member",
   },
   {
     id: "8",
@@ -70,6 +81,8 @@ const dummyCommunities: Community[] = [
     hostName: "추가호스트2",
     currentMembers: 2,
     maxMembers: 6,
+    status: "모집중",
+    role: "member",
   },
   {
     id: "9",
@@ -78,6 +91,8 @@ const dummyCommunities: Community[] = [
     hostName: "추가호스트3",
     currentMembers: 4,
     maxMembers: 8,
+    status: "모집중",
+    role: "member",
   },
   {
     id: "10",
@@ -86,6 +101,8 @@ const dummyCommunities: Community[] = [
     hostName: "추가호스트4",
     currentMembers: 3,
     maxMembers: 7,
+    status: "모집중",
+    role: "member",
   },
 ];
 
@@ -95,7 +112,6 @@ const loadMoreIncrement = 3;
 const RecruitingCommunityList: React.FC = () => {
   const [displayedCount, setDisplayedCount] = useState(initialDisplayCount);
 
-  // 모달 관련 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(
     null
@@ -128,7 +144,6 @@ const RecruitingCommunityList: React.FC = () => {
       </h2>
 
       <div className="space-y-6">
-        {/* slice를 사용하여 보여줄 아이템 개수만큼만 map을 돌립니다. */}
         {dummyCommunities.slice(0, displayedCount).map((community) => (
           <div
             key={community.id}
@@ -151,7 +166,7 @@ const RecruitingCommunityList: React.FC = () => {
         ))}
       </div>
 
-      {/* '더보기' 버튼을 모든 아이템이 로드되지 않았을 때만 보여줍니다. */}
+      {/* '더보기' 버튼을 모든 아이템이 로드되지 않았을 때만 보여줌. */}
       {!allItemsLoaded && (
         <div className="text-center mt-10">
           <Button onClick={handleLoadMore} className="px-8 py-3 text-lg">
@@ -160,7 +175,6 @@ const RecruitingCommunityList: React.FC = () => {
         </div>
       )}
 
-      {/* ApplyToCommunityModal 렌더링 */}
       <ApplyToCommunityModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}

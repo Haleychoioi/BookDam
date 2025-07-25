@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import Button from "../common/Button"; // 기존 Button 컴포넌트 활용
+import { useState } from "react";
+import Button from "../common/Button";
 
 interface ApplyToCommunityModalProps {
-  isOpen: boolean; // 모달 열림/닫힘 상태
-  onClose: () => void; // 모달 닫기 함수
-  communityId: string; // 신청할 커뮤니티의 ID
+  isOpen: boolean;
+  onClose: () => void;
+  communityId: string;
 }
 
 const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
@@ -14,11 +14,10 @@ const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
 }) => {
   const [applicationMessage, setApplicationMessage] = useState("");
 
-  if (!isOpen) return null; // isOpen이 false면 아무것도 렌더링하지 않음
+  if (!isOpen) return null;
 
   const handleSubmit = async () => {
-    // ✨ async 키워드 추가 ✨
-    // 입력 글자 수 3글자 미만일 경우 유효성 검사 추가
+    // 입력 글자 수 3글자 미만일 경우 유효성 검사
     if (applicationMessage.trim().length < 3) {
       alert("신청 메시지를 3글자 이상 입력해주세요.");
       return;

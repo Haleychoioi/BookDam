@@ -1,16 +1,16 @@
 import { useState } from "react";
-import Button from "../common/Button"; // 기존 Button 컴포넌트 활용
+import Button from "../common/Button";
 
 interface CreateCommunityModalProps {
-  isOpen: boolean; // 모달 열림/닫힘 상태
-  onClose: () => void; // 모달 닫기 함수
-  bookId: string; // 이 커뮤니티가 기반할 도서의 ID
+  isOpen: boolean;
+  onClose: () => void;
+  bookId: string;
   onCommunityCreate: (
     bookId: string,
     communityName: string,
     maxMembers: number,
     description: string
-  ) => void; // 커뮤니티 생성 처리 함수
+  ) => void;
 }
 
 const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
@@ -20,16 +20,16 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
   onCommunityCreate,
 }) => {
   const [communityName, setCommunityName] = useState("");
-  const [maxMembers, setMaxMembers] = useState<string>(""); // input type="number" 대신 string으로 받아 유효성 검사
+  const [maxMembers, setMaxMembers] = useState<string>("");
   const [description, setDescription] = useState("");
 
-  if (!isOpen) return null; // isOpen이 false면 아무것도 렌더링하지 않음
+  if (!isOpen) return null;
 
   const handleSubmit = () => {
-    // ✨ 커뮤니티 이름 유효성 검사 수정 ✨
+    // ✨ 커뮤니티 이름 유효성 검사 ✨
     const trimmedCommunityName = communityName.trim();
     if (trimmedCommunityName.length < 3 || trimmedCommunityName.length > 20) {
-      alert("커뮤니티 이름을 3자 이상 20자 이내로 입력해주세요.");
+      alert("커뮤니티 이름을 3자 이상 15자 이내로 입력해주세요.");
       return;
     }
 
@@ -41,8 +41,8 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
 
     // ✨ 커뮤니티 간단 소개 글 유효성 검사 수정 ✨
     const trimmedDescription = description.trim();
-    if (trimmedDescription.length < 3 || trimmedDescription.length > 50) {
-      alert("커뮤니티 소개를 3자 이상 50자 이내로 입력해주세요.");
+    if (trimmedDescription.length < 3 || trimmedDescription.length > 30) {
+      alert("커뮤니티 소개를 3자 이상 30자 이내로 입력해주세요.");
       return;
     }
 
@@ -67,7 +67,6 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
           새로운 독서 커뮤니티를 시작해보세요.
         </p>
 
-        {/* 커뮤니티 이름 */}
         <div className="mb-4">
           <label
             htmlFor="communityName"
@@ -79,14 +78,13 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
             id="communityName"
             type="text"
             className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 font-light"
-            placeholder="커뮤니티 이름을 20자 이내로 입력해주세요"
-            maxLength={20} // 20자 제한
+            placeholder="커뮤니티 이름을 15자 이내로 입력해주세요"
+            maxLength={15}
             value={communityName}
             onChange={(e) => setCommunityName(e.target.value)}
           />
         </div>
 
-        {/* 모집 인원 */}
         <div className="mb-4">
           <label
             htmlFor="maxMembers"
@@ -96,16 +94,15 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
           </label>
           <input
             id="maxMembers"
-            type="number" // 숫자 입력 필드
+            type="number"
             className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 font-light"
             placeholder="모집할 인원수를 입력해주세요 (최소 2명)"
-            min="2" // 최소값 설정
+            min="2"
             value={maxMembers}
             onChange={(e) => setMaxMembers(e.target.value)}
           />
         </div>
 
-        {/* 커뮤니티 간단 소개 글 */}
         <div className="mb-6">
           <label
             htmlFor="description"
@@ -116,9 +113,9 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
           <textarea
             id="description"
             className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 resize-none font-light"
-            rows={3} // 이미지와 유사하게 줄 수 조정
-            placeholder="커뮤니티 소개를 50자 이내로 입력해주세요."
-            maxLength={50} // 50자 제한
+            rows={3}
+            placeholder="커뮤니티 소개를 30자 이내로 입력해주세요."
+            maxLength={30}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           ></textarea>
@@ -127,7 +124,7 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
         <div className="flex justify-end space-x-4">
           <Button
             onClick={onClose}
-            bgColor="bg-gray-300" // 이미지와 유사한 취소 버튼 색상
+            bgColor="bg-gray-300"
             textColor="text-white"
             hoverBgColor="hover:bg-gray-400"
             className="font-normal"
@@ -136,7 +133,7 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
           </Button>
           <Button
             onClick={handleSubmit}
-            bgColor="bg-main" // 이미지와 유사한 생성하기 버튼 색상
+            bgColor="bg-main"
             textColor="text-white"
             hoverBgColor="hover:bg-apply"
             className="font-normal"

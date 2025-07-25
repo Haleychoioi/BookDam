@@ -1,11 +1,11 @@
-import React from "react";
+import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import Button from "../common/Button";
-import { Link } from "react-router-dom"; // Link 임포트 유지
-import { FaUserFriends } from "react-icons/fa"; // 인원 아이콘 임포트 유지
-import type { Community } from "../../types"; // ✨ Community 타입 임포트 ✨
+import { FaUserFriends } from "react-icons/fa";
+import type { Community } from "../../types";
 
 interface RecruitingCommunityCardProps {
-  community: Community; // ✨ 임포트한 Community 타입 사용 ✨
+  community: Community;
   onEndRecruitment: (communityId: string) => void;
 }
 
@@ -17,8 +17,8 @@ const RecruitingCommunityCard: React.FC<RecruitingCommunityCardProps> = ({
   const isFull = community.currentMembers >= community.maxMembers;
 
   const handleEndRecruitmentClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Link의 클릭 이벤트 전파 방지
-    e.stopPropagation(); // Link의 클릭 이벤트 전파 방지
+    e.preventDefault();
+    e.stopPropagation();
 
     if (!isFull) {
       if (
@@ -33,7 +33,7 @@ const RecruitingCommunityCard: React.FC<RecruitingCommunityCardProps> = ({
   };
 
   // 자동 모집 종료 로직
-  React.useEffect(() => {
+  useEffect(() => {
     if (isFull && community.status === "모집중") {
       onEndRecruitment(community.id);
     }

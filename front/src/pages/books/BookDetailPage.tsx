@@ -1,28 +1,15 @@
-// front/src/pages/books/BookDetailPage.tsx
-
-import React, { useState, useEffect } from "react";
-
-import { useParams } from "react-router-dom"; // useMemo, useEffect, useParams, Link, useNavigate 임포트
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 
 import SearchBar from "../../components/common/SearchBar";
-
 import BookDetailHeroSection from "../../components/bookDetail/BookDetailHeroSection";
-
 import BookDetailDescription from "../../components/bookDetail/BookDetailDescriptionSection";
-
 import BookCarousel from "../../components/bookDetail/BookCarousel";
-
 import CommunityCarousel from "../../components/bookDetail/CommunityCarousel";
-
 import ApplyToCommunityModal from "../../components/modals/ApplyToCommunityModal";
-
 import CreateCommunityModal from "../../components/modals/CreateCommunityModal";
 
-// types에서 필요한 모든 인터페이스 임포트
-
 import type { BookDetail, Community } from "../../types";
-
-// 1. dummyCommunities 정의 (BookDetail에서 참조하기 위해 최상단으로 이동)
 
 const dummyCommunities: Community[] = [
   {
@@ -140,8 +127,6 @@ const dummyCommunities: Community[] = [
   },
 ];
 
-// 2. dummyBookData를 BookDetail 타입에 맞게 수정
-
 const dummyBookData: BookDetail = {
   id: "book-123",
 
@@ -211,8 +196,6 @@ const dummyBookData: BookDetail = {
 
   isWished: false,
 };
-
-// 3. mockBookDetails와 mockBookCommunities 명시적 타입 지정 및 데이터 구조 조정
 
 const mockBookDetails: { [key: string]: BookDetail } = {
   "book-123": dummyBookData, // dummyBookData를 직접 참조
@@ -291,41 +274,29 @@ const mockBookCommunities: { [key: string]: Community[] } = {
 };
 
 const BookDetailPage: React.FC = () => {
-  const { bookId } = useParams<{ bookId: string }>(); // URL에서 bookId 가져오기
-
+  const { bookId } = useParams<{ bookId: string }>();
   // const navigate = useNavigate(); // useNavigate 훅 사용
 
   // 책 정보 상태 (useParams의 bookId에 따라 동적으로 가져오기)
-
   const [book, setBook] = useState<BookDetail | null>(null);
-
   const [communities, setCommunities] = useState<Community[]>([]);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState<string | null>(null);
 
   // 모달 관련 상태
-
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
-
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(
     null
   );
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
   const [, setBookIdForCreate] = useState<string | null>(null);
-
-  // ✨ useEffect 훅을 사용하여 데이터 로딩 로직 구현 ✨
 
   useEffect(() => {
     setLoading(true);
-
     setError(null);
 
     // useParams로 받은 bookId를 사용하여 Mock 데이터에서 도서 정보 가져오기
-
     const fetchedBook: BookDetail | undefined = mockBookDetails[bookId || ""];
 
     const fetchedCommunities: Community[] | undefined =
@@ -333,7 +304,6 @@ const BookDetailPage: React.FC = () => {
 
     if (fetchedBook) {
       setBook(fetchedBook);
-
       setCommunities(fetchedCommunities || []); // undefined일 경우 빈 배열로 초기화
     } else {
       setError("도서 정보를 찾을 수 없습니다.");
@@ -342,63 +312,48 @@ const BookDetailPage: React.FC = () => {
     setLoading(false);
 
     window.scrollTo(0, 0); // 페이지 로드 시 상단으로 스크롤
-  }, [bookId]); // bookId가 변경될 때마다 useEffect 재실행
+  }, [bookId]);
 
   const handleApplyCommunityClick = (communityId: string) => {
     setSelectedCommunityId(communityId);
-
     setIsApplyModalOpen(true);
   };
 
   const handleApplyModalClose = () => {
     setIsApplyModalOpen(false);
-
     setSelectedCommunityId(null);
   };
 
   const handleCreateCommunityClick = (bookId: string) => {
     setBookIdForCreate(bookId);
-
     setIsCreateModalOpen(true);
   };
 
   const handleCreateModalClose = () => {
     setIsCreateModalOpen(false);
-
     setBookIdForCreate(null);
   };
 
   const handleCommunityCreate = async (
     bookId: string,
-
     communityName: string,
-
     maxMembers: number,
-
     description: string
   ) => {
     console.log(`커뮤니티 생성 요청:`);
-
     console.log(` 책 ID: ${bookId}`);
-
     console.log(` 이름: ${communityName}`);
-
     console.log(` 모집 인원: ${maxMembers}`);
-
     console.log(` 소개: ${description}`);
 
     try {
       alert("커뮤니티가 성공적으로 생성되었습니다!");
-
       handleCreateModalClose();
     } catch (error) {
       console.error("커뮤니티 생성 중 오류 발생:", error);
-
       alert("커뮤니티 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
   };
-
-  // ✨ 로딩, 에러, 도서 없음 상태 처리 ✨
 
   if (loading) {
     return (
@@ -415,8 +370,6 @@ const BookDetailPage: React.FC = () => {
   }
 
   if (!book) {
-    // 로딩이 끝났는데 book이 null이면 (데이터 없음)
-
     return (
       <div className="text-center py-12 text-xl text-gray-700">
         도서 정보를 찾을 수 없습니다.
@@ -465,13 +418,11 @@ const BookDetailPage: React.FC = () => {
           communityId={selectedCommunityId || ""}
         />
 
-        {/* bookId는 useParams에서 오므로 항상 string입니다. */}
-
         {bookId && (
           <CreateCommunityModal
             isOpen={isCreateModalOpen}
             onClose={handleCreateModalClose}
-            bookId={bookId} // useParams에서 온 bookId를 그대로 전달
+            bookId={bookId}
             onCommunityCreate={handleCommunityCreate}
           />
         )}

@@ -1,12 +1,9 @@
-// front/src/pages/mypage/MyLibraryPage.tsx
-
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
-import BookGridDisplay from "../../components/bookResults/BookGridDisplay"; // 경로 유지
+import BookGridDisplay from "../../components/bookResults/BookGridDisplay";
 import Pagination from "../../components/common/Pagination";
 import { type MyLibraryBook } from "../../types";
 
-// ✨ Mock Data: 내 서재 도서 목록 (각 책의 상태 및 별점 포함) ✨
 const dummyMyLibraryBooks: MyLibraryBook[] = Array.from(
   { length: 30 },
   (_, i) => ({
@@ -16,16 +13,15 @@ const dummyMyLibraryBooks: MyLibraryBook[] = Array.from(
     }`,
     title: `책 제목 ${i + 1}`,
     author: `저자 ${i + 1}`,
-    // ✨ 누락된 Book 인터페이스의 속성들 추가 ✨
+
     publisher: `출판사 ${i + 1}`,
-    pubDate: `2023-01-${(i % 28) + 1}`, // 유효한 날짜 문자열
-    averageRating: parseFloat((Math.random() * 5).toFixed(1)), // 0.0 ~ 5.0 사이 랜덤
-    description: `이것은 책 제목 ${i + 1}의 더미 설명입니다.`,
+    pubDate: `2023-01-${(i % 28) + 1}`,
+    averageRating: parseFloat((Math.random() * 5).toFixed(1)),
     genre: i % 2 === 0 ? "소설/시/희곡" : "인문학",
     summary: `책 제목 ${i + 1}의 짧은 더미 요약입니다.`,
 
-    status: i % 3 === 0 ? "reading" : i % 3 === 1 ? "read" : "to-read", // 더미 데이터에 상태 부여
-    myRating: i % 3 === 1 ? Math.floor(Math.random() * 5) + 1 : undefined, // 'read' 상태인 책에만 랜덤 별점 부여
+    status: i % 3 === 0 ? "reading" : i % 3 === 1 ? "read" : "to-read",
+    myRating: i % 3 === 1 ? Math.floor(Math.random() * 5) + 1 : undefined,
   })
 );
 
@@ -34,7 +30,7 @@ const MyLibraryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"reading" | "read" | "to-read">(
-    "reading" // 디폴트 탭: 읽는 중
+    "reading"
   );
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6; // 이미지에 6권씩 표시되므로 6개로 설정 (3열 2줄)
@@ -44,7 +40,7 @@ const MyLibraryPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        setBooks(dummyMyLibraryBooks); // Mock data 사용
+        setBooks(dummyMyLibraryBooks);
       } catch (err) {
         setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
       } finally {
@@ -122,7 +118,6 @@ const MyLibraryPage: React.FC = () => {
 
       <div className="container mx-auto px-0">
         {paginatedBooks.length > 0 ? (
-          // ✨ className prop에 모든 브레이크포인트에 맞는 grid-cols-* 명시 ✨
           <BookGridDisplay
             books={paginatedBooks}
             className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3"

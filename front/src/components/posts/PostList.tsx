@@ -1,9 +1,8 @@
-import React from "react"; // React 임포트 추가 (필요)
 import { Link } from "react-router-dom";
 import type { Post } from "../../types";
 
 interface PostListProps {
-  posts: Post[]; // 표시할 게시글 목록
+  posts: Post[];
 }
 
 const PostList: React.FC<PostListProps> = ({ posts }) => {
@@ -12,7 +11,7 @@ const PostList: React.FC<PostListProps> = ({ posts }) => {
       {posts.map((post) => (
         <Link
           key={post.id}
-          to={`/posts/${post.id}`} // API 명세: 특정 게시물 상세 정보 조회 [cite: 5]
+          to={`/posts/${post.id}`}
           className="flex justify-between items-center py-4 border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200"
         >
           <div>

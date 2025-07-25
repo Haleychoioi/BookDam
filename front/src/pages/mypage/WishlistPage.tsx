@@ -1,12 +1,9 @@
-// front/src/pages/mypage/WishlistPage.tsx
-
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import BookGridDisplay from "../../components/bookResults/BookGridDisplay";
 import Pagination from "../../components/common/Pagination";
 import { type Book } from "../../types";
 
-// Mock Data: 위시리스트 도서 목록 (기존과 동일)
 const dummyWishlistBooks: Book[] = Array.from({ length: 15 }, (_, i) => ({
   id: `wishlist-book-${i + 1}`,
   coverImage: `https://via.placeholder.com/160x256/E0E0E0/909090?text=Wish+Book+${
@@ -44,16 +41,14 @@ const WishlistPage: React.FC = () => {
     fetchWishlistBooks();
   }, []);
 
-  // ✨ 위시리스트에서 책을 제거하는 핸들러: bookTitle 인자 추가 ✨
   const handleRemoveFromWishlist = useCallback(
     (bookId: string, bookTitle: string) => {
       if (confirm(`'${bookTitle}'을(를) 위시리스트에서 삭제하시겠습니까?`)) {
-        // ✨ confirm 메시지 수정 ✨
         setWishlistBooks((prevBooks) =>
           prevBooks.filter((book) => book.id !== bookId)
         );
         // TODO: 실제 API 호출 로직 (DELETE /books/:bookId/bookmark)
-        alert(`'${bookTitle}'이(가) 위시리스트에서 삭제되었습니다.`); // 사용자에게 삭제 완료 알림 (선택 사항)
+        alert(`'${bookTitle}'이(가) 위시리스트에서 삭제되었습니다.`);
       }
     },
     []
@@ -92,8 +87,8 @@ const WishlistPage: React.FC = () => {
           <BookGridDisplay
             books={paginatedBooks}
             className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3"
-            onRemoveFromWishlist={handleRemoveFromWishlist} // ✨ 핸들러 prop 전달 ✨
-            showWishlistButton={true} // 위시리스트 버튼 표시
+            onRemoveFromWishlist={handleRemoveFromWishlist}
+            showWishlistButton={true}
           />
         ) : (
           <p className="col-span-full text-center text-gray-500 py-10">

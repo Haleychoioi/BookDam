@@ -1,14 +1,10 @@
-// front/src/pages/mypage/ProfileEditPage.tsx
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import MyPageHeader from "../../components/mypage/MyPageHeader";
+import Button from "../../components/common/Button";
+import type { UserProfile } from "../../types";
 
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // 페이지 이동을 위해 임포트
-import MyPageHeader from "../../components/mypage/MyPageHeader"; // MyPageHeader 재활용
-import Button from "../../components/common/Button"; // Button 컴포넌트 임포트
-import type { UserProfile } from "../../types"; // ✨ UserProfile 타입 임포트 ✨
-
-// ✨ Mock Data: 현재 로그인된 사용자 정보 (실제로는 API에서 불러올 것) ✨
 const dummyUserProfile: UserProfile = {
-  // ✨ UserProfile 타입 명시 ✨
   nickname: "기존닉네임123",
   introduction:
     "안녕하세요! 저는 독서를 좋아하고 웹 개발을 즐기는 사용자입니다. 함께 독서하고 소통해요!",
@@ -17,15 +13,12 @@ const dummyUserProfile: UserProfile = {
 const ProfileEditPage: React.FC = () => {
   const navigate = useNavigate();
 
-  // 사용자 정보 로딩 상태
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 현재 사용자 정보 상태
   const [currentNickname, setCurrentNickname] = useState("");
   const [currentIntroduction, setCurrentIntroduction] = useState("");
 
-  // API로부터 사용자 정보를 불러오는 효과 (Mock Data 사용)
   useEffect(() => {
     const fetchUserProfile = async () => {
       setLoading(true);
@@ -52,7 +45,6 @@ const ProfileEditPage: React.FC = () => {
 
   // "저장하기" 버튼 클릭 핸들러
   const handleSave = async () => {
-    // ✨ 유효성 검사 ✨
     if (
       currentNickname.trim().length < 2 ||
       currentNickname.trim().length > 10
@@ -73,7 +65,6 @@ const ProfileEditPage: React.FC = () => {
       return;
     }
 
-    // ✨ 자기소개 유효성 검사 추가/수정 ✨
     if (currentIntroduction.trim().length === 0) {
       // 자기소개가 비어있거나 공백만 있을 경우
       alert("자기소개를 입력해주세요.");
@@ -98,7 +89,6 @@ const ProfileEditPage: React.FC = () => {
       });
       await new Promise((resolve) => setTimeout(resolve, 1000)); // API 호출 시뮬레이션
 
-      // Mock API 응답 성공 가정
       if (Math.random() > 0.1) {
         // 90% 성공
         alert("회원 정보가 성공적으로 수정되었습니다!");
@@ -116,7 +106,7 @@ const ProfileEditPage: React.FC = () => {
   // "취소" 버튼 클릭 핸들러
   const handleCancel = () => {
     if (window.confirm("변경사항을 취소하고 이전으로 돌아가시겠습니까?")) {
-      navigate(-1); // 이전 페이지로 돌아가기
+      navigate(-1);
     }
   };
 
@@ -135,7 +125,6 @@ const ProfileEditPage: React.FC = () => {
       />
 
       <div className=" p-8 space-y-6">
-        {/* 닉네임 입력 필드 */}
         <div>
           <label
             htmlFor="nickname"
@@ -147,14 +136,13 @@ const ProfileEditPage: React.FC = () => {
             id="nickname"
             type="text"
             className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 text-gray-800"
-            maxLength={10} // 닉네임 10자 제한
+            maxLength={10}
             value={currentNickname}
             onChange={(e) => setCurrentNickname(e.target.value)}
             placeholder="2자 이상 10자 이내"
           />
         </div>
 
-        {/* 자기소개 입력 필드 */}
         <div>
           <label
             htmlFor="introduction"
@@ -165,15 +153,14 @@ const ProfileEditPage: React.FC = () => {
           <textarea
             id="introduction"
             className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 resize-none text-gray-800"
-            rows={5} // 여러 줄 입력 가능
-            maxLength={100} // 자기소개 100자 제한
+            rows={5}
+            maxLength={100}
             value={currentIntroduction}
             onChange={(e) => setCurrentIntroduction(e.target.value)}
             placeholder="100자 이내로 자신을 소개해주세요."
           ></textarea>
         </div>
 
-        {/* 버튼 그룹 */}
         <div className="flex justify-end space-x-4 mt-6">
           <Button
             onClick={handleCancel}

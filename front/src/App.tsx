@@ -29,26 +29,20 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<MainLayout />}>
-          {/* 홈페이지(루트 경로) */}
+          {/* 홈페이지 */}
           <Route index element={<HomePage />} />
 
           {/* 책 검색 및 상세 */}
-          <Route path="search/books" element={<BookSearchResultPage />} />
+          <Route path="books/search" element={<BookSearchResultPage />} />
           <Route path="books/:bookId" element={<BookDetailPage />} />
 
-          {/* 커뮤니티 목록 조회 (GET /communities) */}
-          <Route
-            path="communities"
-            element={<CommunityBoardPage /* 혹은 CommunityListPage */ />}
-          />
-
-          {/* 특정 커뮤니티의 게시물 목록 조회 (GET /communities/id/posts) */}
+          {/* 특정 커뮤니티의 게시물 목록 조회 */}
           <Route
             path="communities/:communityId/posts"
             element={<CommunityBoardPage />}
           />
 
-          {/* 특정 게시물 상세 (GET /posts/id) - 커뮤니티 게시물 상세도 이 경로를 사용해야 함 */}
+          {/* 특정 게시물 상세 */}
           <Route path="posts/:postId" element={<PostDetailPage />} />
 
           {/* 전체 게시판 */}
@@ -58,7 +52,7 @@ function App() {
           <Route path="faq" element={<FAQPage />} />
           <Route path="about" element={<AboutPage />} />
 
-          {/* ✨ 마이페이지 섹션 (MyPageLayout 사용) ✨ */}
+          {/* 마이페이지 섹션 */}
           <Route path="mypage" element={<MyPageLayout />}>
             {/* 마이페이지 기본 경로 (index) */}
             <Route index element={<MyCommunitiesParticipatingPage />} />
@@ -89,16 +83,21 @@ function App() {
             />
           </Route>
         </Route>
-        <Route path="/auth/login" element={<LoginPage />} />
-        <Route path="/auth/register" element={<RegisterPage />} />
-        <Route path="*" element={<ErrorPage />} />
 
-        {/* 4. 특정 게시물 작성 (POST /posts) */}
-        <Route path="posts/new" element={<PostWritePage />} />
+        {/* 회원가입/로그인 페이지 */}
+        <Route path="/auth/register" element={<RegisterPage />} />
+        <Route path="/auth/login" element={<LoginPage />} />
+
+        {/* 전체 게시판에 게시물 작성 */}
+        <Route path="posts/write" element={<PostWritePage />} />
+
+        {/* 특정 커뮤니티에 게시물 작성 */}
         <Route
-          path="communities/:communityId/posts/new"
+          path="communities/:communityId/posts/write"
           element={<PostWritePage />}
         />
+
+        <Route path="*" element={<ErrorPage />} />
       </Routes>
     </BrowserRouter>
   );

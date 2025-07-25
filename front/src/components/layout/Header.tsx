@@ -1,15 +1,13 @@
-// front/src/components/layout/Header.tsx
-
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom"; // useLocation 임포트 추가
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import Button from "../common/Button";
 import { FaBars, FaTimes } from "react-icons/fa";
 
 const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // ✨ 실제 애플리케이션에서는 Redux, Context API 등 전역 상태 관리 훅을 사용하여 로그인 상태를 가져올 것입니다.
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // 임시 로그인 상태
-  const location = useLocation(); // useLocation 훅 사용
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const location = useLocation();
 
   // 현재 경로가 마이페이지 섹션인지 확인하는 함수
   const isMyPagePath = location.pathname.startsWith("/mypage");
@@ -27,7 +25,6 @@ const Header: React.FC = () => {
   return (
     <header className="bg-white py-4 fixed top-0 w-full z-50">
       <div className="container mx-auto flex justify-between items-center px-4">
-        {/* 좌측 링크 섹션 (데스크탑 뷰) - '도서'와 '커뮤니티 참여' 링크 제거 */}
         <nav className="flex-1 hidden md:flex items-center space-x-4">
           <ul className="flex items-center space-x-4 list-none">
             <li>
@@ -57,17 +54,14 @@ const Header: React.FC = () => {
           </ul>
         </nav>
 
-        {/* 로고 (중앙 정렬) */}
         <div className="flex-grow text-center">
           <Link to="/" className="text-3xl font-script text-gray-800">
             book
           </Link>
         </div>
 
-        {/* 우측 링크/버튼 섹션 (데스크탑 뷰) */}
         <div className="flex-1 hidden md:flex justify-end items-center space-x-4">
           {isLoggedIn ? (
-            // 로그인 후 상태: 마이페이지, 로그아웃
             <>
               <Link
                 to="/mypage"

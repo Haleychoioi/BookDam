@@ -1,5 +1,3 @@
-import React from "react";
-
 interface MyPageHeaderProps {
   title: string;
   description: string;

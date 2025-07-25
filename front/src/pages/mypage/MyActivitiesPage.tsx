@@ -1,12 +1,9 @@
-// front/src/pages/mypage/MyActivitiesPage.tsx
-
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import MyPostsDisplay from "../../components/mypage/MyPostsDisplay";
 import MyCommentsDisplay from "../../components/mypage/MyCommentsDisplay";
 import type { Post, Comment } from "../../types";
 
-// Mock 데이터: 내가 작성한 글 목록 (변경 없음)
 const myPostsMockData: Post[] = Array.from({ length: 30 }, (_, i) => ({
   id: `my-post-${i + 1}`,
   title: `[내가 쓴 글] ${i + 1}번째 이야기`,
@@ -18,7 +15,6 @@ const myPostsMockData: Post[] = Array.from({ length: 30 }, (_, i) => ({
   content: `이것은 내가 작성한 ${i + 1}번째 글의 상세 내용입니다.`, // ✨ content 추가 ✨
 }));
 
-// Mock 데이터: 내가 작성한 댓글 목록 (변경 없음)
 const myCommentsMockData: Comment[] = Array.from({ length: 40 }, (_, i) => ({
   id: `my-comment-${i + 1}`,
   author: `나 (사용자)`,
@@ -57,8 +53,6 @@ const MyActivitiesPage: React.FC = () => {
   );
   const [currentPage, setCurrentPage] = useState(1);
 
-  // const currentUserId = "currentUserId"; // ✨ 제거: 더 이상 사용하지 않음 ✨
-
   const { totalPages, displayedData } = useMemo(() => {
     let rawData: Post[] | Comment[] = [];
     const itemsPerPage = 8;
@@ -66,7 +60,6 @@ const MyActivitiesPage: React.FC = () => {
     if (activeTab === "posts") {
       rawData = myPostsMockData;
     } else {
-      // activeTab === "comments"
       rawData = myCommentsMockData;
     }
 
@@ -93,10 +86,6 @@ const MyActivitiesPage: React.FC = () => {
     setCurrentPage(page);
     window.scrollTo(0, 0);
   };
-
-  // ✨ handleUpdateComment, handleDeleteComment 함수 제거 ✨
-  // const handleUpdateComment = (commentId: string, newContent: string) => { /* ... */ };
-  // const handleDeleteComment = (commentId: string) => { /* ... */ };
 
   useEffect(() => {
     const tabFromUrl = queryParams.get("tab");

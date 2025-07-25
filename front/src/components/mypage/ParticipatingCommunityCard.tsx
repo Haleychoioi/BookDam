@@ -1,12 +1,10 @@
-import React from "react"; // React 임포트 유지
 import Button from "../common/Button";
 import { Link } from "react-router-dom";
-import { FaUserFriends } from "react-icons/fa"; // 인원 아이콘 임포트 유지
-
-import type { Community } from "../../types"; //
+import { FaUserFriends } from "react-icons/fa";
+import type { Community } from "../../types";
 
 interface ParticipatingCommunityCardProps {
-  community: Community; // ✨ 임포트한 Community 타입 사용 ✨
+  community: Community;
   onLeaveOrDelete: (communityId: string, role: "host" | "member") => void;
 }
 
@@ -50,14 +48,12 @@ const ParticipatingCommunityCard: React.FC<ParticipatingCommunityCardProps> = ({
 
       <div className="mt-auto">
         <div className="flex space-x-2 justify-between items-center">
-          <Link
-            to={`/communities/${community.id}/posts`} // 해당 커뮤니티의 게시판으로 이동 [cite: 1]
-          >
+          <Link to={`/communities/${community.id}/posts`}>
             <Button
-              bgColor="bg-main" // main 컬러
+              bgColor="bg-main"
               textColor="text-white"
-              hoverBgColor="hover:bg-apply" // apply 컬러
-              className="w-full px-3 py-2 text-sm flex-1" // Button 내부에서 width 100% 설정
+              hoverBgColor="hover:bg-apply"
+              className="w-full px-3 py-2 text-sm flex-1"
               onClick={(e) => {
                 e.stopPropagation();
               }}

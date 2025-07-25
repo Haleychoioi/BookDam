@@ -1,6 +1,6 @@
-import React from "react";
 import Button from "../common/Button";
 import { type ApplicantWithStatus } from "../../types";
+
 interface ApplicantCardProps {
   applicant: ApplicantWithStatus;
   onViewHistory: (applicantId: string, nickname: string) => void;

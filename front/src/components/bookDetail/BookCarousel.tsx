@@ -1,11 +1,11 @@
-import React, { useState } from "react";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa"; // 화살표 아이콘
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import type { Book } from "../../types"; // ✨ Book 타입 임포트 ✨
+import type { Book } from "../../types";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 interface BookCarouselProps {
   title: string;
-  books: Book[]; // ✨ inline 타입 정의 대신 임포트한 Book 사용 ✨
+  books: Book[];
 }
 
 const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
@@ -24,7 +24,6 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
     );
   };
 
-  // 보여줄 책 목록을 계산
   const visibleBooks = books.slice(currentIndex, currentIndex + itemsPerPage);
 
   // 캐러셀이 슬라이딩 가능할 만큼 충분한 책이 없는 경우 비활성화
@@ -35,10 +34,9 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
     <div className="mb-48">
       <h2 className="text-2xl text-gray-800 text-center mb-8">{title}</h2>
       <div className="flex items-center justify-center space-x-4 mt-20">
-        {/* 왼쪽 화살표 */}
         <button
           onClick={handlePrev}
-          disabled={!canGoPrev} // 이전으로 갈 수 없을 때 비활성화
+          disabled={!canGoPrev}
           className={`p-3 rounded-full bg-gray-200 hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center ${
             !canGoPrev ? "opacity-50 cursor-not-allowed" : ""
           }`}
@@ -48,7 +46,6 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
 
         {/* 책 목록 */}
         <div className="flex flex-grow justify-center space-x-8 ">
-          {/* overflow-hidden 추가 */}
           {visibleBooks.map((book) => (
             <Link
               key={book.id}
@@ -60,10 +57,9 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
                 alt={book.title}
                 className="w-full h-full object-cover rounded-md"
               />
-              {/* <div className="p-2 text-sm text-center font-semibold">{book.title}</div> */}
             </Link>
           ))}
-          {/* visibleBooks의 개수가 itemsPerPage보다 적을 경우 빈 플레이스홀더를 채워 정렬 유지 (선택 사항) */}
+
           {visibleBooks.length < itemsPerPage &&
             Array(itemsPerPage - visibleBooks.length)
               .fill(0)
@@ -75,10 +71,9 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
               ))}
         </div>
 
-        {/* 오른쪽 화살표 */}
         <button
           onClick={handleNext}
-          disabled={!canGoNext} // 다음으로 갈 수 없을 때 비활성화
+          disabled={!canGoNext}
           className={`p-3 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors duration-200 flex items-center justify-center ${
             !canGoNext ? "opacity-50 cursor-not-allowed" : ""
           }`}

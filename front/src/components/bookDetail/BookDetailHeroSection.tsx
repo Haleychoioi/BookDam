@@ -1,13 +1,11 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import Button from "../common/Button";
-
-import { FaCaretDown, FaQuestionCircle } from "react-icons/fa";
 import HeartButton from "../common/HeartButton";
+import { FaCaretDown, FaQuestionCircle } from "react-icons/fa";
 
-import type { BookDetail } from "../../types"; // ✨ BookDetail 타입 임포트 ✨
+import type { BookDetail } from "../../types";
 
 interface BookDetailHeroSectionProps {
-  // ✨ inline 타입 정의 대신 임포트한 BookDetail 사용 ✨
   book: BookDetail;
   onCreateCommunityClick: (bookId: string) => void;
 }
@@ -17,17 +15,17 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
   onCreateCommunityClick,
 }) => {
   const [isAddToListDropdownOpen, setIsAddToListDropdownOpen] = useState(false);
-  const [selectedRating, setSelectedRating] = useState(0); // ✨ 사용자가 선택한 별점 상태 ✨
-  const [isHoveringQuestion, setIsHoveringQuestion] = useState(false); // ✨ 물음표 호버 상태 ✨
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [isHoveringQuestion, setIsHoveringQuestion] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const questionRef = useRef<HTMLDivElement>(null); // ✨ 물음표 툴팁 레퍼런스 ✨
+  const questionRef = useRef<HTMLDivElement>(null);
 
   const toggleAddToListDropdown = () => {
     setIsAddToListDropdownOpen((prevState) => !prevState);
   };
 
   const handleAddToList = (status: "읽고싶어요" | "읽는 중" | "읽었음") => {
-    // '읽었음'은 별점이 선택되었을 때만 가능하도록 로직 추가
+    // '읽었음'은 별점이 선택되었을 때만 가능하도록
     if (status === "읽었음" && selectedRating === 0) {
       alert("별점을 선택해야 '읽었음'으로 추가할 수 있습니다.");
       return;
@@ -42,7 +40,7 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
   };
 
   const handleWishlistClick = (isWishlisted: boolean) => {
-    // TODO: 찜 목록 추가/삭제 API 호출 (POST /books/:bookId/wishlist) [cite: 2]
+    // TODO: 찜 목록 추가/삭제 API 호출 (POST /books/:bookId/wishlist)
     if (isWishlisted) {
       alert(`${book.title}을 찜 목록에 추가했습니다.`);
     } else {
@@ -81,7 +79,6 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
           />
         </div>
 
-        {/* 도서 정보 및 메타데이터 */}
         <div className="flex-grow text-left mt-16">
           {/* 도서 제목 */}
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-7">
@@ -99,7 +96,6 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
 
           {/* 별점 섹션 */}
           <div className="flex items-center mb-8">
-            {/* 별점 표시 (5개 별) */}
             {Array.from({ length: 5 }).map((_, index) => (
               <span
                 key={index}
@@ -128,7 +124,6 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
             </div>
           </div>
 
-          {/* 커뮤니티 모집하기, 서재 추가, 찜 버튼 */}
           <div className="flex items-center mb-8">
             {/* 커뮤니티 모집하기 버튼 - 너비 auto, 오른쪽 마진 추가 */}
             <Button
@@ -141,9 +136,8 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
               커뮤니티 모집하기
             </Button>
 
-            {/* 서재 추가 버튼과 드롭다운을 묶는 div - flex-1 유지 */}
             <div className="flex-1 relative" ref={dropdownRef}>
-              {/* 서재 추가 버튼 - w-full 유지 */}
+              {/* 서재 추가 버튼 */}
               <Button
                 onClick={toggleAddToListDropdown}
                 bgColor="bg-main"
@@ -159,16 +153,16 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
                 <div className="absolute top-full mt-2 w-full z-10 left-0 bg-white shadow-lg rounded-md border border-gray-200">
                   <Button
                     onClick={() => handleAddToList("읽고싶어요")}
-                    className="block w-full text-left px-4 py-2 mb-1" // mb-1 유지
-                    bgColor="bg-transparent" // 드롭다운 항목은 투명 배경
-                    textColor="text-gray-700" // 드롭다운 항목 텍스트 색상
-                    hoverBgColor="hover:bg-gray-100" // 호버 배경색
+                    className="block w-full text-left px-4 py-2 mb-1"
+                    bgColor="bg-transparent"
+                    textColor="text-gray-700"
+                    hoverBgColor="hover:bg-gray-100"
                   >
                     읽고싶어요
                   </Button>
                   <Button
                     onClick={() => handleAddToList("읽는 중")}
-                    className="block w-full text-left px-4 py-2 mb-1" // mb-1 유지
+                    className="block w-full text-left px-4 py-2 mb-1"
                     bgColor="bg-transparent"
                     textColor="text-gray-700"
                     hoverBgColor="hover:bg-gray-100"
@@ -181,11 +175,11 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
                       selectedRating === 0
                         ? "opacity-50 cursor-not-allowed"
                         : ""
-                    }`} // ✨ 별점이 선택되지 않으면 비활성화 스타일 ✨
+                    }`}
                     bgColor="bg-transparent"
                     textColor="text-gray-700"
                     hoverBgColor="hover:bg-gray-100"
-                    disabled={selectedRating === 0} // ✨ 별점이 0이면 버튼 비활성화 ✨
+                    disabled={selectedRating === 0}
                   >
                     읽었음
                   </Button>
@@ -193,9 +187,9 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
               )}
             </div>
 
-            {/* 찜 버튼 (HeartButton으로 변경) - 왼쪽 마진 추가 */}
+            {/* 찜 버튼  */}
             <HeartButton
-              onClick={handleWishlistClick} // ✨ 새로운 핸들러 연결 ✨
+              onClick={handleWishlistClick}
               initialIsWishlisted={false} // 초기 찜 상태 (백엔드에서 가져와야 함)
               className="ml-2"
             />

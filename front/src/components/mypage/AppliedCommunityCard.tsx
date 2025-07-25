@@ -1,4 +1,3 @@
-import React from "react";
 import Button from "../common/Button";
 import { FaUserFriends } from "react-icons/fa";
 import { type AppliedCommunity } from "../../types";
@@ -12,18 +11,17 @@ const AppliedCommunityCard: React.FC<AppliedCommunityCardProps> = ({
   community,
   onCancelApplication,
 }) => {
-  // ✨ 신청 상태에 따른 스타일 및 텍스트 - community.myApplicationStatus 참조 ✨
   const statusColorClass = {
-    pending: "text-blue-600 bg-blue-100", // 대기 중
-    accepted: "text-green-600 bg-green-100", // 수락됨
-    rejected: "text-red-600 bg-red-100", // 거절됨
-  }[community.myApplicationStatus]; // ✨ community.myApplicationStatus 사용 ✨
+    pending: "text-blue-600 bg-blue-100",
+    accepted: "text-green-600 bg-green-100",
+    rejected: "text-red-600 bg-red-100",
+  }[community.myApplicationStatus];
 
   const statusText = {
     pending: "신청 대기 중",
     accepted: "신청 수락됨",
     rejected: "신청 거절됨",
-  }[community.myApplicationStatus]; // ✨ community.myApplicationStatus 사용 ✨
+  }[community.myApplicationStatus];
 
   return (
     <div className="bg-gray-100 p-6 flex flex-col justify-between">
@@ -40,7 +38,7 @@ const AppliedCommunityCard: React.FC<AppliedCommunityCardProps> = ({
               {community.hostName}
             </p>
           </div>
-          {/* 인원 정보 (모집 중인 경우에만 의미 있으므로 선택 사항) */}
+
           {community.currentMembers !== undefined &&
             community.maxMembers !== undefined && (
               <div className="flex items-center text-gray-600 text-base">
@@ -61,7 +59,7 @@ const AppliedCommunityCard: React.FC<AppliedCommunityCardProps> = ({
 
       <div className="flex justify-end items-center mt-auto">
         <div className="flex items-end space-x-2">
-          {community.status === "모집중" && ( // 신청 중일 때만 신청 취소 버튼 표시
+          {community.status === "모집중" && (
             <Button
               onClick={() => onCancelApplication(community.id)}
               bgColor="bg-red-400"

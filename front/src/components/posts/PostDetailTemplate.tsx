@@ -1,6 +1,3 @@
-// front/src/components/posts/PostDetailTemplate.tsx
-
-import React from "react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
 import { FaChevronLeft } from "react-icons/fa";
@@ -10,10 +7,10 @@ import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
 import remarkGfm from "remark-gfm";
 
-import type { Post } from "../../types"; // Post 임포트
+import type { Post } from "../../types";
 
 interface PostDetailTemplateProps {
-  post: Post; // ✨ Post 객체 자체를 프롭스로 받음 ✨
+  post: Post;
   onEditPost: () => void;
   onDeletePost: () => void;
   children?: React.ReactNode;
@@ -65,7 +62,7 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
         </div>
 
         {/* 게시물 관리/수정 버튼 */}
-        {isPostAuthor && ( // ✨ isPostAuthor가 true일 때만 이 div를 렌더링 ✨
+        {isPostAuthor && (
           <div className="flex justify-end space-x-2 mb-5">
             {isEditing ? (
               <>
@@ -136,7 +133,6 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
           )}
         </div>
 
-        {/* 댓글 섹션 (children으로 받음) */}
         {children}
       </div>
     </div>

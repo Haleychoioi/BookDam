@@ -1,6 +1,3 @@
-// front/src/components/mypage/MyPostsDisplay.tsx
-
-import React from "react";
 import Pagination from "../common/Pagination";
 import PostList from "../posts/PostList";
 import type { Post } from "../../types";
@@ -26,7 +23,7 @@ const MyPostsDisplay: React.FC<MyPostsDisplayProps> = ({
         <PostList posts={posts} />
       )}
 
-      {posts.length > 0 && ( // 결과가 있을 때만 페이지네이션 표시
+      {posts.length > 0 && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}

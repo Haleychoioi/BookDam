@@ -1,6 +1,4 @@
-// front/src/components/comments/CommentInput.tsx
-
-import React, { useState } from "react";
+import { useState } from "react";
 import Button from "../common/Button";
 
 interface CommentInputProps {
@@ -17,7 +15,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
   const handleSubmit = () => {
     if (commentContent.trim()) {
       onAddComment(commentContent);
-      setCommentContent(""); // 입력창 초기화
+      setCommentContent("");
     }
   };
 

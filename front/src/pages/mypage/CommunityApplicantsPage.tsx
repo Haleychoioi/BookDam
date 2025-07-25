@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import ApplicantCard from "../../components/mypage/ApplicantCard";
@@ -43,7 +43,6 @@ const dummyApplicants: ApplicantWithStatus[] = [
   },
 ];
 
-// Mock Data: 신청자별 커뮤니티 참여 이력
 const dummyHistoryData: { [key: string]: CommunityHistoryEntry[] } = {
   "app-1": [
     {
@@ -101,12 +100,10 @@ const dummyHistoryData: { [key: string]: CommunityHistoryEntry[] } = {
 const CommunityApplicationsPage: React.FC = () => {
   const { communityId } = useParams<{ communityId: string }>();
 
-  // ✨ applicants 상태 타입을 ApplicantWithStatus[]로 변경 ✨
   const [applicants, setApplicants] = useState<ApplicantWithStatus[]>([]);
   const [loadingApplicants, setLoadingApplicants] = useState(true);
   const [errorApplicants, setErrorApplicants] = useState<string | null>(null);
 
-  // 모달 관련 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedApplicantNickname, setSelectedApplicantNickname] = useState<
     string | null
@@ -229,7 +226,7 @@ const CommunityApplicationsPage: React.FC = () => {
               key={applicant.id}
               applicant={applicant}
               onViewHistory={handleViewHistory}
-              onAcceptReject={handleAcceptReject} // ✨ onAcceptReject prop 전달 ✨
+              onAcceptReject={handleAcceptReject}
             />
           ))
         ) : (
@@ -239,7 +236,6 @@ const CommunityApplicationsPage: React.FC = () => {
         )}
       </div>
 
-      {/* 커뮤니티 참여 이력 모달 */}
       <CommunityHistoryModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}

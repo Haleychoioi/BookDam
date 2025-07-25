@@ -1,10 +1,10 @@
-import React, { useState } from "react"; // ✨ useState 임포트 추가 ✨
+import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { FaBars, FaTimes } from "react-icons/fa"; // ✨ 햄버거/닫기 아이콘 임포트 추가 ✨
+import { FaBars, FaTimes } from "react-icons/fa";
 
 const MyPageLayout: React.FC = () => {
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // ✨ 모바일 메뉴 열림/닫힘 상태 ✨
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const getNavLinkClass = (path: string) => {
     const isActive =
@@ -18,7 +18,6 @@ const MyPageLayout: React.FC = () => {
   };
 
   const toggleMobileMenu = () => {
-    // ✨ 토글 함수 추가 ✨
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
@@ -26,7 +25,7 @@ const MyPageLayout: React.FC = () => {
     <div className="min-h-screen py-10">
       <div className="container mx-auto px-4 lg:px-8 xl:px-20">
         <div className="flex flex-col md:flex-row gap-8">
-          {/* ✨ 모바일 햄버거 메뉴 버튼 (md 미만에서만 보임) ✨ */}
+          {/*  모바일 햄버거 메뉴 버튼 (md 미만에서만 보임)  */}
           <div className="md:hidden flex justify-center w-full mb-4">
             <button
               onClick={toggleMobileMenu}
@@ -34,9 +33,9 @@ const MyPageLayout: React.FC = () => {
               aria-label="Toggle navigation menu"
             >
               {isMobileMenuOpen ? (
-                <FaTimes className="w-6 h-6" /> // 닫기 아이콘
+                <FaTimes className="w-6 h-6" />
               ) : (
-                <FaBars className="w-6 h-6" /> // 햄버거 아이콘
+                <FaBars className="w-6 h-6" />
               )}
             </button>
           </div>
@@ -56,7 +55,7 @@ const MyPageLayout: React.FC = () => {
                   className={`${getNavLinkClass(
                     "/mypage/communities/participating"
                   )} text-sm`}
-                  onClick={toggleMobileMenu} // ✨ 메뉴 항목 클릭 시 메뉴 닫기 ✨
+                  onClick={toggleMobileMenu}
                 >
                   현재 참여 중인
                   <br />
@@ -151,11 +150,19 @@ const MyPageLayout: React.FC = () => {
                 >
                   회원 정보 수정
                 </Link>
+                <Link
+                  to="/mypage/user-leave"
+                  className={`${getNavLinkClass(
+                    "/mypage/profile-leave"
+                  )} text-sm text-gray-300`}
+                  onClick={toggleMobileMenu}
+                >
+                  탈퇴하기
+                </Link>
               </li>
             </ul>
           </nav>
 
-          {/* 메인 콘텐츠 영역 (하위 라우트가 렌더링될 곳) */}
           <main className="w-full md:w-5/6 p-6">
             <Outlet />
           </main>

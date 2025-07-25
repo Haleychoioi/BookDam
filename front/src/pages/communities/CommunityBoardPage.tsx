@@ -1,11 +1,8 @@
-// front/src/pages/communities/CommunityBoardPage.tsx
-
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import BoardTemplate from "../../components/posts/BoardTemplate";
-import type { Post } from "../../types"; // Post 인터페이스 임포트
+import type { Post } from "../../types";
 
-// mockdata: 커뮤니티 ID에 따라 다른 게시글 목록을 제공하는 더미 데이터 (Post 타입에 맞게 필드 추가)
 const communityPostsMockData: { [key: string]: Post[] } = {
   comm1: Array.from({ length: 15 }, (_, i) => ({
     id: `comm1-post-${i + 1}`,
@@ -39,7 +36,6 @@ const communityPostsMockData: { [key: string]: Post[] } = {
   })),
 };
 
-// mockdata: 커뮤니티 상세 정보 (communityId에 따라 다르게) - 변경 없음
 const communityInfoMockData: {
   [key: string]: {
     bookTitle: string;
@@ -135,7 +131,7 @@ const CommunityBoardPage: React.FC = () => {
       totalPages={totalPages}
       onPageChange={handlePageChange}
       onWritePostClick={handleWritePostClick}
-      boardTitle="게시글" // 커뮤니티 게시판의 게시글 섹션 제목
+      boardTitle="게시글"
     />
   );
 };
