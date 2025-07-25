@@ -42,12 +42,12 @@ const LoginPage: React.FC = () => {
 
     </section>
     <section id="register" className="container mx-auto py-12 px-20">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3">
         <div>
           <h2 className="text-2xl font-bold mb-4">회원 가입으로 새로운 시작</h2>
         </div>
         <div className="text-right">
-          <p className="text-gray-700 mb-4">
+          <p className="text-gray-700 mb-5">
             아직 회원이 아니신가요? <br />
             지금 가입하시면 다양한 독서 경험과 커뮤니티 활동에 참여하실 수 있습니다.
           </p>
