@@ -1,30 +1,41 @@
-// front/src/pages/communities/CommunityBoardPage.tsx
-
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import BoardTemplate from "../../components/posts/BoardTemplate";
 import type { Post } from "../../types";
 
-// mockdata: 커뮤니티 ID에 따라 다른 게시글 목록을 제공하는 더미 데이터
 const communityPostsMockData: { [key: string]: Post[] } = {
   comm1: Array.from({ length: 15 }, (_, i) => ({
     id: `comm1-post-${i + 1}`,
     title: `[해리포터] ${i + 1}번째 독서 스터디 논의점`,
     commentCount: Math.floor(Math.random() * 10) + 1,
+    createdAt: new Date(Date.now() - i * 86400000).toISOString(), // ✨ createdAt 추가 ✨
+    type: "community", // ✨ type 추가 ✨
+    author: `호그와트 ${i + 1}`, // ✨ author 추가 ✨
+    authorId: `user-hp${i + 1}`, // ✨ authorId 추가 ✨
+    content: `이것은 [해리포터] 커뮤니티의 ${i + 1}번째 게시물 내용입니다.`, // ✨ content 추가 ✨
   })),
   comm2: Array.from({ length: 25 }, (_, i) => ({
     id: `comm2-post-${i + 1}`,
     title: `[노인과바다] 깊은 바다 이야기 ${i + 1}`,
     commentCount: Math.floor(Math.random() * 15) + 1,
+    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
+    type: "community",
+    author: `어부 ${i + 1}`,
+    authorId: `user-sea${i + 1}`,
+    content: `노인과 바다 ${i + 1}번째 게시물 내용입니다.`,
   })),
   comm3: Array.from({ length: 8 }, (_, i) => ({
     id: `comm3-post-${i + 1}`,
     title: `[삼국지] 위촉오 인물 분석 ${i + 1}탄`,
     commentCount: Math.floor(Math.random() * 5) + 1,
+    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
+    type: "community",
+    author: `촉한 ${i + 1}`,
+    authorId: `user-hist${i + 1}`,
+    content: `삼국지 ${i + 1}탄 인물 분석 내용입니다.`,
   })),
 };
 
-// mockdata: 커뮤니티 상세 정보 (communityId에 따라 다르게)
 const communityInfoMockData: {
   [key: string]: {
     bookTitle: string;
@@ -106,7 +117,7 @@ const CommunityBoardPage: React.FC = () => {
   if (!currentCommunityInfo || totalPosts === 0) {
     return (
       <div className="text-center py-12 text-xl text-gray-700">
-        해당 커뮤니티를 찾을 수 없거나 게시글이 없습니다.
+        해당 커뮤니티를 찾을 수 없습니다.
       </div>
     );
   }
@@ -120,7 +131,7 @@ const CommunityBoardPage: React.FC = () => {
       totalPages={totalPages}
       onPageChange={handlePageChange}
       onWritePostClick={handleWritePostClick}
-      boardTitle="게시글" // 커뮤니티 게시판의 게시글 섹션 제목
+      boardTitle="게시글"
     />
   );
 };

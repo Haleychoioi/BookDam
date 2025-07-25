@@ -1,6 +1,4 @@
-// front/src/pages/posts/PostDetailPage.tsx
-
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import PostDetailTemplate from "../../components/posts/PostDetailTemplate";
 import type { Post, Comment } from "../../types";
@@ -8,22 +6,13 @@ import type { Post, Comment } from "../../types";
 import CommentInput from "../../components/comments/CommentInput";
 import CommentList from "../../components/comments/CommentList";
 
-// Mock Data: 단일 게시물 상세 정보 (FullPost 인터페이스는 변경 없음)
-interface FullPost extends Post {
-  author: string;
-  createdAt: string;
-  content: string;
-  authorId?: string; // 게시물 작성자 ID 추가 (수정 권한 확인용)
-}
-
-const mockPostsDetailData: { [key: string]: FullPost } = {
-  // Mock 데이터에 authorId를 추가하여 실제 게시물과 동일하게 수정 권한을 테스트할 수 있도록 합니다.
+const mockPostsDetailData: { [key: string]: Post } = {
   "post-1": {
     id: "post-1",
     title: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
     commentCount: 5,
     author: "홍길동",
-    authorId: "user456", // Mock user ID (user123이 아님)
+    authorId: "user456",
     createdAt: "2025년 07월 21일",
     content: `# 마크다운 테스트 제목
 **볼드 텍스트**와 *이탤릭 텍스트*를 포함합니다.
@@ -36,24 +25,26 @@ console.log("코드 블록");
 \`\`\`
 
 > 인용 블록`,
+    type: "general",
   },
   "post-2": {
     id: "post-2",
     title: "독서 모임 다음 주제 추천 받아요!",
     commentCount: 12,
     author: "김철수",
-    authorId: "user123", // Mock user ID (user123)
+    authorId: "user123",
     createdAt: "2025년 07월 20일",
     content: `안녕하세요, 다음 독서 모임 주제를 선정하려고 합니다.
 혹시 추천해주실 만한 책이나 특정 주제가 있다면 자유롭게 의견 주세요!
 이번에는 추리 소설이나 SF 장르도 고려하고 있습니다 :)`,
+    type: "general",
   },
   "comm1-post-1": {
     id: "comm1-post-1",
     title: "[해리포터] 1번째 독서 스터디 논의점",
     commentCount: Math.floor(Math.random() * 10) + 1,
     author: "그리핀도르",
-    authorId: "user123", // Mock user ID (user123)
+    authorId: "user123",
     createdAt: "2025년 07월 17일",
     content: `해리포터 독서 모임 논의점
 이것은 '해리포터' 커뮤니티의 1번째 게시물 상세 내용입니다.
@@ -64,6 +55,7 @@ console.log("코드 블록");
 * 흥미로웠던 마법 주문
 * 다음 모임에서 다룰 내용
 `,
+    type: "community",
   },
   "comm1-post-2": {
     id: "comm1-post-2",
@@ -73,6 +65,7 @@ console.log("코드 블록");
     authorId: "user456",
     createdAt: "2025년 07월 16일",
     content: `이것은 '해리포터' 커뮤니티의 2번째 게시물 상세 내용입니다. 논의 내용을 확인하세요.`,
+    type: "community",
   },
   "comm2-post-1": {
     id: "comm2-post-1",
@@ -82,28 +75,30 @@ console.log("코드 블록");
     authorId: "user123",
     createdAt: "2025년 07월 15일",
     content: `노인과 바다의 첫 번째 깊은 이야기.`,
-  }, // ✨ GeneralBoardPage에서 사용할 게시물 추가 ✨
+    type: "community",
+  },
   "general-post-1": {
     id: "general-post-1",
     title: "[전체] 1번째 흥미로운 이야기",
     commentCount: 5,
     author: "전체 게시판 유저1",
-    authorId: "user456", // Mock authorId
+    authorId: "user456",
     createdAt: "2025년 07월 21일",
     content: `이것은 전체 게시판의 1번째 게시물 상세 내용입니다.`,
+    type: "general",
   },
   "general-post-2": {
     id: "general-post-2",
     title: "[전체] 2번째 흥미로운 이야기",
     commentCount: 10,
     author: "전체 게시판 유저2",
-    authorId: "user123", // user123으로 수정 테스트 가능
+    authorId: "user123",
     createdAt: "2025년 07월 20일",
     content: `이것은 전체 게시판의 2번째 게시물 상세 내용입니다.`,
+    type: "general",
   },
 };
 
-// Mock 댓글 데이터 (postId에 따라 다르게) - 변경 없음
 const mockCommentsData: { [key: string]: Comment[] } = {
   "comm1-post-1": [
     {
@@ -112,6 +107,11 @@ const mockCommentsData: { [key: string]: Comment[] } = {
       authorId: "user123",
       createdAt: "2025.07.20 12:00",
       content: "정말 흥미로운 논의네요!",
+      postId: "comm1-post-1",
+      postTitle: "[해리포터] 1번째 독서 스터디 논의점",
+      postType: "community",
+      communityId: "comm1",
+      isEdited: false,
     },
     {
       id: "c2",
@@ -120,6 +120,10 @@ const mockCommentsData: { [key: string]: Comment[] } = {
       createdAt: "2025.07.20 12:35",
       content: "저도 그 부분에서 궁금한 점이 많았어요.",
       isEdited: true,
+      postId: "comm1-post-1",
+      postTitle: "[해리포터] 1번째 독서 스터디 논의점",
+      postType: "community",
+      communityId: "comm1",
     },
     {
       id: "c3",
@@ -127,6 +131,10 @@ const mockCommentsData: { [key: string]: Comment[] } = {
       authorId: "user123",
       createdAt: "2025.07.20 13:10",
       content: "이런 질문은 정말 좋아요!",
+      postId: "comm1-post-1",
+      postTitle: "[해리포터] 1번째 독서 스터디 논의점",
+      postType: "community",
+      communityId: "comm1",
     },
   ],
   "post-1": [
@@ -136,6 +144,10 @@ const mockCommentsData: { [key: string]: Comment[] } = {
       authorId: "user789",
       createdAt: "2025.07.21 10:00",
       content: "좋은 글 잘 읽었습니다.",
+      postId: "post-1",
+      postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
+      postType: "general",
+      isEdited: false,
     },
     {
       id: "gc2",
@@ -143,6 +155,10 @@ const mockCommentsData: { [key: string]: Comment[] } = {
       authorId: "user123",
       createdAt: "2025.07.21 10:15",
       content: "저도 같은 의견입니다.",
+      postId: "post-1",
+      postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
+      postType: "general",
+      isEdited: false,
     },
   ],
 };
@@ -153,14 +169,12 @@ const PostDetailPage: React.FC = () => {
 
   const currentUserId = "user123"; // 임시 로그인 사용자 ID (이 ID를 가진 사용자만 수정/삭제 버튼을 볼 수 있습니다)
 
-  // 게시물 데이터 (useEffect에서 불러와서 상태로 관리)
-  const [post, setPost] = useState<FullPost | undefined>(undefined);
+  const [post, setPost] = useState<Post | undefined>(undefined);
   const [loadingPost, setLoadingPost] = useState(true);
   const [errorPost, setErrorPost] = useState<string | null>(null);
 
-  // ✨ 게시물 수정 모드 관련 상태 ✨
   const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState(""); // 수정 중인 내용을 저장하는 상태
+  const [editedContent, setEditedContent] = useState("");
 
   const [comments, setComments] = useState<Comment[]>([]);
 
@@ -191,7 +205,6 @@ const PostDetailPage: React.FC = () => {
   // 게시물 수정 시작 (PostDetailTemplate의 "수정" 버튼 클릭 시)
   const handleEditPost = () => {
     // 현재 로그인된 사용자가 게시물 작성자인지 확인
-    // post.authorId 필드를 FullPost 인터페이스에 추가해야 합니다.
     if (post && post.authorId !== currentUserId) {
       alert("게시물 작성자만 수정할 수 있습니다.");
       return;
@@ -285,24 +298,17 @@ const PostDetailPage: React.FC = () => {
         hour12: false,
       }),
       content: content,
+      // ✨ Comment 인터페이스에 추가된 필드들 (Mock 데이터이므로 임시 값) ✨
+      postId: postId || `mock-post-${Date.now()}`, // 현재 게시물 ID
+      postTitle: post?.title || "알 수 없는 게시물", // 현재 게시물 제목
+      postType: post?.type || "general", // 현재 게시물 타입
+      communityId:
+        post?.type === "community" && postId?.startsWith("comm")
+          ? postId.split("-")[0]
+          : undefined, // 예시: comm1-post-1 -> comm1
+      isEdited: false, // isEdited도 Comment 인터페이스에 포함되므로 추가
     };
     setComments((prevComments) => [...prevComments, newComment]);
-  };
-
-  const handleUpdateComment = (commentId: string, newContent: string) => {
-    console.log(`댓글 ${commentId} 수정:`, newContent);
-    setComments((prevComments) =>
-      prevComments.map((c) =>
-        c.id === commentId ? { ...c, content: newContent, isEdited: true } : c
-      )
-    );
-  };
-
-  const handleDeleteComment = (commentId: string) => {
-    console.log(`댓글 ${commentId} 삭제`);
-    setComments((prevComments) =>
-      prevComments.filter((c) => c.id !== commentId)
-    );
   };
 
   if (loadingPost) {
@@ -336,10 +342,7 @@ const PostDetailPage: React.FC = () => {
 
   return (
     <PostDetailTemplate
-      postTitle={post.title}
-      author={post.author}
-      createdAt={post.createdAt}
-      postContent={post.content}
+      post={post}
       onEditPost={handleEditPost}
       onDeletePost={handleDeletePost}
       backToBoardPath={backToBoardPath}
@@ -349,18 +352,12 @@ const PostDetailPage: React.FC = () => {
       onSavePost={handleSavePost}
       onCancelEdit={handleCancelEdit}
       backToBoardText={backToBoardText}
-      isPostAuthor={isPostAuthor} // ✨ isPostAuthor 프롭스 전달 ✨
+      isPostAuthor={isPostAuthor}
     >
-      {/* 댓글 섹션은 수정 모드와 관계없이 항상 표시 */}
       <div className="mt-12 px-10">
         <h3 className="text-xl font-bold text-gray-800 mb-4">댓글</h3>
         <CommentInput onAddComment={handleAddComment} />
-        <CommentList
-          comments={comments}
-          onUpdateComment={handleUpdateComment}
-          onDeleteComment={handleDeleteComment}
-          currentUserId={currentUserId}
-        />
+        <CommentList comments={comments} />
       </div>
     </PostDetailTemplate>
   );

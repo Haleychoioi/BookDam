@@ -1,12 +1,10 @@
-// front/src/components/common/StarButton.tsx
-
-import React, { useState } from "react";
-import { FaStar, FaRegStar } from "react-icons/fa"; // ✨ FaStar, FaRegStar 임포트 ✨
+import { useState } from "react";
+import { FaStar, FaRegStar } from "react-icons/fa";
 
 interface StarButtonProps {
-  initialIsWishlisted?: boolean; // 초기 찜 여부
-  onClick?: () => void; // 클릭 시 실행될 콜백 함수
-  className?: string; // 추가적인 스타일 클래스
+  initialIsWishlisted?: boolean;
+  onClick?: () => void;
+  className?: string;
 }
 
 const StarButton: React.FC<StarButtonProps> = ({
@@ -17,9 +15,9 @@ const StarButton: React.FC<StarButtonProps> = ({
   const [isWishlisted, setIsWishlisted] = useState(initialIsWishlisted);
 
   const handleClick = () => {
-    setIsWishlisted((prev) => !prev); // 상태 토글
+    setIsWishlisted((prev) => !prev);
     if (onClick) {
-      onClick(); // 부모에서 전달받은 onClick 함수 호출
+      onClick();
     }
   };
 
@@ -31,11 +29,10 @@ const StarButton: React.FC<StarButtonProps> = ({
                   ${className}`}
       aria-label="찜하기"
     >
-      {/* ✨ 찜 상태에 따라 FaStar 또는 FaRegStar 렌더링 ✨ */}
       {isWishlisted ? (
-        <FaStar className="w-6 h-6 text-apply" /> // 채워진 별 (찜된 상태)
+        <FaStar className="w-6 h-6 text-apply" />
       ) : (
-        <FaRegStar className="w-6 h-6 text-apply" /> // 비어있는 별 (찜 안 된 상태, apply 색상 테두리)
+        <FaRegStar className="w-6 h-6 text-apply" />
       )}
     </button>
   );

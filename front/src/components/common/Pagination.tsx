@@ -1,6 +1,4 @@
-// front/src/components/common/Pagination.tsx
-import React from "react";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa"; // 화살표 아이콘 임포트
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 interface PaginationProps {
   currentPage: number;
@@ -14,11 +12,9 @@ const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
 }) => {
   const pageNumbers: number[] = [];
-  const pagesPerBlock = 5; // ✨ 한 블록에 보여줄 페이지 번호 개수 (5개) ✨
+  const pagesPerBlock = 5;
 
   // 현재 블록의 시작 페이지 계산
-  // 예: currentPage가 1,2,3,4,5 중 하나면 startBlockPage = 1
-  //     currentPage가 6,7,8,9,10 중 하나면 startBlockPage = 6
   const startBlockPage =
     Math.floor((currentPage - 1) / pagesPerBlock) * pagesPerBlock + 1;
   const endBlockPage = Math.min(totalPages, startBlockPage + pagesPerBlock - 1);
@@ -66,8 +62,8 @@ const Pagination: React.FC<PaginationProps> = ({
           className={`px-3 py-1.5 rounded-md font-medium text-lg transition-colors duration-200
             ${
               currentPage === page
-                ? "text-main" // 현재 페이지: 텍스트 색상만 main 컬러로 변경
-                : "text-gray-700 hover:text-main" // 다른 페이지: 기본 텍스트 색상, 호버 시 main 컬러
+                ? "text-main"
+                : "text-gray-700 hover:text-main"
             }`}
         >
           {page}

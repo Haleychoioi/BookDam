@@ -2,7 +2,7 @@
 module.exports = {
   content: [
     "./index.html", // public 폴더의 index.html (주로 Vite에서 사용)
-    "./src/**/*.{ts,tsx, js, jsx}", // src 폴더 내의 모든 .js, .ts, .jsx, .tsx 파일
+    "./src/**/*.{ts,tsx, js, jsx, html}", // src 폴더 내의 모든 .js, .ts, .jsx, .tsx 파일
   ],
   theme: {
     extend: {

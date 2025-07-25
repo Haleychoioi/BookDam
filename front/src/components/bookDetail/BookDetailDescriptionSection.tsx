@@ -1,11 +1,7 @@
-import React from "react";
+import type { BookDetail } from "../../types";
 
 interface BookDetailDescriptionSectionProps {
-  book: {
-    description: string;
-    tableOfContents: string[];
-    commentaryContent: string;
-  };
+  book: BookDetail;
 }
 
 const BookDetailDescriptionSection: React.FC<

@@ -1,6 +1,3 @@
-// front/src/components/posts/PostDetailTemplate.tsx
-
-import React from "react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
 import { FaChevronLeft } from "react-icons/fa";
@@ -8,20 +5,17 @@ import { FaChevronLeft } from "react-icons/fa";
 import MDEditor from "@uiw/react-md-editor";
 import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
-
 import remarkGfm from "remark-gfm";
 
+import type { Post } from "../../types";
+
 interface PostDetailTemplateProps {
-  postTitle: string;
-  author: string;
-  createdAt: string;
-  postContent: string;
+  post: Post;
   onEditPost: () => void;
   onDeletePost: () => void;
   children?: React.ReactNode;
   backToBoardPath: string;
   backToBoardText: string;
-
   isEditing: boolean;
   editedContent: string;
   onEditedContentChange: (newContent: string) => void;
@@ -31,10 +25,7 @@ interface PostDetailTemplateProps {
 }
 
 const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
-  postTitle,
-  author,
-  createdAt,
-  postContent,
+  post,
   onEditPost,
   onDeletePost,
   children,
@@ -63,15 +54,15 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
 
         {/* 게시물 헤더 */}
         <h1 className="text-3xl font-bold text-gray-800 text-center my-16">
-          {postTitle}
+          {post.title}
         </h1>
         <div className="text-right text-gray-500 text-sm border-b border-gray-200 pb-2 mb-3">
-          <span className="mr-4">작성자: {author}</span>
-          <span>게시일: {createdAt}</span>
+          <span className="mr-4">작성자: {post.author}</span>
+          <span>게시일: {post.createdAt}</span>
         </div>
 
         {/* 게시물 관리/수정 버튼 */}
-        {isPostAuthor && ( // ✨ isPostAuthor가 true일 때만 이 div를 렌더링 ✨
+        {isPostAuthor && (
           <div className="flex justify-end space-x-2 mb-5">
             {isEditing ? (
               <>
@@ -133,7 +124,7 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
             />
           ) : (
             <MDEditor.Markdown
-              source={postContent}
+              source={post.content}
               remarkPlugins={[remarkGfm]}
               style={{
                 padding: 16,
@@ -142,7 +133,6 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
           )}
         </div>
 
-        {/* 댓글 섹션 (children으로 받음) */}
         {children}
       </div>
     </div>
