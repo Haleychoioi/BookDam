@@ -1,0 +1,326 @@
+// Prisma 스키마 설정
+
+기존 스키마 -> 회원상태 변경, profileImage, 채팅 추가한거 적용할 예정
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ ENUM 정의 ============
+
+// 사용자 역할 (일반 사용자 / 관리자)
+enum UserRole {
+  USER    // 일반 사용자
+  ADMIN   // 관리자
+}
+
+// 독서팀 상태 (모집중 → 활동중 → 완료)
+enum CommunityStatus {
+  RECRUITING  // 모집중
+  ACTIVE      // 활동중
+  COMPLETED   // 완료
+}
+
+// 퍼블릭 게시글 타입 (일반글 / 모집글)
+enum PostType {
+  GENERAL       // 일반글 (기본값)
+  RECRUITMENT   // 모집글
+}
+
+// 팀 내부 게시글 타입 (공지 / 질문 / 토론)
+enum TeamPostType {
+  NOTICE           // 공지 (팀장만 작성 가능)
+  QUESTION         // 질문 (팀장+팀원)
+  DISCUSSION       // 토론 (팀장+팀원, 기본값)
+}
+
+// 팀 지원 상태 (대기 / 승인 / 거절)
+enum ApplicationStatus {
+  PENDING   // 대기중
+  ACCEPTED  // 승인됨
+  REJECTED  // 거절됨
+}
+
+// 개인 독서 상태 (읽고싶어요 / 읽는중 / 완료)
+enum ReadingStatus {
+  WANT_TO_READ  // 읽고싶어요
+  READING       // 읽는중
+  COMPLETED     // 읽었음
+}
+
+// 팀 내 역할 (팀장 / 팀원)
+enum TeamRole {
+  LEADER  // 팀장
+  MEMBER  // 팀원
+}
+
+// ============ 사용자 관련 모델 ============
+
+// 사용자 정보
+model User {
+  userId              Int          @id @default(autoincrement()) @map("user_id")
+  email               String       @unique @map("email")                    // 이메일 (로그인 ID)
+  password            String       @map("password")                         // 비밀번호
+  name                String       @map("name")                             // 실명
+  nickname            String       @unique @map("nickname")                 // 닉네임 (중복 불가)
+  phone               String       @map("phone")                            // 전화번호
+  introduction        String?      @map("introduction")                     // 자기소개 (선택사항)
+  agreement           Boolean      @map("agreement")                        // 약관 동의 여부
+  role                UserRole     @default(USER) @map("role")              // 사용자 역할 (기본: 일반사용자)
+  createdAt           DateTime     @default(now()) @map("created_at")       // 가입일시
+  updatedAt           DateTime     @updatedAt @map("updated_at")            // 수정일시
+
+  // 관계 설정
+  teamMembers        TeamMember[]                                    // 내가 참여한 팀 멤버십들
+  teamApplications   TeamApplication[]                               // 내가 지원한 팀 지원서들
+  posts              Post[]                                          // 내가 작성한 퍼블릭 게시글들
+  teamPosts          TeamPost[]                                      // 내가 작성한 팀 게시글들
+  comments           Comment[]                                       // 내가 작성한 퍼블릭 댓글들
+  teamComments       TeamComment[]                                   // 내가 작성한 팀 댓글들
+  myBooks            MyLibrary[]                                     // 내 개인 도서관
+  bookmarks          WishList[]           @relation("UserWishLists") // 내 위시리스트
+  
+  @@map("users")
+}
+
+// ============ 도서 관련 모델 ============
+
+// 책 정보 (ISBN13 기반)
+model Book {
+  isbn13        String   @id @map("isbn13")                    // ISBN13 (Primary Key)
+  title         String   @map("title")                         // 책 제목
+  author        String   @map("author")                        // 저자
+  publisher     String   @map("publisher")                     // 출판사
+  pubDate       String?  @map("pub_date")                      // 출간일
+  description   String?  @db.Text @map("description")          // 책 설명
+  cover         String?  @map("cover")                         // 표지 이미지 URL
+  category      String?  @map("category")                      // 카테고리 ("소설", "에세이", "자기계발" 등)
+  pageCount     Int?     @map("page_count")                    // 페이지 수
+  toc           String?  @db.Text @map("toc")                  // 목차 (추가 요청시 가능)
+  story         String?  @db.Text @map("story")                // 줄거리 (추가 요청시 가능, 소설 위주)
+  createdAt     DateTime @default(now()) @map("created_at")    // 등록일시
+
+  // 관계 설정
+  posts             Post[]
+  teams             TeamCommunity[]                              // 이 책을 읽는 독서팀들
+  myBooks           MyLibrary[]                                // 이 책을 개인 라이브러리에 추가한 사용자들
+  wishLists         WishList[]           @relation("BookWishLists") // 이 책을 위시리스트에 추가한 사용자들
+  
+  @@map("books")
+}
+
+// ============ 게시글 관련 모델 ============
+
+// 퍼블릭 커뮤니티 게시글 (일반글 + 모집글)
+model Post {
+  postId      Int               @id @default(autoincrement()) @map("post_id")
+  userId      Int               @map("user_id")               
+  type        PostType          @default(GENERAL) @map("type") 
+  title       String            @map("title")                 
+  content     String            @db.Text @map("content")      
+  maxMembers  Int?              @map("max_members")           
+  isbn13      String?           @map("isbn13")
+  createdAt   DateTime          @default(now()) @map("created_at") 
+  updatedAt   DateTime          @updatedAt @map("updated_at") 
+
+  // 관계 설정
+  user        User              @relation(fields: [userId], references: [userId], onDelete: Cascade) 
+  book        Book?             @relation(fields: [isbn13], references: [isbn13], onDelete: SetNull) 
+  comments    Comment[]                                       
+  applications TeamApplication[]                              
+  team        TeamCommunity?    @relation("RecruitmentPost") 
+
+  @@index([userId])   
+  @@index([type])     
+  @@index([isbn13])
+  @@map("posts")
+}
+// ============ 독서팀 관련 모델 ============
+
+// 독서팀 (Private Community)
+model TeamCommunity {
+  teamId         Int              @id @default(autoincrement()) @map("team_id")
+  postId         Int?              @unique @map("post_id")       // 모집글 ID (필수 - 모집글을 통해서만 팀 생성)
+  isbn13         String?          @map("isbn13")                // 팀에서 읽을 책 (모집글에서 자동 상속)
+  // Post에서 복사해온 정보
+  title          String           @map("title")                 // 모집글 제목 복사
+  content        String           @db.Text @map("content")      // 모집글 내용 복사
+  status         CommunityStatus  @default(RECRUITING) @map("status") // 팀 상태 (기본: 모집중)
+  createdAt      DateTime         @default(now()) @map("created_at") // 생성일시
+  updatedAt      DateTime         @updatedAt @map("updated_at") // 수정일시
+
+  // 관계 설정
+  recruitmentPost Post?            @relation("RecruitmentPost", fields: [postId], references: [postId], onDelete: SetNull) // 모집글 삭제 시 postId만 NULL로 설정
+  book           Book?            @relation(fields: [isbn13], references: [isbn13], onDelete: SetNull) // 책 삭제 시 NULL로 설정
+  members        TeamMember[]                                    // 팀 멤버들 (팀 삭제 시 멤버십도 삭제)
+  teamPosts      TeamPost[]                                      // 팀 내 게시글들 (팀 삭제 시 게시글도 삭제)
+
+  @@index([isbn13])  // 책별 팀 조회 최적화
+  @@map("team_communities")
+}
+
+model TeamMember {
+  userId        Int               @map("user_id")               // 사용자 ID
+  teamId        Int               @map("team_id")               // 팀 ID
+  role          TeamRole          @default(MEMBER) @map("role") // 팀 내 역할 (기본: 팀원)
+
+  // 관계 설정
+  user          User              @relation(fields: [userId], references: [userId], onDelete: Cascade)     // 사용자 삭제 시 멤버십도 삭제
+  team          TeamCommunity     @relation(fields: [teamId], references: [teamId], onDelete: Cascade)     // 팀 삭제 시 멤버십도 삭제
+
+  @@id([userId, teamId])  // 복합 Primary Key (한 사용자는 한 팀에 한 번만 가입)
+  @@index([teamId])       // 팀별 멤버 조회 최적화
+  @@map("team_members")
+}
+
+// 모집 게시글 지원서
+model TeamApplication {
+  applicationId      Int               @id @default(autoincrement()) @map("application_id")
+  userId             Int               @map("user_id")               // 지원자 ID
+  postId             Int               @map("post_id")               // 모집 게시글 ID
+  applicationMessage String            @map("application_message")   // 지원 메시지 (필수)
+  status             ApplicationStatus @default(PENDING) @map("status") // 지원 상태 (기본: 대기중)
+  appliedAt          DateTime          @default(now()) @map("applied_at") // 지원일시
+  processedAt        DateTime?         @map("processed_at")          // 처리일시 (승인/거절 시점)
+
+  // 관계 설정
+  user      User              @relation(fields: [userId], references: [userId], onDelete: Cascade)         // 사용자 삭제 시 지원서도 삭제
+  post      Post              @relation(fields: [postId], references: [postId], onDelete: Cascade)         // 모집글 삭제 시 지원서도 삭제
+
+  @@unique([userId, postId])  // 한 사용자는 한 모집글에 한 번만 지원 가능
+  @@index([postId, status])   // 모집글별 지원서 상태별 조회 최적화
+  @@map("team_applications")
+}
+
+// 팀 내부 게시글 (공지, 질문, 토론)
+model TeamPost {
+  teamPostId  Int               @id @default(autoincrement()) @map("team_post_id")
+  userId      Int               @map("user_id")               // 작성자 ID
+  teamId      Int               @map("team_id")               // 팀 ID
+  type        TeamPostType      @default(DISCUSSION) @map("type") // 게시글 타입 (기본: 토론)
+  title       String            @map("title")                 // 제목
+  content     String            @db.Text @map("content")      // 내용
+  createdAt   DateTime          @default(now()) @map("created_at") // 작성일시
+  updatedAt   DateTime          @updatedAt @map("updated_at") // 수정일시
+
+  // 관계 설정
+  user        User              @relation(fields: [userId], references: [userId], onDelete: Cascade)     // 사용자 삭제 시 팀 게시글도 삭제
+  team        TeamCommunity     @relation(fields: [teamId], references: [teamId], onDelete: Cascade)       // 팀 삭제 시 게시글도 삭제
+  comments    TeamComment[]                                   // 댓글들 (팀 게시글 삭제 시 댓글도 삭제)
+
+  @@index([teamId])   // 팀별 게시글 조회 최적화
+  @@index([userId])   // 사용자별 게시글 조회 최적화
+  @@index([type])     // 게시글 타입별 조회 최적화
+  @@map("team_posts")
+}
+
+// ============ 댓글 관련 모델 ============
+
+// 퍼블릭 게시글 댓글
+model Comment {
+  commentId Int      @id @default(autoincrement()) @map("comment_id")
+  postId    Int      @map("post_id")               // 게시글 ID
+  userId    Int      @map("user_id")               // 작성자 ID
+  content   String   @map("content")               // 댓글 내용
+  createdAt DateTime @default(now()) @map("created_at") // 작성일시
+  updatedAt DateTime @updatedAt @map("updated_at") // 수정일시
+
+  // 관계 설정
+  post Post @relation(fields: [postId], references: [postId], onDelete: Cascade)  // 게시글 삭제 시 댓글도 삭제
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade) // 사용자 삭제 시 댓글도 삭제
+
+  @@index([postId])   // 게시글별 댓글 조회 최적화
+  @@index([userId])   // 사용자별 댓글 조회 최적화
+  @@map("comments")
+}
+
+// 팀 게시글 댓글
+model TeamComment {
+  teamCommentId Int      @id @default(autoincrement()) @map("team_comment_id")
+  teamPostId    Int      @map("team_post_id")          // 팀 게시글 ID
+  userId        Int      @map("user_id")               // 작성자 ID
+  content       String   @map("content")               // 댓글 내용
+  createdAt     DateTime @default(now()) @map("created_at") // 작성일시
+  updatedAt     DateTime @updatedAt @map("updated_at") // 수정일시
+
+  // 관계 설정
+  teamPost TeamPost @relation(fields: [teamPostId], references: [teamPostId], onDelete: Cascade) // 팀 게시글 삭제 시 댓글도 삭제
+  user     User     @relation(fields: [userId], references: [userId], onDelete: Cascade)        // 사용자 삭제 시 댓글도 삭제
+
+  @@index([teamPostId]) // 팀 게시글별 댓글 조회 최적화
+  @@index([userId])     // 사용자별 댓글 조회 최적화
+  @@map("team_comments")
+}
+
+// ============ 개인 도서 관리 모델 ============
+
+// 개인 도서관 (읽고싶어요, 읽는중, 완료한 책들)
+model MyLibrary {
+  libraryId Int           @id @default(autoincrement()) @map("library_id")
+  userId    Int           @map("user_id")               // 사용자 ID
+  bookIsbn13 String       @map("book_isbn13")           // 책 ISBN13
+  myRating  Int?          @map("my_rating")             // 개인 평점 (1~5, 선택사항)
+  status    ReadingStatus @map("status")                // 독서 상태 (읽고싶어요/읽는중/완료)
+  addedAt   DateTime      @default(now()) @map("added_at") // 추가일시
+  updatedAt DateTime      @updatedAt @map("updated_at") // 수정일시
+
+  // 관계 설정
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)           // 사용자 삭제 시 라이브러리도 삭제
+  book Book @relation(fields: [bookIsbn13], references: [isbn13], onDelete: Cascade)       // 책 삭제 시 라이브러리 항목도 삭제
+
+  @@unique([userId, bookIsbn13]) // 한 사용자는 한 책을 한 번만 라이브러리에 추가
+  @@index([userId])              // 사용자별 라이브러리 조회 최적화
+  @@index([status])              // 독서 상태별 조회 최적화
+  @@map("my_libraries")
+}
+
+// 위시리스트 (나중에 읽고 싶은 책들)
+model WishList {
+  wishListId Int      @id @default(autoincrement()) @map("wish_list_id")
+  userId     Int      @map("user_id")               // 사용자 ID
+  bookIsbn13 String   @map("book_isbn13")           // 책 ISBN13
+  addedAt    DateTime @default(now()) @map("added_at") // 추가일시
+
+  // 관계 설정
+  user User @relation("UserWishLists", fields: [userId], references: [userId], onDelete: Cascade)     // 사용자 삭제 시 위시리스트도 삭제
+  book Book @relation("BookWishLists", fields: [bookIsbn13], references: [isbn13], onDelete: Cascade) // 책 삭제 시 위시리스트 항목도 삭제
+
+  @@unique([userId, bookIsbn13]) // 한 사용자는 한 책을 한 번만 위시리스트에 추가
+  @@index([userId])              // 사용자별 위시리스트 조회 최적화
+  @@map("wish_lists")
+}
+
+// ============ 관리 컨텐츠 모델 ============
+
+// FAQ 아이템
+model FAQItem {
+  faqId      Int      @id @default(autoincrement()) @map("faq_id")
+  question   String   @map("question")              // 질문
+  answer     String   @db.Text @map("answer")       // 답변
+  isActive   Boolean  @default(true) @map("is_active") // 활성화 여부
+  displayOrder Int?   @map("display_order")         // 표시 순서
+  createdAt  DateTime @default(now()) @map("created_at") // 생성일시
+  updatedAt  DateTime @updatedAt @map("updated_at") // 수정일시
+
+  @@index([isActive, displayOrder]) // 활성화된 FAQ 순서별 조회 최적화
+  @@map("faq_items")
+}
+
+// 서비스 소개 컨텐츠
+model AboutContent {
+  aboutId    Int      @id @default(autoincrement()) @map("about_id")
+  title      String   @map("title")                 // 제목
+  content    String   @db.Text @map("content")      // 내용
+  isActive   Boolean  @default(true) @map("is_active") // 활성화 여부
+  displayOrder Int?   @map("display_order")         // 표시 순서
+  createdAt  DateTime @default(now()) @map("created_at") // 생성일시
+  updatedAt  DateTime @updatedAt @map("updated_at") // 수정일시
+
+  @@index([isActive, displayOrder]) // 활성화된 컨텐츠 순서별 조회 최적화
+  @@map("about_contents")
+}

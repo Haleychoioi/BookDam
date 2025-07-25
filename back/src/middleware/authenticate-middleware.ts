@@ -45,20 +45,3 @@ export default function(req: Request, res: Response, next: NextFunction) {
     console.log('req.user 설정 후:', req.user);
     next();
 }
-
-// export default function(req: Request, res: Response, next: NextFunction) {
-//   const authHeader = req.get('authorization');
-//   const token = authHeader && authHeader.split(' ')[1];
-  
-//   const verifiedToken = verifyToken(token);
-  
-//   if(!verifiedToken) {
-//     return next(new Error("TokenNotMatched"));
-//   }
-  
-
-//   // JWTPlayload, global Request로 any 없이 사용
-//   req.user = verifiedToken.userId;
-
-//   next();
-// }
