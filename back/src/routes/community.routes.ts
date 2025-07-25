@@ -9,7 +9,8 @@ const router = Router();
 router.get("/", communityController.getPublicCommunities);
 
 // 특정 도서 기반 커뮤니티 목록 조회
-router.get("/books/:bookId", communityController.getCommunitiesByBook); // API 명세 '/books/:id/communities'와 다름. '/communities/books/:bookId'로 통일성을 맞추거나, 책 라우트에 포함. 현재 구조상 여기가 적절
+router.get("/books/:bookId", communityController.getCommunitiesByBook);
+// API 명세 '/books/:id/communities'와 다름. '/communities/books/:bookId'로 통일성을 맞추거나, 책 라우트에 포함. 현재 구조상 여기가 적절
 
 // 커뮤니티 가입 신청 (특정 모집글에 대한 지원)
 // POST /communities/:id/apply -> 여기서 :id는 postId임

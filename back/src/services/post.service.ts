@@ -1,4 +1,4 @@
-import prisma from "../utils/prisma"; // Prisma 클라이언트 임포트
+import prisma from "../utils/prisma";
 
 export const postService = {
   // 게시물 목록 조회
@@ -16,7 +16,6 @@ export const postService = {
     if (sort === "latest") {
       orderBy.createdAt = "desc";
     }
-    // TODO: 다른 정렬 기준 추가 ('popular' 등)
 
     // communityId가 없는(NULL) 일반 게시물만 포함
     const posts = await prisma.post.findMany({

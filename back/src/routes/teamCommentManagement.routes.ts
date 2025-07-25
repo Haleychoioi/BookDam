@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { teamCommentController } from "../controllers/teamComment.controller"; // 팀 댓글 컨트롤러
-import { authMiddleware } from "../middlewares/auth.middleware"; // 인증 미들웨어
+import { teamCommentController } from "../controllers/teamComment.controller";
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
 

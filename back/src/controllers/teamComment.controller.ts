@@ -3,7 +3,6 @@ import { teamCommentService } from "../services/teamComment.service";
 
 export const teamCommentController = {
   // 특정 팀 게시물의 댓글 목록 조회 (GET /team-posts/:teamPostId/comments)
-  // teamPost.routes.ts에서 호출
   async getTeamCommentsByTeamPostId(
     req: Request,
     res: Response,
@@ -27,12 +26,12 @@ export const teamCommentController = {
     }
   },
 
-  // 특정 팀 게시물에 댓글 작성 (POST /team-posts/:teamPostId/comments)
+  // 특정 팀 게시물에 댓글 작성 (대댓글 기능 추가)
   async createTeamComment(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.userId;
       const teamPostId = parseInt(req.params.teamPostId);
-      const { content } = req.body;
+      const { content, parentId } = req.body;
 
       if (!userId) {
         return res.status(401).json({ message: "인증 정보가 없습니다." });
@@ -41,7 +40,8 @@ export const teamCommentController = {
       const newComment = await teamCommentService.createTeamComment(
         teamPostId,
         userId,
-        content
+        content,
+        parentId
       );
       res
         .status(201)

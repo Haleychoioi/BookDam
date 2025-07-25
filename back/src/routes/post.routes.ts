@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { postController } from "../controllers/post.controller";
-import { commentController } from "../controllers/comment.controller"; // 댓글 컨트롤러
-import { authMiddleware } from "../middlewares/auth.middleware"; // 인증 미들웨어
+import { commentController } from "../controllers/comment.controller";
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
 

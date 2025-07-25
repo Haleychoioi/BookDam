@@ -5,7 +5,6 @@ interface JwtPayload {
   userId: number;
 }
 
-// 인증 미들웨어 함수
 export const authMiddleware = (
   req: Request,
   res: Response,

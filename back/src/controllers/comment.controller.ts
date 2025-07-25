@@ -18,12 +18,12 @@ export const commentController = {
     }
   },
 
-  // 특정 게시물에 댓글 작성 (POST /posts/:postId/comments)
+  // 특정 게시물에 댓글 작성 (대댓글 기능 추가)
   async createComment(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.userId;
       const postId = parseInt(req.params.postId);
-      const { content } = req.body;
+      const { content, parentId } = req.body;
 
       if (!userId) {
         return res.status(401).json({ message: "인증 정보가 없습니다." });
@@ -32,7 +32,8 @@ export const commentController = {
       const newComment = await commentService.createComment(
         postId,
         userId,
-        content
+        content,
+        parentId
       );
       res
         .status(201)
@@ -42,7 +43,7 @@ export const commentController = {
     }
   },
 
-  // 특정 댓글 수정 (PUT /comments/:id) - Comment 모델의 PUT/DELETE는 별도의 라우트로 분리
+  // 특정 댓글 수정 (PUT /comments/:id)
   async updateComment(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.userId;
