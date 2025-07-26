@@ -42,6 +42,9 @@ export interface Comment {
   postTitle: string; // 댓글이 달린 게시물 제목
   postType: "community" | "general"; // 게시물 타입 ('community' 또는 'general')
   communityId?: string; // 커뮤니티 게시물인 경우 커뮤니티 ID (선택적)
+  parentId?: string; // 이 댓글이 대댓글인 경우 부모 댓글의 ID
+  replies?: Comment[]; // 자식 댓글 목록
+  depth?: number; // 댓글의 깊이
 }
 
 // =========================================================

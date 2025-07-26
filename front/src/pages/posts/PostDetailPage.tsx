@@ -112,6 +112,7 @@ const mockCommentsData: { [key: string]: Comment[] } = {
       postType: "community",
       communityId: "comm1",
       isEdited: false,
+      depth: 0, // 최상위 댓글
     },
     {
       id: "c2",
@@ -124,6 +125,7 @@ const mockCommentsData: { [key: string]: Comment[] } = {
       postTitle: "[해리포터] 1번째 독서 스터디 논의점",
       postType: "community",
       communityId: "comm1",
+      depth: 0, // 최상위 댓글
     },
     {
       id: "c3",
@@ -135,6 +137,7 @@ const mockCommentsData: { [key: string]: Comment[] } = {
       postTitle: "[해리포터] 1번째 독서 스터디 논의점",
       postType: "community",
       communityId: "comm1",
+      depth: 0, // 최상위 댓글
     },
   ],
   "post-1": [
@@ -148,6 +151,7 @@ const mockCommentsData: { [key: string]: Comment[] } = {
       postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
       postType: "general",
       isEdited: false,
+      depth: 0, // 최상위 댓글
     },
     {
       id: "gc2",
@@ -159,6 +163,7 @@ const mockCommentsData: { [key: string]: Comment[] } = {
       postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
       postType: "general",
       isEdited: false,
+      depth: 0, // 최상위 댓글
     },
   ],
 };
@@ -178,6 +183,40 @@ const PostDetailPage: React.FC = () => {
 
   const [comments, setComments] = useState<Comment[]>([]);
 
+  const handleAddReply = (parentId: string, content: string) => {
+    console.log(`댓글 ${parentId}에 대한 답글 추가:`, content);
+
+    const newReply: Comment = {
+      id: `r-${Date.now()}`,
+      author: "현재 사용자",
+      authorId: currentUserId,
+      createdAt: new Date().toLocaleString("ko-KR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }),
+      content: content,
+      postId: postId || `mock-post-${Date.now()}`,
+      postTitle: post?.title || "알 수 없는 게시물",
+      postType: post?.type || "general",
+      communityId:
+        post?.type === "community" && postId?.startsWith("comm")
+          ? postId.split("-")[0]
+          : undefined,
+      isEdited: false,
+      parentId: parentId,
+      depth: 1, // 대댓글이므로 깊이 1
+    };
+
+    setComments((prevComments) => {
+      return [...prevComments, newReply];
+    });
+    // TODO: 실제 API 호출 (POST /posts/:id/comments with parentId)
+  };
+
   // 게시물 데이터 로딩 및 초기화
   useEffect(() => {
     const fetchPostData = () => {
@@ -187,7 +226,52 @@ const PostDetailPage: React.FC = () => {
       if (fetchedPost) {
         setPost(fetchedPost);
         setEditedContent(fetchedPost.content); // 게시물 내용 로드 시 수정 내용도 초기화
-        setComments(mockCommentsData[postId || ""] || []); // 댓글 로딩
+
+        // 기존 댓글과 Mock 대댓글을 합쳐서 comments 상태 초기화
+        const fetchedComments = mockCommentsData[postId || ""] || [];
+        const mockReplies: Comment[] = [
+          {
+            id: "gc1-r1",
+            author: "답글러1",
+            authorId: "user456",
+            createdAt: "2025.07.21 10:30",
+            content: "첫 댓글에 대한 답글입니다.",
+            postId: "post-1",
+            postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
+            postType: "general",
+            isEdited: false,
+            parentId: "gc1",
+            depth: 1,
+          },
+          {
+            id: "gc1-r2",
+            author: "답글러2",
+            authorId: "user789",
+            createdAt: "2025.07.21 10:45",
+            content: "저도 동의합니다.",
+            postId: "post-1",
+            postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
+            postType: "general",
+            isEdited: false,
+            parentId: "gc1",
+            depth: 1,
+          },
+          {
+            id: "c1-r1",
+            author: "해리팬",
+            authorId: "user456",
+            createdAt: "2025.07.20 12:15",
+            content: "맞아요, 그 부분 저도 궁금했어요!",
+            postId: "comm1-post-1",
+            postTitle: "[해리포터] 1번째 독서 스터디 논의점",
+            postType: "community",
+            communityId: "comm1",
+            isEdited: false,
+            parentId: "c1",
+            depth: 1,
+          },
+        ];
+        setComments([...fetchedComments, ...mockReplies]);
       } else {
         setErrorPost("게시물을 찾을 수 없습니다.");
       }
@@ -227,7 +311,7 @@ const PostDetailPage: React.FC = () => {
       return;
     }
 
-    // 실제로는 API 호출 (PUT /posts/:id)
+    // 실제로는 API 호출 (PUT /posts/:id) [cite: 5]
     console.log(`게시물 ${postId} 수정 완료:`, trimmedEditedContent);
 
     // Mock 데이터 업데이트 예시 (실제 API 호출 성공 후 적용)
@@ -275,7 +359,7 @@ const PostDetailPage: React.FC = () => {
 
     if (window.confirm("정말로 이 게시물을 삭제하시겠습니까?")) {
       console.log(`Delete post ${postId}`);
-      // 실제 API 호출 (DELETE /posts/d)
+      // 실제 API 호출 (DELETE /posts/id) [cite: 5]
       // Mock 데이터에서 삭제하는 로직도 추가해야 합니다 (여기서는 단순 콘솔 로그 후 리다이렉트)
       // delete mockPostsDetailData[postId]; // 이런 식으로 직접 Mock 데이터에서 삭제
       navigate("/posts");
@@ -307,6 +391,8 @@ const PostDetailPage: React.FC = () => {
           ? postId.split("-")[0]
           : undefined, // 예시: comm1-post-1 -> comm1
       isEdited: false, // isEdited도 Comment 인터페이스에 포함되므로 추가
+      parentId: undefined, // 최상위 댓글이므로 parentId 없음
+      depth: 0, // 최상위 댓글이므로 깊이 0
     };
     setComments((prevComments) => [...prevComments, newComment]);
   };
@@ -357,7 +443,11 @@ const PostDetailPage: React.FC = () => {
       <div className="mt-12 px-10">
         <h3 className="text-xl font-bold text-gray-800 mb-4">댓글</h3>
         <CommentInput onAddComment={handleAddComment} />
-        <CommentList comments={comments} />
+        <CommentList
+          comments={comments}
+          onAddReply={handleAddReply}
+          currentUserId={currentUserId}
+        />
       </div>
     </PostDetailTemplate>
   );
