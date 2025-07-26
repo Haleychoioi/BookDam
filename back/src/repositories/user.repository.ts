@@ -9,6 +9,7 @@ export interface CreateUserData {
   phone: string;
   agreement: boolean;
   introduction?: string;
+  profileImage?: string;
   role?: UserRole
 }
 
@@ -59,6 +60,7 @@ class UserRepository {
       role: userData.role || UserRole.USER,
       nickname: userData.nickname,
       agreement: userData.agreement,
+      profileImage: userData.profileImage,
       introduction: userData.introduction,
     }
   });

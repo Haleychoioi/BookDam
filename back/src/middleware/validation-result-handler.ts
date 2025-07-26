@@ -31,6 +31,7 @@ export const loginValidator: ValidationChain[] = [
 
 export const updateProfileValidator: ValidationChain[] = [
     body('nickname')
+        .optional()
         .notEmpty().withMessage("닉네임을 작성해주세요.")
         .isLength({ min: 1, max: 10 }).withMessage("닉네임은 1~10자로 입력해주세요.")
 ];

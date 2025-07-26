@@ -2,6 +2,7 @@ import express from 'express';
 import  userController  from '../controllers/user.controller';
 import authenticate from '../middleware/authenticate-middleware'
 import { updateProfileValidator, handleValidationResult } from '../middleware/validation-result-handler';
+import upload from '../middleware/multer';
 
 const router = express.Router();
 
@@ -9,12 +10,7 @@ const router = express.Router();
 router.get('/getProfile', authenticate, userController.getProfile);
 
 // 회원정보 수정
-router.put('/profile',
-    updateProfileValidator,
-    authenticate,
-    handleValidationResult,
-    userController.updateProfile
-);
+router.put('/profile',authenticate,upload.single('profileImage'),updateProfileValidator,handleValidationResult,userController.updateProfile);
 
 // 유저 삭제
 router.delete('/delete', authenticate, handleValidationResult, userController.deleteUser);

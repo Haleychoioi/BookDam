@@ -54,14 +54,15 @@ class UserController {
         }
     };
 
-    // 프로필 업데이트 (닉네임, 한줄소개)
+    // 프로필 업데이트 (닉네임, 한줄소개, 이미지)
     updateProfile = async (req: Request, res: Response, next: NextFunction) => {
         try {
 
             const userId = req.user!;
             const updateData = req.body;
+            const file = req.file;
 
-            const updatedUser = await userService.updateProfile(userId, updateData);
+            const updatedUser = await userService.updateProfile(userId, updateData, file);
 
             res.status(200).json({
                 user: updatedUser,

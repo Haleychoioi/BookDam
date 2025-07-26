@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import path from 'path';
 
 // 환경변수를 맨 먼저 로드
 dotenv.config();
@@ -15,6 +16,9 @@ const PORT = process.env.PORT || 3000;
 // 미들웨어
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// profileImage 링크 이동할때 에러 안나게 하려면
+app.use('/static', express.static(path.join(__dirname, '../public')));
 
 // 라우터
 app.use("/auth", authRouter);

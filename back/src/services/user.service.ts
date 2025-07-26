@@ -2,55 +2,60 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { UserRole } from '@prisma/client';
 import userRepository from '../repositories/user.repository';
-import { SignupRequest, SignupResponse, LoginRequest, LoginResponse, JWTPayload, UpdateProfileRequest } from '../types/user.type';
+import { SignupRequest, SignupResponse, LoginRequest, LoginResponse, JWTPayload, UpdateUserData } from '../types/user.type';
 
 class UserService {
 
-  // 회원가입
-  async signUp(signupData: SignupRequest): Promise<SignupResponse> {
-    const { name, email, password, nickname, phone, agreement, introduction } = signupData;
+    // 회원가입
+    async signUp(signupData: SignupRequest): Promise<SignupResponse> {
+        const { name, email, password, nickname, phone, agreement, introduction } = signupData;
 
-    // 1. 이메일 중복 확인
-    const existingEmailUser = await userRepository.findByEmail(email);
-    if (existingEmailUser) {
-      throw new Error('ExistEmail');
+        // 1. 이메일 중복 확인
+        const existingEmailUser = await userRepository.findByEmail(email);
+        if (existingEmailUser) {
+            throw new Error('ExistEmail');
+        }
+
+        // 2. 닉네임 중복 확인
+        const existingNickname = await userRepository.findByNickname(nickname);
+        if (existingNickname) {
+            throw new Error('ExistNickname');
+        }
+
+        // 3. 비밀번호 해싱
+        const saltRounds = parseInt(process.env.SALT_ROUNDS || '10');
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        // 기본 프로필 이미지 설정
+        const avatarName = encodeURIComponent(nickname) // 닉네임에 따라 고유한 아바타 생성
+        const profileImage = `https://api.dicebear.com/8.x/identicon/svg?seed=${avatarName}`;
+
+        // 4. 사용자 생성
+        const newUser = await userRepository.createUser({
+            name,
+            email,
+            password: hashedPassword,
+            nickname,
+            phone,
+            agreement,
+            introduction,
+            profileImage,
+            role: UserRole.USER
+        });
+
+        // 5. 응답 (비밀번호 제외) - 구조 분해 할당 사용
+        const { password: _, ...userWithoutPassword } = newUser;
+        // 제외하는것, 나머지 모든것(password를 제외한 나머지 필드를 새 객체로 생성)
+        // _는 사용하지 않는 변수를 표현
+
+        return {
+            user: userWithoutPassword, // 타입이 자동으로 맞춰짐
+            message: '회원가입이 성공적으로 완료되었습니다.'
+        };
     }
 
-    // 2. 닉네임 중복 확인
-    const existingNickname = await userRepository.findByNickname(nickname);
-    if (existingNickname) {
-        throw new Error('ExistNickname');
-    }
-
-    // 3. 비밀번호 해싱
-    const saltRounds = parseInt(process.env.SALT_ROUNDS || '10');
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // 4. 사용자 생성
-    const newUser = await userRepository.createUser({
-      name,
-      email,
-      password: hashedPassword,
-      nickname,
-      phone,
-      agreement,
-      introduction,
-      role: UserRole.USER
-    });
-
-    // 5. 응답 (비밀번호 제외) - 구조 분해 할당 사용
-    const { password: _, ...userWithoutPassword } = newUser;
-    // 제외하는것, 나머지 모든것(password를 제외한 나머지 필드를 새 객체로 생성)
-    // _는 사용하지 않는 변수를 표현
-
-    return {
-      user: userWithoutPassword, // 타입이 자동으로 맞춰짐
-      message: '회원가입이 성공적으로 완료되었습니다.'
-    };
-  }
-
-  // 로그인
-  async login(loginData: LoginRequest): Promise<LoginResponse> {
+    // 로그인
+    async login(loginData: LoginRequest): Promise<LoginResponse> {
         const { email, password } = loginData;
 
         // 1. 사용자 존재 확인
@@ -78,15 +83,13 @@ class UserService {
             { expiresIn: '24h' }
         );
 
-        // 4. 응답 (비밀번호 제외)
-        // const { password: _, ...userWithoutPassword } = user;
-
         return {
             token,
             userId: user.userId,
             message: '로그인이 성공적으로 완료되었습니다.'
         };
     }
+
 
     // 내 정보 조회
     async getMyProfile(userId: number) {
@@ -101,18 +104,45 @@ class UserService {
     }
 
     // 회원정보 수정
-    async updateProfile(userId: number, updateData: UpdateProfileRequest) {
-        
+    async updateProfile(userId: number, updateData: UpdateUserData, file: Express.Multer.File | undefined) {
+
+        // DB에 업데이트할 내용만 담을 빈 객체
+        const dataToUpdate: Partial<UpdateUserData> = {};
+
         // 닉네임 중복 체크 (변경하려는 경우)
         if (updateData.nickname) {
             const existingUser = await userRepository.findByNickname(updateData.nickname);
             if (existingUser && existingUser.userId !== userId) {
                 throw new Error('ExistNickname');
             }
+            dataToUpdate.nickname = updateData.nickname;
         }
 
-        const updatedUser = await userRepository.updateUser(userId, updateData);
-        
+        // 소개글
+        if (updateData.introduction) {
+            dataToUpdate.introduction = updateData.introduction;
+        }
+
+        // 기본 이미지로 변경
+        if (updateData.deleteProfileImage === 'true') {
+            const currentUser = await userRepository.findById(userId);
+            if (!currentUser) throw new Error('UserNotFound');
+
+            const avatarName = encodeURIComponent(currentUser.nickname);
+            const defaultImageUrl = `https://api.dicebear.com/8.x/identicon/svg?seed=${avatarName}`;
+
+            dataToUpdate.profileImage = defaultImageUrl;
+        }
+
+        // 파일 업로드
+        if (file) {
+            // 주의: 3000부분은 배포 시 서버 주소로 변경해야함
+            const fileUrl = `http://localhost:3000/static/images/${file.filename}`;
+            dataToUpdate.profileImage = fileUrl;
+        }
+
+        const updatedUser = await userRepository.updateUser(userId, dataToUpdate as UpdateUserData);
+
         // 비밀번호 제외하고 반환
         const { password, ...userWithoutPassword } = updatedUser;
         return userWithoutPassword;
@@ -152,7 +182,7 @@ class UserService {
 
 
 
-    
+
     // 비밀번호 변경
     // async changePassword(userId: number, oldPassword: string, newPassword: string) {
     //     // 1. 현재 사용자 정보 조회
@@ -183,7 +213,7 @@ class UserService {
     async getUserStats() {
         const totalUsers = await userRepository.countUsers();
         const allUsers = await userRepository.findAllUsers();
-        
+
         return {
             totalUsers,
             recentUsers: allUsers.slice(0, 10) // 최근 10명

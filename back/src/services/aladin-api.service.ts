@@ -10,8 +10,6 @@ import {
     AladinCoverSize,
     AladinItemIdType
 } from '../types/book.type';
-import { query } from 'express-validator';
-import { join } from 'path';
 
 export class AladinApiService {
     private readonly ALADIN_API_KEY = process.env.ALADIN_API_KEY!;

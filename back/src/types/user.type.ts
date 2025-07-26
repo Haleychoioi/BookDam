@@ -10,6 +10,7 @@ export interface SignupRequest {
     nickname: string;
     phone: string;
     agreement: boolean;
+    profileImage: string;
     introduction?: string;
 }
 
@@ -36,10 +37,11 @@ export interface LoginResponse {
 }
 
 // ===== 사용자 정보 수정 =====
-export interface UpdateProfileRequest {
+export interface UpdateUserData {
     nickname: string;
     introduction?: string;
-    // profileImage?: string;
+    profileImage?: string;
+    deleteProfileImage?: string;
 }
 
 // ===== JWT 관련 =====
