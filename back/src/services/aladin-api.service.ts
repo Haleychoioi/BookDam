@@ -105,7 +105,7 @@ export class AladinApiService {
 
 
 
-    // // 상품 조회
+    // 상품 조회
     async getBookDetail(params: AladinLookupRequest): Promise<AladinApiResponse> {
         try {
             const url = `${this.BASE_URL}/ItemLookUp.aspx`;

@@ -1,8 +1,6 @@
 // book.repository.ts
-import { PrismaClient } from '@prisma/client';
+import prisma from "../utils/prisma";
 import { BookCreateData } from '../types/book.type';
-
-const prisma = new PrismaClient();
 
 export class BookRepository {
     

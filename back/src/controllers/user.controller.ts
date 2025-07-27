@@ -4,16 +4,6 @@ import { SignupRequest, LoginRequest } from '../types/user.type';
 
 class UserController {
 
-    // userService에서 인스턴스를 생성해서 굳이 여기서 필요가 없음
-    // 컨트롤러에서 인스턴스를 생성하면 this.userService로 사용해야됨
-
-    // 생성자 제거
-    // private userService: UserService;
-
-    // constructor() {
-    //     this.userService = new UserService();
-    // }
-
     // 회원가입
     signup = async (req: Request, res: Response, next: NextFunction) => {
         try {
