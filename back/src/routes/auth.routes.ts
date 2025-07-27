@@ -1,16 +1,27 @@
-import { Router } from "express";
-import { authController } from "../controllers/auth.controller";
+import express from "express";
+import userController from "../controllers/user.controller";
 import {
-  registerValidation,
-  loginValidation,
-} from "../middlewares/validation.middleware";
+  signUpValidator,
+  loginValidator,
+  handleValidationResult,
+} from "../middleware/validation-result-handler";
 
-const router = Router();
+const router = express.Router();
 
-// 사용자 회원가입 라우트
-router.post("/register", registerValidation, authController.register);
+// 회원가입
+router.post(
+  "/register",
+  signUpValidator,
+  handleValidationResult,
+  userController.signup
+);
 
-// 사용자 로그인 라우트
-router.post("/login", loginValidation, authController.login);
+// 로그인
+router.post(
+  "/login",
+  loginValidator,
+  handleValidationResult,
+  userController.login
+);
 
 export default router;
