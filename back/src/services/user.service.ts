@@ -99,7 +99,7 @@ class UserService {
         }
 
         // 비밀번호 제외하고 반환
-        const { password, ...userWithoutPassword } = user;
+        const { password, agreement, ...userWithoutPassword } = user;
         return userWithoutPassword;
     }
 
@@ -144,7 +144,7 @@ class UserService {
         const updatedUser = await userRepository.updateUser(userId, dataToUpdate as UpdateUserData);
 
         // 비밀번호 제외하고 반환
-        const { password, ...userWithoutPassword } = updatedUser;
+        const { password, agreement, ...userWithoutPassword } = updatedUser;
         return userWithoutPassword;
     }
 
