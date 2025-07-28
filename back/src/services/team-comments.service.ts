@@ -2,34 +2,33 @@
 
 import { TeamCommentRepository } from "../repositories/team-comments.repository";
 import { TeamPostRepository } from "../repositories/team-posts.repository";
-import { TeamMemberRepository } from "../repositories/team-members.repository"; // 실제 TeamMemberRepository를 import합니다.
+import { TeamMemberRepository } from "../repositories/team-members.repository";
 import { TeamComment, TeamRole } from "@prisma/client";
 
 export class TeamCommentService {
   private teamCommentRepository: TeamCommentRepository;
   private teamPostRepository: TeamPostRepository;
-  private teamMemberRepository: TeamMemberRepository; // 실제 레포지토리 사용
+  private teamMemberRepository: TeamMemberRepository;
 
   constructor() {
     this.teamCommentRepository = new TeamCommentRepository();
     this.teamPostRepository = new TeamPostRepository();
-    this.teamMemberRepository = new TeamMemberRepository(); // 실제 레포지토리 인스턴스 생성
+    this.teamMemberRepository = new TeamMemberRepository();
   }
 
   /**
-   * 새 댓글을 생성합니다.
+   * 새 댓글을 생성합니다. (대댓글 포함)
    * @param commentData - 댓글 데이터 { teamPostId, userId, content, parentId? }
    * @returns 생성된 TeamComment 객체
    * @throws Error 게시물을 찾을 수 없을 때, 사용자가 팀 멤버가 아닐 때, 부모 댓글을 찾을 수 없을 때
    */
   public async createComment(commentData: {
-    // 메서드 이름 변경: createTeamComment -> createComment
-    teamPostId: number; // 컨트롤러에서 객체 안에 teamPostId를 포함하여 전달하므로, 여기에 명시
+    teamPostId: number;
     userId: number;
     content: string;
-    parentId?: number;
+    parentId?: number; // 대댓글을 위한 parentId 필드
   }): Promise<TeamComment> {
-    const { teamPostId, userId, content, parentId } = commentData; // 객체에서 직접 구조 분해 할당
+    const { teamPostId, userId, content, parentId } = commentData;
 
     // 1. 팀 게시물 존재 여부 확인
     const teamPost = await this.teamPostRepository.findById(teamPostId);
@@ -46,7 +45,7 @@ export class TeamCommentService {
       throw new Error("Unauthorized: You are not a member of this team.");
     }
 
-    // 3. 부모 댓글이 지정된 경우, 부모 댓글이 존재하는지 확인
+    // 3. 부모 댓글이 지정된 경우, 부모 댓글이 존재하는지 확인 및 해당 게시물에 속하는지 확인
     if (parentId) {
       const parentComment = await this.teamCommentRepository.findById(parentId);
       if (!parentComment || parentComment.teamPostId !== teamPostId) {
@@ -60,33 +59,32 @@ export class TeamCommentService {
       teamPostId,
       userId,
       content,
-      parentId,
+      parentId, // parentId를 레포지토리로 전달
     });
 
     return newComment;
   }
 
   /**
-   * 특정 팀 게시물의 댓글 목록을 조회합니다.
+   * 특정 팀 게시물의 댓글 목록을 조회합니다. (최상위 댓글 및 1단계 대댓글 포함)
    * @param teamPostId - 팀 게시물 ID
-   * @returns TeamComment 배열
+   * @returns TeamComment 배열 (작성자 닉네임 및 대댓글 포함)
    * @throws Error 게시물을 찾을 수 없을 때
    */
   public async findCommentsByTeamPostId(
-    // 메서드 이름 변경: findTeamCommentsByTeamPost -> findCommentsByTeamPostId
     teamPostId: number
-    // 컨트롤러에서 query 및 requestingUserId를 전달하지 않으므로, 서비스 시그니처에서 제거
-    // 만약 권한 확인이 필요하다면, 컨트롤러에서 requestingUserId를 전달하도록 수정해야 함
-  ): Promise<TeamComment[]> {
+  ): Promise<
+    (TeamComment & {
+      user: { nickname: string } | null;
+      replies: (TeamComment & { user: { nickname: string } | null })[];
+    })[]
+  > {
     const teamPost = await this.teamPostRepository.findById(teamPostId);
     if (!teamPost) {
       throw new Error("Team Post not found.");
     }
 
-    // NOTE: 댓글 목록 조회 시 권한 확인 로직은 현재 컨트롤러에서 requestingUserId를 전달하지 않으므로,
-    // 필요하다면 컨트롤러에서 teamPost.teamId를 사용하여 팀 멤버 여부를 확인 후 호출해야 합니다.
-    // 현재는 게시물 존재 여부만 확인합니다.
-
+    // 레포지토리에서 닉네임과 대댓글을 포함하여 가져오므로, 반환 타입 업데이트
     const comments = await this.teamCommentRepository.findByTeamPostId(
       teamPostId
     );
@@ -102,9 +100,8 @@ export class TeamCommentService {
    * @throws Error 댓글을 찾을 수 없을 때 또는 권한이 없을 때
    */
   public async updateComment(
-    // 메서드 이름 변경: updateTeamComment -> updateComment
     teamCommentId: number,
-    userId: number, // updateData 객체 대신 userId와 content를 직접 받음
+    userId: number,
     content: string
   ): Promise<TeamComment> {
     const existingComment = await this.teamCommentRepository.findById(
@@ -116,12 +113,10 @@ export class TeamCommentService {
     }
 
     // 수정 권한 확인: 요청하는 userId가 댓글 작성자이거나 팀장인지 확인
-    // 팀 게시물 ID를 통해 팀 ID를 가져와서 팀 멤버 역할을 확인
     const teamPost = await this.teamPostRepository.findById(
       existingComment.teamPostId
     );
     if (!teamPost) {
-      // 이 경우는 거의 없겠지만, 데이터 불일치 시를 대비
       throw new Error("Associated team post not found for this comment.");
     }
 
@@ -157,7 +152,6 @@ export class TeamCommentService {
     teamCommentId: number,
     userId: number
   ): Promise<number> {
-    // 메서드 이름 변경: deleteTeamComment -> deleteComment, 반환 타입 Promise<void> -> Promise<number>
     const existingComment = await this.teamCommentRepository.findById(
       teamCommentId
     );
@@ -188,7 +182,8 @@ export class TeamCommentService {
       );
     }
 
-    await this.teamCommentRepository.delete(teamCommentId);
-    return 1; // 성공적으로 삭제되었음을 의미하는 1 반환
+    // 레포지토리의 delete 메서드가 삭제된 레코드 수를 반환하도록 변경되었으므로, 그 값을 그대로 반환합니다.
+    const deletedCount = await this.teamCommentRepository.delete(teamCommentId);
+    return deletedCount;
   }
 }

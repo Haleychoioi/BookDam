@@ -6,22 +6,48 @@ import { Router } from "express";
 import communitiesRouter from "./communities.routes";
 import postsRouter from "./posts.routes";
 import teamPostsRouter from "./team-posts.routes";
-import commentsRouter from "./comments.routes";
-import teamCommentsRouter from "./team-comments.routes";
-import applicationsRouter from "./applications.routes"; // applications.routes 임포트
+// 퍼블릭 댓글 라우터 (이전 대화에서 수정 완료)
+import {
+  postCommentsRouter,
+  standaloneCommentsRouter,
+} from "./comments.routes";
+// 팀 댓글 라우터 (분리된 두 라우터를 임포트합니다.)
+import {
+  teamPostCommentsRouter,
+  standaloneTeamCommentsRouter,
+} from "./team-comments.routes";
+import applicationsRouter from "./applications.routes";
 import booksRouter from "./book.routes";
 
 const router = Router();
 
 // 각 라우터를 기본 경로에 연결합니다.
+
+// 커뮤니티 관련 라우트: /api/communities
 router.use("/communities", communitiesRouter);
+
+// 퍼블릭 게시물 라우트: /api/posts
 router.use("/posts", postsRouter);
-router.use("/team-posts", teamPostsRouter); // 팀 게시물 라우트
-router.use("/comments", commentsRouter);
-router.use("/team-comments", teamCommentsRouter); // 수정: "/team-posts"에서 "/team-comments"로 변경하여 중복 방지
-// applicationsRouter를 올바른 경로에 연결합니다.
-// GET /api/mypage/communities/recruiting/:communityId/applicants 경로를 처리하기 위함입니다.
+// 게시물에 종속된 퍼블릭 댓글 라우트: /api/posts/:postId/comments
+router.use("/posts", postCommentsRouter);
+
+// 개별 퍼블릭 댓글 수정/삭제 라우트: /api/comments/:id
+router.use("/comments", standaloneCommentsRouter);
+
+// 팀 게시물 라우트: /api/team-posts
+router.use("/team-posts", teamPostsRouter);
+// 중요: 팀 게시물에 종속된 댓글 라우트를 /team-posts 경로 아래에 연결합니다.
+// 이렇게 해야 GET/POST /api/team-posts/:teamPostId/comments 경로가 올바르게 매핑됩니다.
+router.use("/team-posts", teamPostCommentsRouter); // teamPostCommentsRouter 연결
+
+// 중요: 개별 팀 댓글 수정/삭제 라우트를 /team-comments 경로 아래에 직접 연결합니다.
+// 이렇게 해야 PUT/DELETE /api/team-comments/:id 경로가 올바르게 매핑됩니다.
+router.use("/team-comments", standaloneTeamCommentsRouter); // standaloneTeamCommentsRouter 연결
+
+// 마이페이지 커뮤니티 모집 관련 라우트: /api/mypage/communities/recruiting
 router.use("/mypage/communities/recruiting", applicationsRouter);
+
+// 도서 관련 라우트: /api/books
 router.use("/books", booksRouter);
 
 export default router;
