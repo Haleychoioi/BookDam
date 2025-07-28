@@ -25,6 +25,6 @@ router.delete('/delete', authenticate, handleValidationResult, userController.de
 // router.put('/password', authenticate, userController.changePassword);
 
 // 사용자 통계 (관리자용) - api에 없는 기능
-router.get('/userList', authenticate, userController.getUserStats);
+// router.get('/userList', authenticate, userController.getUserStats);
 
 export default router;
