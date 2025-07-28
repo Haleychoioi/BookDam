@@ -33,7 +33,7 @@ const BookGridDisplay: React.FC<BookGridDisplayProps> = ({
         <Link
           key={book.isbn13}
           to={`/books/${book.isbn13}`}
-          className="w-52 h-96 flex flex-col items-center max-w-full relative"
+          className="w-52 flex flex-col items-center max-w-full relative"
         >
           {/* 책 커버 이미지 */}
           <img

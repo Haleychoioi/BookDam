@@ -1,42 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import MyPostsDisplay from "../../components/mypage/MyPostsDisplay";
 import MyCommentsDisplay from "../../components/mypage/MyCommentsDisplay";
 import type { Post, Comment } from "../../types";
+import { fetchMyPosts, fetchMyComments } from "../../api/mypage";
 
-const myPostsMockData: Post[] = Array.from({ length: 30 }, (_, i) => ({
-  id: `my-post-${i + 1}`,
-  title: `[내가 쓴 글] ${i + 1}번째 이야기`,
-  commentCount: Math.floor(Math.random() * 5),
-  createdAt: new Date().toISOString(),
-  type: i % 2 === 0 ? "general" : "community",
-  author: `작성자${i + 1}`, // ✨ author 추가 ✨
-  authorId: `user${i + 1}`, // ✨ authorId 추가 ✨
-  content: `이것은 내가 작성한 ${i + 1}번째 글의 상세 내용입니다.`, // ✨ content 추가 ✨
-}));
-
-const myCommentsMockData: Comment[] = Array.from({ length: 40 }, (_, i) => ({
-  id: `my-comment-${i + 1}`,
-  author: `나 (사용자)`,
-  authorId: "currentUserId",
-  createdAt: new Date(Date.now() - i * 12 * 3600 * 1000).toLocaleString(
-    "ko-KR",
-    {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }
-  ),
-  content: `이것은 내가 작성한 ${i + 1}번째 댓글 내용입니다.`,
-  isEdited: i % 5 === 0,
-  postId: `related-post-${Math.floor(Math.random() * 10) + 1}`,
-  postTitle: `관련 게시물 제목 ${Math.floor(Math.random() * 10) + 1}`,
-  postType: i % 2 === 0 ? "general" : "community",
-  communityId: `comm${(i % 3) + 1}`,
-}));
+// ✨ 더미 데이터 삭제 ✨
+// const myPostsMockData: Post[] = Array.from(...);
+// const myCommentsMockData: Comment[] = Array.from(...);
 
 const MyActivitiesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -53,39 +24,46 @@ const MyActivitiesPage: React.FC = () => {
   );
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { totalPages, displayedData } = useMemo(() => {
-    let rawData: Post[] | Comment[] = [];
-    const itemsPerPage = 8;
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
 
-    if (activeTab === "posts") {
-      rawData = myPostsMockData;
-    } else {
-      rawData = myCommentsMockData;
+  const [totalPostsCount, setTotalPostsCount] = useState(0);
+  const [totalCommentsCount, setTotalCommentsCount] = useState(0);
+
+  const [loading, setLoading] = useState(true); // 초기 로딩 상태 true
+  const [error, setError] = useState<string | null>(null);
+
+  const itemsPerPage = 8;
+
+  const fetchActivities = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (activeTab === "posts") {
+        const data = await fetchMyPosts(currentPage, itemsPerPage);
+        setPosts(data.posts);
+        setTotalPostsCount(data.total);
+      } else {
+        // activeTab === "comments"
+        const data = await fetchMyComments(currentPage, itemsPerPage);
+        setComments(data.comments);
+        setTotalCommentsCount(data.total);
+      }
+    } catch (err) {
+      console.error("내 활동 기록 불러오기 실패:", err);
+      setError("활동 기록을 불러오는 데 실패했습니다.");
+      setPosts([]);
+      setComments([]);
+      setTotalPostsCount(0);
+      setTotalCommentsCount(0);
+    } finally {
+      setLoading(false);
     }
+  }, [activeTab, currentPage, itemsPerPage]);
 
-    const currentTotalCount = rawData.length;
-    const calculatedTotalPages = Math.ceil(currentTotalCount / itemsPerPage);
-
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentDisplayedData = rawData.slice(startIndex, endIndex);
-
-    return {
-      totalPages: calculatedTotalPages,
-      displayedData: currentDisplayedData,
-    };
-  }, [activeTab, currentPage]);
-
-  const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId as "posts" | "comments");
-    setCurrentPage(1);
-    navigate(`${location.pathname}?tab=${tabId}`, { replace: true });
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo(0, 0);
-  };
+  useEffect(() => {
+    fetchActivities();
+  }, [fetchActivities]);
 
   useEffect(() => {
     const tabFromUrl = queryParams.get("tab");
@@ -98,6 +76,33 @@ const MyActivitiesPage: React.FC = () => {
       setCurrentPage(1);
     }
   }, [queryParams, activeTab]);
+
+  const totalPages = useMemo(() => {
+    if (activeTab === "posts") {
+      return Math.ceil(totalPostsCount / itemsPerPage);
+    } else {
+      return Math.ceil(totalCommentsCount / itemsPerPage);
+    }
+  }, [activeTab, totalPostsCount, totalCommentsCount, itemsPerPage]);
+
+  const displayedData = useMemo(() => {
+    if (activeTab === "posts") {
+      return posts;
+    } else {
+      return comments;
+    }
+  }, [activeTab, posts, comments]);
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId as "posts" | "comments");
+    setCurrentPage(1);
+    navigate(`${location.pathname}?tab=${tabId}`, { replace: true });
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo(0, 0);
+  };
 
   return (
     <div>
@@ -125,20 +130,41 @@ const MyActivitiesPage: React.FC = () => {
         ))}
       </div>
 
-      {activeTab === "posts" ? (
-        <MyPostsDisplay
-          posts={displayedData as Post[]}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+      {loading && (
+        <p className="text-center text-gray-600">활동 기록을 불러오는 중...</p>
+      )}
+      {error && <p className="text-center text-red-600">{error}</p>}
+      {!loading && !error && displayedData.length === 0 ? (
+        <p className="text-center text-gray-600">
+          작성한 활동 기록이 없습니다.
+        </p>
       ) : (
-        <MyCommentsDisplay
-          comments={displayedData as Comment[]}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+        <>
+          {activeTab === "posts" ? (
+            <MyPostsDisplay
+              posts={displayedData as Post[]}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          ) : (
+            <MyCommentsDisplay
+              comments={displayedData as Comment[]}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              onAddReply={() => {
+                // TODO: 댓글 답글 추가 로직 구현
+                // 이 함수는 MyCommentsDisplay 내부에서 답글 버튼 클릭 시 호출됩니다.
+                // 실제 답글 작성 API 호출 로직을 여기에 구현하거나, MyCommentsDisplay에서 받은
+                // 특정 댓글 ID 등을 바탕으로 부모 컴포넌트에서 처리하도록 할 수 있습니다.
+                console.log("답글 추가 기능 구현 필요");
+              }}
+              currentUserId={1} // ✨ 현재 로그인된 사용자의 ID를 전달해야 합니다. ✨
+              // 실제 애플리케이션에서는 사용자 인증 상태(예: Context API, Redux 등)에서 이 ID를 가져와야 합니다.
+            />
+          )}
+        </>
       )}
     </div>
   );

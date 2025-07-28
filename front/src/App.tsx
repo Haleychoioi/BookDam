@@ -34,7 +34,7 @@ function App() {
 
           {/* 책 검색 및 상세 */}
           <Route path="books/search" element={<BookSearchResultPage />} />
-          <Route path="books/:bookId" element={<BookDetailPage />} />
+          <Route path="books/:itemId" element={<BookDetailPage />} />
 
           {/* 특정 커뮤니티의 게시물 목록 조회 */}
           <Route
