@@ -48,12 +48,15 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
         <div className="flex flex-grow justify-center space-x-8 ">
           {visibleBooks.map((book) => (
             <Link
-              key={book.id}
-              to={`/books/${book.id}`}
+              key={book.isbn13}
+              to={`/books/${book.isbn13}`}
               className="w-60 h-80 rounded-md shadow-md flex-shrink-0"
             >
               <img
-                src={book.coverImage}
+                src={
+                  book.coverImage ||
+                  "https://via.placeholder.com/160x256/E0E0E0/909090?text=No+Cover"
+                }
                 alt={book.title}
                 className="w-full h-full object-cover rounded-md"
               />

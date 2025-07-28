@@ -8,11 +8,11 @@ const communityPostsMockData: { [key: string]: Post[] } = {
     id: `comm1-post-${i + 1}`,
     title: `[해리포터] ${i + 1}번째 독서 스터디 논의점`,
     commentCount: Math.floor(Math.random() * 10) + 1,
-    createdAt: new Date(Date.now() - i * 86400000).toISOString(), // ✨ createdAt 추가 ✨
-    type: "community", // ✨ type 추가 ✨
-    author: `호그와트 ${i + 1}`, // ✨ author 추가 ✨
-    authorId: `user-hp${i + 1}`, // ✨ authorId 추가 ✨
-    content: `이것은 [해리포터] 커뮤니티의 ${i + 1}번째 게시물 내용입니다.`, // ✨ content 추가 ✨
+    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
+    type: "community",
+    author: `호그와트 ${i + 1}`,
+    authorId: (i + 1) * 100 + 1, // ★★★ FIX: string -> number (예시: 고유한 숫자 ID 할당) ★★★
+    content: `이것은 [해리포터] 커뮤니티의 ${i + 1}번째 게시물 내용입니다.`,
   })),
   comm2: Array.from({ length: 25 }, (_, i) => ({
     id: `comm2-post-${i + 1}`,
@@ -21,7 +21,7 @@ const communityPostsMockData: { [key: string]: Post[] } = {
     createdAt: new Date(Date.now() - i * 86400000).toISOString(),
     type: "community",
     author: `어부 ${i + 1}`,
-    authorId: `user-sea${i + 1}`,
+    authorId: (i + 1) * 100 + 2, // ★★★ FIX: string -> number ★★★
     content: `노인과 바다 ${i + 1}번째 게시물 내용입니다.`,
   })),
   comm3: Array.from({ length: 8 }, (_, i) => ({
@@ -31,7 +31,7 @@ const communityPostsMockData: { [key: string]: Post[] } = {
     createdAt: new Date(Date.now() - i * 86400000).toISOString(),
     type: "community",
     author: `촉한 ${i + 1}`,
-    authorId: `user-hist${i + 1}`,
+    authorId: (i + 1) * 100 + 3, // ★★★ FIX: string -> number ★★★
     content: `삼국지 ${i + 1}탄 인물 분석 내용입니다.`,
   })),
 };

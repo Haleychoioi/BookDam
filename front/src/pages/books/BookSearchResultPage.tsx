@@ -8,12 +8,17 @@ import BookCategoryFilter from "../../components/bookResults/BookCategoryFilter"
 import type { Book } from "../../types";
 
 const allDummyBooks: Book[] = Array.from({ length: 200 }, (_, i) => ({
-  id: `book-${i + 1}`,
-  coverImage: `https://via.placeholder.com/160x256/F0F0F0/B0B0B0?text=Book+${
-    i + 1
-  }`,
+  isbn13: `978893746012${(i + 1).toString().padStart(2, "0")}`, // 13자리 ISBN 형식으로 더미 데이터 생성
+  coverImage: `/x0I5nAsbefrRCgbR6jio5dvWhA.jpg`,
   title: `집 가자 ${i + 1}`,
   author: `작가 ${i + 1}`,
+  publisher: `출판사 ${Math.floor(i / 10) + 1}`, // 더미 출판사
+  publicationDate: `2023-0${Math.floor(i / 20) + 1}-${(i % 28) + 1}`, // 더미 출판일 (YYYY-MM-DD)
+  description: `이것은 '집 가자 ${
+    i + 1
+  }' 책의 더미 설명입니다. 책 내용 요약 및 기타 상세 정보가 여기에 들어갑니다.`, // 더미 설명
+  genre:
+    ["소설", "인문학", "자기계발", "과학", "역사", "에세이"][i % 6] || null, // 더미 장르 (백엔드 category에 해당)
 }));
 
 const categories = ["만화", "인문학", "소설/시/희곡", "외국어", "여행", "잡지"];
@@ -80,7 +85,7 @@ const BookSearchResultPage: React.FC = () => {
   const handleSearchSubmit = (term: string) => {
     setCurrentSearchTerm(term);
     setCurrentPage(1);
-    navigate(`/search/books?q=${encodeURIComponent(term)}`);
+    navigate(`/books/search?q=${encodeURIComponent(term)}`);
   };
 
   const handleCategoryClick = (category: string) => {

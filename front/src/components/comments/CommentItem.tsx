@@ -8,7 +8,7 @@ interface CommentItemProps {
   comment: Comment;
   postLink?: string;
   onAddReply: (parentId: string, content: string) => void;
-  currentUserId: string;
+  currentUserId: number;
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({

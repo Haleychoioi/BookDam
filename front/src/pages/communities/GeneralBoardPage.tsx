@@ -11,7 +11,7 @@ const allGeneralPostsMockData: Post[] = Array.from({ length: 100 }, (_, i) => ({
   updatedAt: undefined, // 선택적 필드이므로 일단 undefined
   type: "general",
   author: `작성자 ${i + 1}`,
-  authorId: `user-${i + 1}`,
+  authorId: i + 1, // ★★★ FIX: string -> number (고유한 숫자 ID 할당) ★★★
   content: `이것은 [전체] ${i + 1}번째 게시물의 내용입니다.`,
 }));
 

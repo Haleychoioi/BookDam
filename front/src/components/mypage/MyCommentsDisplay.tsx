@@ -7,6 +7,9 @@ interface MyCommentsDisplayProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+
+  onAddReply: (parentId: string, content: string) => void;
+  currentUserId: number;
 }
 
 const MyCommentsDisplay: React.FC<MyCommentsDisplayProps> = ({
@@ -14,6 +17,8 @@ const MyCommentsDisplay: React.FC<MyCommentsDisplayProps> = ({
   currentPage,
   totalPages,
   onPageChange,
+  onAddReply,
+  currentUserId,
 }) => {
   const getPostLink = (comment: Comment) => {
     // API 명세에 따라 postType을 사용하여 올바른 경로 생성
@@ -37,6 +42,8 @@ const MyCommentsDisplay: React.FC<MyCommentsDisplayProps> = ({
               key={comment.id}
               comment={comment}
               postLink={getPostLink(comment)}
+              onAddReply={onAddReply}
+              currentUserId={currentUserId}
             />
           ))}
         </div>

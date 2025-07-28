@@ -131,7 +131,7 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
               textColor="text-white"
               hoverBgColor="hover:bg-apply"
               className="px-4 py-2 w-auto mr-2 flex-1"
-              onClick={() => onCreateCommunityClick(book.id)}
+              onClick={() => onCreateCommunityClick(book.isbn13)}
             >
               커뮤니티 모집하기
             </Button>

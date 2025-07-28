@@ -6,13 +6,14 @@ import type { Post, Comment } from "../../types";
 import CommentInput from "../../components/comments/CommentInput";
 import CommentList from "../../components/comments/CommentList";
 
+// ★★★ FIX: mockPostsDetailData 내 authorId를 number로 변경 ★★★
 const mockPostsDetailData: { [key: string]: Post } = {
   "post-1": {
     id: "post-1",
     title: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
     commentCount: 5,
     author: "홍길동",
-    authorId: "user456",
+    authorId: 456, // 'user456' -> 456
     createdAt: "2025년 07월 21일",
     content: `# 마크다운 테스트 제목
 **볼드 텍스트**와 *이탤릭 텍스트*를 포함합니다.
@@ -32,7 +33,7 @@ console.log("코드 블록");
     title: "독서 모임 다음 주제 추천 받아요!",
     commentCount: 12,
     author: "김철수",
-    authorId: "user123",
+    authorId: 123, // 'user123' -> 123
     createdAt: "2025년 07월 20일",
     content: `안녕하세요, 다음 독서 모임 주제를 선정하려고 합니다.
 혹시 추천해주실 만한 책이나 특정 주제가 있다면 자유롭게 의견 주세요!
@@ -44,7 +45,7 @@ console.log("코드 블록");
     title: "[해리포터] 1번째 독서 스터디 논의점",
     commentCount: Math.floor(Math.random() * 10) + 1,
     author: "그리핀도르",
-    authorId: "user123",
+    authorId: 123, // 'user123' -> 123
     createdAt: "2025년 07월 17일",
     content: `해리포터 독서 모임 논의점
 이것은 '해리포터' 커뮤니티의 1번째 게시물 상세 내용입니다.
@@ -62,7 +63,7 @@ console.log("코드 블록");
     title: "[해리포터] 2번째 독서 스터디 논의점",
     commentCount: Math.floor(Math.random() * 10) + 1,
     author: "슬리데린",
-    authorId: "user456",
+    authorId: 456, // 'user456' -> 456
     createdAt: "2025년 07월 16일",
     content: `이것은 '해리포터' 커뮤니티의 2번째 게시물 상세 내용입니다. 논의 내용을 확인하세요.`,
     type: "community",
@@ -72,7 +73,7 @@ console.log("코드 블록");
     title: "[노인과바다] 깊은 바다 이야기 1",
     commentCount: Math.floor(Math.random() * 15) + 1,
     author: "바다사나이",
-    authorId: "user123",
+    authorId: 123, // 'user123' -> 123
     createdAt: "2025년 07월 15일",
     content: `노인과 바다의 첫 번째 깊은 이야기.`,
     type: "community",
@@ -82,7 +83,7 @@ console.log("코드 블록");
     title: "[전체] 1번째 흥미로운 이야기",
     commentCount: 5,
     author: "전체 게시판 유저1",
-    authorId: "user456",
+    authorId: 456, // 'user456' -> 456
     createdAt: "2025년 07월 21일",
     content: `이것은 전체 게시판의 1번째 게시물 상세 내용입니다.`,
     type: "general",
@@ -92,19 +93,20 @@ console.log("코드 블록");
     title: "[전체] 2번째 흥미로운 이야기",
     commentCount: 10,
     author: "전체 게시판 유저2",
-    authorId: "user123",
+    authorId: 123, // 'user123' -> 123
     createdAt: "2025년 07월 20일",
     content: `이것은 전체 게시판의 2번째 게시물 상세 내용입니다.`,
     type: "general",
   },
 };
 
+// ★★★ FIX: mockCommentsData 내 authorId를 number로 변경 ★★★
 const mockCommentsData: { [key: string]: Comment[] } = {
   "comm1-post-1": [
     {
       id: "c1",
       author: "책돌이",
-      authorId: "user123",
+      authorId: 123, // 'user123' -> 123
       createdAt: "2025.07.20 12:00",
       content: "정말 흥미로운 논의네요!",
       postId: "comm1-post-1",
@@ -117,7 +119,7 @@ const mockCommentsData: { [key: string]: Comment[] } = {
     {
       id: "c2",
       author: "책순이",
-      authorId: "user456",
+      authorId: 456, // 'user456' -> 456
       createdAt: "2025.07.20 12:35",
       content: "저도 그 부분에서 궁금한 점이 많았어요.",
       isEdited: true,
@@ -130,7 +132,7 @@ const mockCommentsData: { [key: string]: Comment[] } = {
     {
       id: "c3",
       author: "독서왕",
-      authorId: "user123",
+      authorId: 123, // 'user123' -> 123
       createdAt: "2025.07.20 13:10",
       content: "이런 질문은 정말 좋아요!",
       postId: "comm1-post-1",
@@ -144,7 +146,7 @@ const mockCommentsData: { [key: string]: Comment[] } = {
     {
       id: "gc1",
       author: "김독자",
-      authorId: "user789",
+      authorId: 789, // 'user789' -> 789
       createdAt: "2025.07.21 10:00",
       content: "좋은 글 잘 읽었습니다.",
       postId: "post-1",
@@ -156,7 +158,7 @@ const mockCommentsData: { [key: string]: Comment[] } = {
     {
       id: "gc2",
       author: "박논평",
-      authorId: "user123",
+      authorId: 123, // 'user123' -> 123
       createdAt: "2025.07.21 10:15",
       content: "저도 같은 의견입니다.",
       postId: "post-1",
@@ -172,7 +174,8 @@ const PostDetailPage: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
 
-  const currentUserId = "user123"; // 임시 로그인 사용자 ID (이 ID를 가진 사용자만 수정/삭제 버튼을 볼 수 있습니다)
+  // ★★★ FIX: currentUserId를 number로 변경 ★★★
+  const currentUserId = 123; // 임시 로그인 사용자 ID (이 ID를 가진 사용자만 수정/삭제 버튼을 볼 수 있습니다)
 
   const [post, setPost] = useState<Post | undefined>(undefined);
   const [loadingPost, setLoadingPost] = useState(true);
@@ -189,7 +192,7 @@ const PostDetailPage: React.FC = () => {
     const newReply: Comment = {
       id: `r-${Date.now()}`,
       author: "현재 사용자",
-      authorId: currentUserId,
+      authorId: currentUserId, // 이제 number 타입으로 할당
       createdAt: new Date().toLocaleString("ko-KR", {
         year: "numeric",
         month: "2-digit",
@@ -229,11 +232,12 @@ const PostDetailPage: React.FC = () => {
 
         // 기존 댓글과 Mock 대댓글을 합쳐서 comments 상태 초기화
         const fetchedComments = mockCommentsData[postId || ""] || [];
+        // ★★★ FIX: mockReplies 내 authorId를 number로 변경 ★★★
         const mockReplies: Comment[] = [
           {
             id: "gc1-r1",
             author: "답글러1",
-            authorId: "user456",
+            authorId: 456, // 'user456' -> 456
             createdAt: "2025.07.21 10:30",
             content: "첫 댓글에 대한 답글입니다.",
             postId: "post-1",
@@ -246,7 +250,7 @@ const PostDetailPage: React.FC = () => {
           {
             id: "gc1-r2",
             author: "답글러2",
-            authorId: "user789",
+            authorId: 789, // 'user789' -> 789
             createdAt: "2025.07.21 10:45",
             content: "저도 동의합니다.",
             postId: "post-1",
@@ -259,7 +263,7 @@ const PostDetailPage: React.FC = () => {
           {
             id: "c1-r1",
             author: "해리팬",
-            authorId: "user456",
+            authorId: 456, // 'user456' -> 456
             createdAt: "2025.07.20 12:15",
             content: "맞아요, 그 부분 저도 궁금했어요!",
             postId: "comm1-post-1",
@@ -284,7 +288,7 @@ const PostDetailPage: React.FC = () => {
   }, [postId]); // postId가 변경될 때마다 재호출
 
   // 게시물 작성자 여부 확인
-  const isPostAuthor = post?.authorId === currentUserId;
+  const isPostAuthor = post?.authorId === currentUserId; // 이제 number === number 비교
 
   // 게시물 수정 시작 (PostDetailTemplate의 "수정" 버튼 클릭 시)
   const handleEditPost = () => {
@@ -372,7 +376,7 @@ const PostDetailPage: React.FC = () => {
     const newComment: Comment = {
       id: `c-${Date.now()}`,
       author: "현재 사용자",
-      authorId: currentUserId,
+      authorId: currentUserId, // 이제 number 타입으로 할당
       createdAt: new Date().toLocaleString("ko-KR", {
         year: "numeric",
         month: "2-digit",

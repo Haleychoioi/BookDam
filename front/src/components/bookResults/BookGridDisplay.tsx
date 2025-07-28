@@ -23,7 +23,7 @@ const BookGridDisplay: React.FC<BookGridDisplayProps> = ({
     // isWishlisted는 HeartButton 내부에서 현재 찜 상태를 토글한 결과이므로,
     // 여기서는 `false` (즉, 찜 해제 상태)일 때만 onRemoveFromWishlist 호출
     if (!isWishlisted && onRemoveFromWishlist) {
-      onRemoveFromWishlist(book.id, book.title);
+      onRemoveFromWishlist(book.isbn13, book.title);
     }
   };
 
@@ -31,38 +31,28 @@ const BookGridDisplay: React.FC<BookGridDisplayProps> = ({
     <div className={`grid gap-x-8 gap-y-12 justify-items-center ${className}`}>
       {books.map((book) => (
         <Link
-          key={book.id}
-          to={`/books/${book.id}`}
+          key={book.isbn13}
+          to={`/books/${book.isbn13}`}
           className="w-52 h-96 flex flex-col items-center max-w-full relative"
         >
           {/* 책 커버 이미지 */}
           <img
-            src={book.coverImage}
+            src={book.coverImage || "/x0I5nAsbefrRCgbR6jio5dvWhA.jpg"}
             alt={book.title}
-            className="w-full h-4/5 object-cover rounded-md shadow-md"
+            className="w-full h-full object-cover rounded-md shadow-md"
           />
 
           {/* 하트 버튼 */}
           {showWishlistButton && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                // 이제 HeartButton의 onClick은 handleHeartButtonClick을 호출
-                // HeartButton 자체의 onClick은 isWishlisted 인자만 제공하므로,
-                // 여기에 다시 한번 HeartButton을 렌더링하고 그 onClick을 활용
-              }}
-              className="absolute top-64 right-2.5 p-0 bg-transparent border-none focus:outline-none"
-            >
+            <div className="absolute top-2 right-2 z-10">
               <HeartButton
-                initialIsWishlisted={true}
+                initialIsWishlisted={true} // TODO: 실제 찜 상태 데이터와 연동
                 onClick={(isWishlisted) =>
                   handleHeartButtonClick(book, isWishlisted)
                 }
                 className="p-2 rounded-full shadow-md"
               />
-            </button>
+            </div>
           )}
 
           {/* 책 제목 */}

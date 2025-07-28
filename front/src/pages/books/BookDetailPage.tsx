@@ -128,140 +128,96 @@ const dummyCommunities: Community[] = [
 ];
 
 const dummyBookData: BookDetail = {
-  id: "book-123",
-
-  coverImage:
-    "https://via.placeholder.com/200x450/F0F0F0/B0B0B0?text=Book+Cover",
-
+  isbn13: "9788937460123",
+  coverImage: "https://picsum.photos/seed/book123/200/450",
   title: "혼모노",
-
   author: "성해나",
-
-  publisher: "민음사",
-
-  publicationDate: "2023-01-01",
-
-  averageRating: 4.5,
-
-  description: `이 책은 독서 커뮤니티 플랫폼에서 추천하는 도서입니다. 흥미로운 내용을 담고 있습니다. 상세 줄거리입니다.`,
-
-  genre: "소설/시/희곡",
-
+  publisher: "민음사", // BookDetail에 포함된 필드
+  publicationDate: "2023-01-01", // BookDetail에 포함된 필드
+  averageRating: 4.5, // BookDetail에 포함된 필드
+  description: `이 책은 독서 커뮤니티 플랫폼에서 추천하는 도서입니다. 흥미로운 내용을 담고 있습니다. 상세 줄거리입니다.`, // BookDetail에 포함된 필드
+  genre: "소설/시/희곡", // BookDetail에 포함된 필드
   summary: `30년차 박수무당 문수가 자신이 모시던 신령 '장수 할멈'을 20살 신출내기 무당 신혜에게 빼앗기면서 벌어지는 '진짜'와 '가짜'를 둘러싼 치열한 대결을 그린 소설 (요약)`,
-
   tableOfContents: [
     "첫 소설집 『빛을 건너면 빛』 (문학동네 2022)",
-
     "젊은작가상 선사해준 「길티 클럽: 호랑이 만지기」",
   ],
-
   commentaryContent: `작품마다 치밀한 취재와 정교한 구성을 바탕으로 한 개성적인 캐릭터와 강렬하고도 서늘한 서사로 평단과 독자의 주목을 고루 받으며 새로운 세대의 리얼리즘을 열어가고 있다고 평가받는 작가 성해나가 두 번째 소설집 『혼모노』를 선보인다.`,
-
+  communityCount: 6,
+  isWished: false,
   recommendedBooks: [
     {
-      id: "rec-1",
-
-      coverImage:
-        "https://via.placeholder.com/192x288/B0B0B0/FFFFFF?text=추천1",
-
+      isbn13: "9788937460124", // isbn13 필드
+      coverImage: "https://picsum.photos/seed/book123/200/450",
       title: "추천도서 1",
-
       author: "작가 A",
+      publisher: "추천출판사1", // ★★★ 누락된 필드 추가
+      publicationDate: "2022-01-01", // ★★★ 누락된 필드 추가
+      description: "추천도서1에 대한 간략한 설명입니다.", // ★★★ 누락된 필드 추가
+      genre: "판타지", // ★★★ 누락된 필드 추가
     },
-
     {
-      id: "rec-2",
-
-      coverImage:
-        "https://via.placeholder.com/192x288/B0B0B0/FFFFFF?text=추천2",
-
+      isbn13: "9788937460125", // isbn13 필드
+      coverImage: "https://picsum.photos/seed/book123/200/450",
       title: "추천도서 2",
-
       author: "작가 B",
+      publisher: "추천출판사2", // ★★★ 누락된 필드 추가
+      publicationDate: "2022-02-01", // ★★★ 누락된 필드 추가
+      description: "추천도서2에 대한 간략한 설명입니다.", // ★★★ 누락된 필드 추가
+      genre: "에세이", // ★★★ 누락된 필드 추가
     },
-
     {
-      id: "rec-3",
-
-      coverImage:
-        "https://via.placeholder.com/192x288/B0B0B0/FFFFFF?text=추천3",
-
+      isbn13: "9788937460126", // isbn13 필드
+      coverImage: "https://picsum.photos/seed/book123/200/450",
       title: "추천도서 3",
-
       author: "작가 C",
+      publisher: "추천출판사3", // ★★★ 누락된 필드 추가
+      publicationDate: "2022-03-01", // ★★★ 누락된 필드 추가
+      description: "추천도서3에 대한 간략한 설명입니다.", // ★★★ 누락된 필드 추가
+      genre: "자기계발", // ★★★ 누락된 필드 추가
     },
   ],
-
-  communityCount: 6,
-
-  isWished: false,
 };
 
 const mockBookDetails: { [key: string]: BookDetail } = {
-  "book-123": dummyBookData, // dummyBookData를 직접 참조
+  "9788937460123": dummyBookData, // 키 값도 isbn13에 맞춰 변경
 
+  // 아래 "book-1", "book-2" 키를 사용하려면 useParams로 넘어오는 값이 "book-1", "book-2"여야 하고,
+  // 실제 백엔드 연동 시에는 isbn13 값인 "978..." 형태의 키로 변경하는 것을 권장합니다.
   "book-1": {
-    id: "book-1",
-
+    isbn13: "9788937460001", // 'id' 대신 'isbn13'으로 변경
     coverImage: "https://via.placeholder.com/200x450/F0F0F0/B0B0B0?text=Book+1",
-
     title: "리팩터링 2판",
-
     author: "마틴 파울러",
-
     publisher: "한빛미디어",
-
     publicationDate: "2019-01-01",
-
     description: "소프트웨어 개발의 고전, 코드 품질 개선의 필수 지침서입니다.",
-
     communityCount: 3,
-
     isWished: false,
-
     genre: "컴퓨터/IT",
-
     summary: "리팩토링에 대한 고전적인 지침서",
-
     tableOfContents: ["1장. 리팩토링 소개"],
-
     commentaryContent: "소프트웨어 품질 개선의 바이블",
-
     averageRating: 4.8,
-
-    recommendedBooks: dummyBookData.recommendedBooks,
+    recommendedBooks: dummyBookData.recommendedBooks, // 이 부분도 위의 변경된 구조를 따릅니다.
   },
 
   "book-2": {
-    id: "book-2",
-
+    isbn13: "9788937460002", // 'id' 대신 'isbn13'으로 변경
     coverImage: "https://via.placeholder.com/200x450/F0F0F0/B0B0B0?text=Book+2",
-
     title: "클린 코드",
-
     author: "로버트 C. 마틴",
-
     publisher: "인사이트",
-
     publicationDate: "2008-08-08",
-
     description: "개발자들이 반드시 알아야 할 클린 코드 작성법을 다룹니다.",
-
-    communityCount: 3, // communityCount가 5에서 3으로 변경되었네요.
-
+    communityCount: 3,
     isWished: true,
-
     genre: "컴퓨터/IT",
-
     summary: "좋은 코드를 작성하는 방법론",
-
     tableOfContents: ["1장. 깨끗한 코드"],
-
     commentaryContent: "소프트웨어 장인의 길",
-
     averageRating: 4.7,
-
-    recommendedBooks: dummyBookData.recommendedBooks,
+    recommendedBooks: dummyBookData.recommendedBooks, // 이 부분도 위의 변경된 구조를 따릅니다.
   },
 };
 
