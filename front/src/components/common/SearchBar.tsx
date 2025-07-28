@@ -55,7 +55,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     if (onSearch) {
       onSearch(processedSearchTerm);
     } else {
-      const searchPath = `/search/books?q=${encodeURIComponent(
+      const searchPath = `/books/search?q=${encodeURIComponent(
         processedSearchTerm
       )}`;
       navigate(searchPath);

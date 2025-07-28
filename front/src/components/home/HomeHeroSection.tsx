@@ -17,7 +17,7 @@ const HomeHeroSection: React.FC = () => {
     }
 
     // 1글자 이상이면 모두 검색 실행
-    const searchPath = `/search/books?q=${encodeURIComponent(
+    const searchPath = `/books/search?q=${encodeURIComponent(
       processedSearchTerm
     )}`;
     navigate(searchPath);

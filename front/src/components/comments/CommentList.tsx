@@ -4,8 +4,8 @@ import type { Comment } from "../../types";
 interface CommentListProps {
   comments: Comment[];
   depth?: number;
+  currentUserId: number;
   onAddReply: (parentId: string, content: string) => void;
-  currentUserId: string;
 }
 
 const buildCommentTree = (

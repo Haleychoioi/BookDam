@@ -4,16 +4,29 @@
 
 // 1.1 사용자 프로필 타입 (기본 사용자 정보)
 export interface UserProfile {
+  userId: number;
+  email: string;
+  name: string;
   nickname: string;
-  introduction: string;
+  phone: string;
+  profileImage?: string;
+  introduction?: string;
+  agreement: boolean;
+  role: "USER" | "ADMIN";
+  createdAt: string;
+  updatedAt: string;
 }
 
 // 1.2 도서 기본 타입
 export interface Book {
-  id: string;
-  coverImage: string; // 필수
+  isbn13: string;
+  coverImage: string | null;
   title: string;
   author: string;
+  publisher: string;
+  publicationDate: string | null;
+  description: string | null;
+  genre: string | null;
 }
 
 // 1.3 게시물 기본 타입 (상세 정보 포함)
@@ -25,7 +38,7 @@ export interface Post {
   updatedAt?: string;
   type: "community" | "general"; // 'community' 또는 'general' 게시물 타입
   author: string; // 게시물 작성자 이름
-  authorId: string; // 게시물 작성자 ID
+  authorId: number; // 게시물 작성자 ID
   content: string; // 게시물 본문 내용
 }
 
@@ -33,7 +46,7 @@ export interface Post {
 export interface Comment {
   id: string;
   author: string;
-  authorId: string;
+  authorId: number;
   createdAt: string;
   updatedAt?: string;
   content: string;
@@ -53,17 +66,13 @@ export interface Comment {
 
 // 2.1 도서 상세 정보 타입 (Book을 확장)
 export interface BookDetail extends Book {
-  publisher: string;
-  publicationDate: string; // "YYYY-MM-DD" 형식
-  description: string;
   communityCount: number;
   isWished: boolean;
-  genre: string;
   summary: string;
   tableOfContents: string[];
   commentaryContent: string;
   averageRating: number;
-  recommendedBooks?: Book[]; // optional (있을 수도 없을 수도 있음)
+  recommendedBooks?: Book[];
 }
 
 // =========================================================
