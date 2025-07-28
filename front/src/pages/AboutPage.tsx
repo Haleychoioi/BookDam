@@ -10,7 +10,12 @@ const AboutPage: React.FC = () => {
       <p className="text-lg mb-40">책과 사람을 연결하여 독서의 즐거움을 나누는 플랫폼입니다.</p>
   
       <div className="flex flex-col md:flex-row items-center justify-center gap-10 max-w-5xl mx-auto mb-10">
-        <div className="md:w-1/2 text-left">
+        <div className="md:w-1/2 mr-12">
+          <div className="w-full h-48 bg-gray-200 flex items-center justify-center rounded-lg">
+            이미지 영역
+          </div>
+        </div>
+        <div className="md:w-1/2">
           <h2 className="text-2xl font-bold mb-10">
             독서와 커뮤니티를 연결하는 종합 플랫폼으로 여러분을 초대합니다.
           </h2>
@@ -18,11 +23,6 @@ const AboutPage: React.FC = () => {
             이 웹사이트는 사용자에게 다양한 도서와 독서 토론의 기회를 제공합니다.
             또한, 마이페이지 관리와 커뮤니티 활동 참여를 통해 독서 경험을 더욱 풍부하게 만들어 드립니다.
           </p>
-        </div>
-        <div className="md:w-1/2">
-          <div className="w-full h-48 bg-gray-200 flex items-center justify-center rounded-lg">
-            이미지 영역
-          </div>
         </div>
       </div>
     </section>
