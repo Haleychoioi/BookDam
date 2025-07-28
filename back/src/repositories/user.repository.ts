@@ -43,7 +43,7 @@ class UserRepository {
   }
 
   // 비밀번호 찾기
-  async findByPassword(userId: number) {
+  async findByPasswordByUserId(userId: number) {
     return await prisma.user.findUnique({
       where: { userId }
     })
@@ -110,9 +110,3 @@ class UserRepository {
 
 
 export default new UserRepository();
-
-
-// Promise사용안해도 TypeScript가 자동으로 인식
-// async findByUsername(username: string): Promise<User | null> {
-//     return await prisma.user.findUnique({ where: { username } });
-// }

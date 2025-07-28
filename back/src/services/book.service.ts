@@ -23,7 +23,7 @@ export class BookService {
   //알라딘 책 정보 → DB에 이미 있는지 확인 → 없으면 DB컬럼 형식으로 변환해서 저장
   // 책을 DB에 저장 => 책 캐싱
   async saveBook(aladinBook: AladinBookItem) {
-    
+
     // 이미 있는지 확인
     const existingBook = await bookRepository.findByIsbn(aladinBook.isbn13);
     if (existingBook) {
@@ -53,30 +53,60 @@ export class BookService {
   }
 
 
-  // 카테고리 매핑 (알라딘 카테고리명 → 우리 카테고리)
+  // book.service.ts - mapCategory 개선
   private mapCategory(aladinCategory: string): string | null {
+    // "국내도서>" 다음의 첫 번째 카테고리 추출
+    const mainCategory = this.extractMainCategory(aladinCategory);
+
     const categoryMap: { [key: string]: string } = {
-      '소설': '소설',
+      '소설/시/희곡': '소설',
       '에세이': '에세이',
       '자기계발': '자기계발',
-      '경영': '경영',
+      '경제경영': '경영',
       '인문학': '인문학',
       '역사': '역사',
-      '과학': '과학',
-      '철학': '철학',
-      '심리학': '심리학',
-      '컴퓨터': '컴퓨터',
-      '외국어': '외국어',
-      '여행': '여행',
-      '요리': '요리',
-      '건강': '건강',
-      '취미': '취미',
-      '아동': '아동',
-      '청소년': '청소년'
+      '자연과학': '과학',
+      '요리/살림': '요리',
+      // ...
     };
 
-    return categoryMap[aladinCategory] || aladinCategory;
+    return mainCategory ? (categoryMap[mainCategory] || mainCategory) : null;
   }
+
+  // 메인 카테고리 추출 헬퍼 함수
+  private extractMainCategory(fullCategory: string): string | null {
+    if (fullCategory.startsWith('국내도서>')) {
+      const parts = fullCategory.split('>');
+      return parts[1]?.trim(); // "소설/시/희곡"
+    }
+    return null;
+  }
+
+
+  // 카테고리 매핑 (알라딘 카테고리명 → 우리 카테고리)
+  // private mapCategory(aladinCategory: string): string | null {
+  //   const categoryMap: { [key: string]: string } = {
+  //     '소설': '소설',
+  //     '에세이': '에세이',
+  //     '자기계발': '자기계발',
+  //     '경영': '경영',
+  //     '인문학': '인문학',
+  //     '역사': '역사',
+  //     '과학': '과학',
+  //     '철학': '철학',
+  //     '심리학': '심리학',
+  //     '컴퓨터': '컴퓨터',
+  //     '외국어': '외국어',
+  //     '여행': '여행',
+  //     '요리': '요리',
+  //     '건강': '건강',
+  //     '취미': '취미',
+  //     '아동': '아동',
+  //     '청소년': '청소년'
+  //   };
+
+  //   return categoryMap[aladinCategory] || aladinCategory;
+  // }
 }
 
 export const bookService = new BookService();

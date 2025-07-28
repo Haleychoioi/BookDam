@@ -11,6 +11,8 @@ const router = express.Router();
 router.get('/search', bookController.searchBooks);
 
 
+
+
 // 도서 리스트(aladin-api.service)
 // 베스트셀러
 router.get('/bestsellers', bookController.getBestSellers);
@@ -20,6 +22,9 @@ router.get('/newBooks', bookController.getNewBooks);
 
 // 신간 스페셜
 router.get('/specialNewBooks', bookController.getSpecialNewBooks);
+
+// 도서 전체 리스트
+router.get('/allBooks', bookController.getAllBooks);
 
 
 // 도서 조회(book.service)

@@ -74,6 +74,40 @@ class BookController {
     }
   }
 
+  getAllBooks = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { categoryId, page = 1, limit = 25 } = req.query;
+    
+    const [bestsellers, newBooks] = await Promise.all([
+      aladinApiService.getBookList({
+        QueryType: AladinListType.BESTSELLER,
+        Start: 1,
+        MaxResults: 15,
+        CategoryId: categoryId ? parseInt(categoryId as string) : 0
+      }),
+      aladinApiService.getBookList({
+        QueryType: AladinListType.NEW_ALL,
+        Start: 1,
+        MaxResults: 10,
+        CategoryId: categoryId ? parseInt(categoryId as string) : 0
+      })
+    ]);
+
+    // 중복 제거
+    const allBooks = [...bestsellers.item, ...newBooks.item];
+    const uniqueBooks = allBooks.filter((book, index, arr) => 
+      arr.findIndex(b => b.isbn13 === book.isbn13) === index
+    );
+
+    res.status(200).json({
+      status: 'success',
+      data: { item: uniqueBooks }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
   // 상품 리스트 - 신간리스트
   getNewBooks = async (req: Request, res: Response, next: NextFunction) => {
     try {
