@@ -13,7 +13,7 @@ const LoginPage: React.FC = () => {
       <h1 className="text-3xl font-semibold mb-6">환영합니다, 로그인</h1>
       <p>당신의 독서 여정을 시작하기 위해 로그인하세요.함께 책을 나누고 소통합시다.</p>
     </section>
-    <section id="register" className="container mx-auto py-12 px-20">
+    <section id="login" className="container mx-auto py-12 px-20">
         <form className="space-y-4 max-w-md mx-auto">
           <div>
             <input

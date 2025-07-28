@@ -3,6 +3,10 @@ import Button from "../../components/common/Button";
 
 import axios from "axios";
 
+{/* 가상의 URL 설정 */}
+const DEFAULT_PROFILE =
+  "https://via.placeholder.com/120?text=Profile";
+
 const RegisterPage: React.FC = () => {
     const [form, setForm] = useState({
     name: "",
@@ -25,7 +29,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   
   return (
     <div className="container mx-auto px-4 py-12">
-      <section id="loginText" className="container mx-auto py-12 px-20">
+      <section id="register" className="container mx-auto py-12 px-20">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold mb-4">회원가입</h1>
           <h2 className="text-lg text-gray-700">
@@ -34,6 +38,14 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           </h2>
         </div>
         <form className="max-w-md mx-auto space-y-4">
+          <div className="flex flex-col items-center mb-6">
+            <img
+              src={DEFAULT_PROFILE}
+              alt="프로필 이미지"
+              className="w-24 h-24 rounded-full border object-cover"
+            />
+            <p className="text-sm text-gray-500 mt-2">랜덤 프로필 이미지입니다.</p>
+          </div>
           <div>
             <label htmlFor="name" className="block text-sm font-semibold mb-1">
               이름
