@@ -2,26 +2,29 @@
 import { Request, Response, NextFunction } from 'express';
 import { AladinQueryType, AladinSortType, AladinSearchTarget, AladinListType, AladinLookupRequest, AladinCoverSize, AladinItemIdType } from '../types/book.type';
 import { aladinApiService } from '../services/aladin-api.service';
+import { bookService } from '../services/book.service';
+import { getCategoryId } from '../constants/categories';
 
-const getCategoryId = (category?: string): number => {
-  const categoryIdMap: { [key: string]: number } = {
-    '소설': 1,
-    '에세이': 55889,
-    '자기계발': 336,
-    '경영': 170,
-    '인문학': 656,
-    '역사': 74,
-    '과학': 983,
-    '사회과학': 798,
-    '예술': 517,
-    '만화': 2551,
-    '장르소설': 112011,
-    '고전': 2105,
-    '전체': 0
-  };
+// const getCategoryId = (category?: string): number => {
+//   const categoryIdMap: { [key: string]: number } = {
+//     '소설': 1,
+//     '에세이': 55889,
+//     '자기계발': 336,
+//     '경영': 170,
+//     '인문학': 656,
+//     '역사': 74,
+//     '과학': 983,
+//     '사회과학': 798,
+//     '예술': 517,
+//     '만화': 2551,
+//     '장르소설': 112011,
+//     '고전': 2105,
+//     '전체': 0
+//   };
 
-  return category ? (categoryIdMap[category] || 0) : 0;
-};
+//   return category ? (categoryIdMap[category] || 0) : 0;
+// };
+
 class BookController {
 
   // searchBooks = async (req: Request, res: Response, next: NextFunction) => {
@@ -267,43 +270,66 @@ class BookController {
 
   // 상품 조회
   getBookDetail = async (req: Request, res: Response, next: NextFunction) => {
-    try {
+  try {
+    const { itemId } = req.params;
 
-      const { itemId } = req.params;
-
-      if (!itemId) {
-        return res.status(400).json({
-          status: 'error',
-          message: '도서 ISBN을 입력해주세요'
-        });
-      }
-
-      // 숫자가 아닌 경우 검증 -> validation 추가하가
-
-      //쿼리 파라미터에서 추가 옵션들 추출
-      const { Cover, OptResult } = req.query;
-
-      const lookUpParams: AladinLookupRequest = {
-        ItemId: itemId,
-        ItemIdType: itemId.length === 13 ? AladinItemIdType.ISBN13 : AladinItemIdType.ITEM_ID,
-        Cover: Cover as AladinCoverSize,
-        OptResult: OptResult
-          ? (OptResult as string).split(',')
-          : ['description', 'fulldescription', 'fulldescription2', 'toc', 'story', 'subInfo']
-      }
-
-      const result = await aladinApiService.getBookDetail(lookUpParams);
-
-      res.status(200).json({
-        status: 'success',
-        message: '도서 상세 조회 성공',
-        data: result
-      })
-
-    } catch (error) {
-      next(error);
+    if (!itemId) {
+      return res.status(400).json({
+        status: 'error',
+        message: '도서 ISBN을 입력해주세요'
+      });
     }
+
+    const result = await bookService.getBookDetail(itemId);
+
+    res.status(200).json({
+      status: 'success',
+      message: '도서 상세 조회 성공',
+      data: result
+    });
+
+  } catch (error) {
+    next(error);
   }
+}
+  // getBookDetail = async (req: Request, res: Response, next: NextFunction) => {
+  //   try {
+
+  //     const { itemId } = req.params;
+
+  //     if (!itemId) {
+  //       return res.status(400).json({
+  //         status: 'error',
+  //         message: '도서 ISBN을 입력해주세요'
+  //       });
+  //     }
+
+  //     // 숫자가 아닌 경우 검증 -> validation 추가하가
+
+  //     //쿼리 파라미터에서 추가 옵션들 추출
+  //     const { Cover, OptResult } = req.query;
+
+  //     const lookUpParams: AladinLookupRequest = {
+  //       ItemId: itemId,
+  //       ItemIdType: itemId.length === 13 ? AladinItemIdType.ISBN13 : AladinItemIdType.ITEM_ID,
+  //       Cover: Cover as AladinCoverSize,
+  //       OptResult: OptResult
+  //         ? (OptResult as string).split(',')
+  //         : ['description', 'fulldescription', 'fulldescription2', 'toc', 'story', 'subInfo']
+  //     }
+
+  //     const result = await aladinApiService.getBookDetail(lookUpParams);
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       message: '도서 상세 조회 성공',
+  //       data: result
+  //     })
+
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // }
 
 
 

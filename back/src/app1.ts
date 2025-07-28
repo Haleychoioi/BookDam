@@ -25,19 +25,21 @@ const PORT = process.env.PORT || 3000;
 // Express 앱을 기반으로 HTTP 서버 생성*
 const server = http.createServer(app);
 
-// HTTP 서버 위에 Socket.IO 서버를 연결 => CORS 설정을 해야 클라이언트에서 접속 가능*
+// HTTP 서버 위에 Socket.IO 서버를 연결 => CORS 설정을 해야 클라이언트에서 접속 가능
 const io = new Server(server, {
   cors: {
-    // 클라이언트 주소를 명시적으로 지정 나중에 고쳐야되나(주의)**
-    origin: 'http://127.0.0.1:5500',
+    // 클라이언트 주소를 명시적으로 지정 나중에 고쳐야되나(주의)
+    origin: ["http://localhost:5173", "http://127.0.0.1:5500"],
     methods: ['GET', 'POST'],
   },
 });
 
-// Express 앱에도 cors 미들웨어를 적용합니다. 라우터보다 위에 있어야 됨
+// Express 앱에도 cors 미들웨어를 적용. 라우터보다 위에 있어야 됨
+// 배포할때 다시 변경
 app.use(cors({
-    origin: 'http://127.0.0.1:5500'
+    origin: ["http://localhost:5173", "http://127.0.0.1:5500"]
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // profileImage 링크 이동할때 에러 안나게 하려면

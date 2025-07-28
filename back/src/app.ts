@@ -34,14 +34,15 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     // 클라이언트 주소를 명시적으로 지정 나중에 고쳐야되나(주의)
-    origin: 'http://127.0.0.1:5500',
+    origin: ["http://localhost:5173", "http://127.0.0.1:5500"],
     methods: ['GET', 'POST'],
   },
 });
 
-// Express 앱에도 cors 미들웨어를 적용합니다. 라우터보다 위에 있어야 됨
+// Express 앱에도 cors 미들웨어를 적용. 라우터보다 위에 있어야 됨
+// 배포할때 다시 변경
 app.use(cors({
-    origin: 'http://127.0.0.1:5500'
+    origin: ["http://localhost:5173", "http://127.0.0.1:5500"]
 }));
 
 // 미들웨어 설정

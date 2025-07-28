@@ -78,6 +78,54 @@ export class PostController {
     }
   };
 
+  //   public createPost = async (
+  //   req: Request,
+  //   res: Response,
+  //   next: NextFunction
+  // ) => {
+  //   try {
+  //     const { 
+  //       userId: rawUserId, 
+  //       title, 
+  //       content, 
+  //       type,         
+  //       maxMembers,     
+  //       isbn13        
+  //     } = req.body;
+
+  //     // 필수 필드 검사
+  //     if (rawUserId === undefined || title === undefined || content === undefined) {
+  //       return res.status(400).json({
+  //         message: "필수 필드(userId, title, content)가 누락되었습니다.",
+  //       });
+  //     }
+
+  //     const userId = Number(rawUserId);
+  //     if (isNaN(userId)) {
+  //       return res.status(400).json({ 
+  //         message: "유효한 사용자 ID(userId)가 아닙니다." 
+  //       });
+  //     }
+
+  //     const newPost = await this.postService.createPost({
+  //       userId,
+  //       title,
+  //       content,
+  //       type,       
+  //       maxMembers, 
+  //       isbn13      
+  //     });
+
+  //     res.status(201).json({
+  //       status: "success",
+  //       message: "게시물 작성 완료",
+  //       postId: newPost.postId,
+  //     });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // };
+
   /**
    * GET /posts/:id - 특정 게시물 상세 정보 조회
    */

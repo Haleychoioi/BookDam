@@ -1,7 +1,7 @@
 // src/services/posts.service.ts
 
 import { PostRepository } from "../repositories/posts.repository";
-import { Post, PostType } from "@prisma/client";
+import { Post, PostType, RecruitmentStatus } from "@prisma/client";
 
 export class PostService {
   private postRepository: PostRepository;
@@ -43,6 +43,41 @@ export class PostService {
     });
     return newPost;
   }
+
+// public async createPost(postData: {
+//     userId: number;
+//     title: string;
+//     content: string;
+//     type?: PostType;
+//     maxMembers?: number;
+//     isbn13?: string;
+// }): Promise<Post> {
+    
+//     if (postData.type === PostType.RECRUITMENT) {
+//         // 모집글 => 추가 필드 필요
+//         if (!postData.maxMembers || postData.maxMembers <= 0) {
+//             throw new Error("모집글은 모집 인원이 필요합니다.");
+//         }
+        
+//         return await this.postRepository.create({
+//             userId: postData.userId,
+//             title: postData.title,
+//             content: postData.content,
+//             type: PostType.RECRUITMENT,
+//             maxMembers: postData.maxMembers,
+//             isbn13: postData.isbn13,
+//             recruitmentStatus: RecruitmentStatus.RECRUITING
+//         });
+//     } else {
+//         // 일반글 => 기본 필드만
+//         return await this.postRepository.create({
+//             userId: postData.userId,
+//             title: postData.title,
+//             content: postData.content,
+//             // type은 스키마 기본값 GENERAL 사용, 나머지 필드들은 null처리
+//         });
+//     }
+// }
 
   /**
    * 특정 게시물의 상세 정보를 조회합니다.
