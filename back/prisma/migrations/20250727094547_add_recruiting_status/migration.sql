@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE `team_communities` MODIFY `status` ENUM('RECRUITING', 'ACTIVE', 'COMPLETED') NOT NULL DEFAULT 'ACTIVE';
