@@ -1,11 +1,12 @@
 // src/repositories/posts.repository.ts
 
 import prisma from "../utils/prisma";
-import { Post, PostType, RecruitmentStatus, Prisma } from "@prisma/client"; // RecruitmentStatus import 추가
+import { Post, PostType, RecruitmentStatus, Prisma } from "@prisma/client";
 
 export class PostRepository {
   /**
-   * 모든 게시물을 조회합니다. (전체 게시판 일반 게시물만 해당)
+   * 모든 게시물을 조회합니다. (전체 게시판 일반 게시물 및 모집 중인 모집글 포함)
+   * UX 플로우: "퍼블릭 커뮤니티 게시글 (일반글 + 모집글)은 커뮤니티 페이지에 들어가면 전체 게시물을 볼 수 있고"
    * @param query - 페이지네이션 및 정렬 옵션 { page, pageSize, sort }
    * @returns Post 배열
    * @remarks 해당 조건에 맞는 게시물이 없으면 빈 배열을 반환합니다.
@@ -21,7 +22,14 @@ export class PostRepository {
     const findManyOptions: Prisma.PostFindManyArgs = {
       where: {
         team: null, // TeamCommunity와의 관계가 없는 게시물 (즉, 퍼블릭 게시물)
-        type: PostType.GENERAL, // '전체 게시판'은 일반 게시물만 포함
+        OR: [
+          // 일반 게시물 또는 모집 중인 모집글을 포함하도록 OR 조건 추가
+          { type: PostType.GENERAL }, // 일반 게시물
+          {
+            type: PostType.RECRUITMENT, // 모집글
+            recruitmentStatus: RecruitmentStatus.RECRUITING, // 모집 중인 상태만
+          },
+        ],
       },
       skip,
       take: pageSize,
@@ -29,14 +37,14 @@ export class PostRepository {
         user: {
           select: {
             nickname: true, // 작성자 닉네임 포함
-            profileImage: true, // 새롭게 추가된 프로필 이미지 포함
+            profileImage: true, // 프로필 이미지 포함
           },
         },
         _count: {
           select: { comments: true }, // 댓글 수 포함
         },
         book: {
-          // 새롭게 추가된 book 관계 포함 (Post 모델에 bookId가 연결되어 있다면)
+          // book 관계 포함 (Post 모델에 bookId가 연결되어 있다면)
           select: {
             title: true,
             author: true,
@@ -50,7 +58,7 @@ export class PostRepository {
     if (sort === "latest") {
       findManyOptions.orderBy = { createdAt: "desc" };
     } else {
-      findManyOptions.orderBy = { createdAt: "desc" }; // 기본 정렬 추가 (최신순)
+      findManyOptions.orderBy = { createdAt: "desc" }; // 기본 정렬 (최신순)
     }
 
     const posts = await prisma.post.findMany(findManyOptions);
@@ -91,7 +99,7 @@ export class PostRepository {
         user: {
           select: {
             nickname: true, // 작성자 닉네임 포함
-            profileImage: true, // 새롭게 추가된 프로필 이미지 포함
+            profileImage: true, // 프로필 이미지 포함
           },
         },
         comments: {
@@ -100,7 +108,7 @@ export class PostRepository {
             user: {
               select: {
                 nickname: true, // 댓글 작성자 닉네임
-                profileImage: true, // 새롭게 추가된 프로필 이미지 포함
+                profileImage: true, // 프로필 이미지 포함
               },
             },
             replies: {
@@ -109,7 +117,7 @@ export class PostRepository {
                 user: {
                   select: {
                     nickname: true,
-                    profileImage: true, // 새롭게 추가된 프로필 이미지 포함
+                    profileImage: true, // 프로필 이미지 포함
                   },
                 },
               },
@@ -117,7 +125,7 @@ export class PostRepository {
           },
         },
         book: {
-          // 새롭게 추가된 book 관계 포함 (Post 모델에 bookId가 연결되어 있다면)
+          // book 관계 포함 (Post 모델에 bookId가 연결되어 있다면)
           select: {
             title: true,
             author: true,
