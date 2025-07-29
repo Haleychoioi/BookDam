@@ -9,7 +9,7 @@ const LoginPage: React.FC = () => {
 
   return (
   <div>
-    <section id="loginText" className="container mx-auto py-12 px-20">
+    <section id="loginText" className="container mx-auto py-12 px-20 mt-10">
       <h1 className="text-3xl font-semibold mb-6">환영합니다, 로그인</h1>
       <p>당신의 독서 여정을 시작하기 위해 로그인하세요.함께 책을 나누고 소통합시다.</p>
     </section>
@@ -51,7 +51,7 @@ const LoginPage: React.FC = () => {
             아직 회원이 아니신가요? <br />
             지금 가입하시면 다양한 독서 경험과 커뮤니티 활동에 참여하실 수 있습니다.
           </p>
-          <Button to="/register">가입하기</Button>
+          <Button to="/auth/register">가입하기</Button>
         </div>
       </div>
     </section>

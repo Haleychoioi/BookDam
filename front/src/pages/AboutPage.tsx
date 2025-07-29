@@ -5,7 +5,7 @@ import { LuLayoutDashboard } from "react-icons/lu";
 const AboutPage: React.FC = () => {
   return (
   <div>
-    <section id="vision" className="container mx-auto py-12 px-4">
+    <section id="vision" className="container mx-auto py-12 px-20 mt-10">
       <h1 className="text-3xl font-bold mb-8">우리의 비전</h1>
       <p className="text-lg mb-40">책과 사람을 연결하여 독서의 즐거움을 나누는 플랫폼입니다.</p>
   
@@ -26,7 +26,7 @@ const AboutPage: React.FC = () => {
         </div>
       </div>
     </section>
-    <section id="service" className="container mx-auto py-12 px-4">
+    <section id="service" className="container mx-auto py-12 px-20">
       <h2 className="text-2xl font-bold mb-10">다양한 독서 경험을 제공합니다</h2>
       <p>
         우리 플렛폼은 사용자가 도서를 쉽게 검색하고 독서 토론에 참여할 수 있는 기회를 제공합니다. <br />
@@ -68,7 +68,7 @@ const AboutPage: React.FC = () => {
         ))}
       </div>
     </section>
-    <section id="info" className="container mx-auto py-12 px-4">
+    <section id="info" className="container mx-auto py-12 px-20">
       <div className="flex justify-around mb-4">
         <div className="text-center">
           <IoMailOutline size={32} className="mx-auto" />
