@@ -18,6 +18,7 @@ import userRouter from './routes/user.routes';
 import bookRouter from './routes/book.routes';
 // chatController 추가*
 import chatController from './chat/chat.controller';
+import postRouter from './post2/posts2.routes'
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -49,6 +50,7 @@ app.use('/static', express.static(path.join(__dirname, '../public')));
 app.use("/auth", authRouter);
 app.use("/users", userRouter);
 app.use("/books", bookRouter);
+app.use("/posts", postRouter);
 
 
 // --- Socket.IO 인증 미들웨어 설정 ---

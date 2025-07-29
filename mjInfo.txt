@@ -81,3 +81,18 @@ post.controller
 일반글/ 모집글 구분 로직
 일반글 userId, title, content, type(general)기본으로 명시 안해도됨
 모집글 userId, title, content, type(RECRUITMENT), maxMembers, isbn13, recruitmentStatus(RECRUITMENT)기본값
+
+
+현재**
+post(모집글)이 생성되면 team_community가 자동으로 생성
+post는 모집중인 상태여도 team_community가 활동중이라 지원서를 넣을수가 없음
+
+의도된 구조**
+1. POST /api/posts → Post만 생성 (모집글 작성)
+2. 지원자들이 신청 → POST /api/posts/2/apply  
+3. 모집자가 승인
+4. 모집자가 "팀 생성" 버튼 클릭
+5. TeamCommunity 생성 (status: ACTIVE)
+
+현재 구조**
+POST /api/communities → Post + TeamCommunity 동시 생성
