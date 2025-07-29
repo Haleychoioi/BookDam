@@ -98,21 +98,21 @@ class UserController {
     
 
     // 사용자 통계 - 토큰 검증만, 권한 체크는 나중에 추가
-    getUserStats = async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            // req.user는 이미 authenticate 미들웨어에서 설정됨
-            // 일단 권한 체크는 생략 (나중에 authorization 미들웨어 추가 예정)
+    // getUserStats = async (req: Request, res: Response, next: NextFunction) => {
+    //     try {
+    //         // req.user는 이미 authenticate 미들웨어에서 설정됨
+    //         // 일단 권한 체크는 생략 (나중에 authorization 미들웨어 추가 예정)
 
-            const stats = await userService.getUserStats();
+    //         const stats = await userService.getUserStats();
 
-            res.status(200).json({
-                stats,
-                message: "사용자 통계 조회 성공"
-            });
-        } catch (error) {
-            next(error);  // 에러 미들웨어로 전달
-        }
-    };
+    //         res.status(200).json({
+    //             stats,
+    //             message: "사용자 통계 조회 성공"
+    //         });
+    //     } catch (error) {
+    //         next(error);  // 에러 미들웨어로 전달
+    //     }
+    // };
 }
 
 export default new UserController();
