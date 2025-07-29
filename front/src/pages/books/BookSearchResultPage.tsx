@@ -1,25 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
 import BookGridDisplay from "../../components/bookResults/BookGridDisplay";
 import BookCategoryFilter from "../../components/bookResults/BookCategoryFilter";
 
-import type { Book } from "../../types";
-
-const allDummyBooks: Book[] = Array.from({ length: 200 }, (_, i) => ({
-  isbn13: `978893746012${(i + 1).toString().padStart(2, "0")}`, // 13자리 ISBN 형식으로 더미 데이터 생성
-  coverImage: `/x0I5nAsbefrRCgbR6jio5dvWhA.jpg`,
-  title: `집 가자 ${i + 1}`,
-  author: `작가 ${i + 1}`,
-  publisher: `출판사 ${Math.floor(i / 10) + 1}`, // 더미 출판사
-  publicationDate: `2023-0${Math.floor(i / 20) + 1}-${(i % 28) + 1}`, // 더미 출판일 (YYYY-MM-DD)
-  description: `이것은 '집 가자 ${
-    i + 1
-  }' 책의 더미 설명입니다. 책 내용 요약 및 기타 상세 정보가 여기에 들어갑니다.`, // 더미 설명
-  genre:
-    ["소설", "인문학", "자기계발", "과학", "역사", "에세이"][i % 6] || null, // 더미 장르 (백엔드 category에 해당)
-}));
+import { searchBooks } from "../../api/books";
 
 const categories = ["만화", "인문학", "소설/시/희곡", "외국어", "여행", "잡지"];
 
@@ -40,70 +28,59 @@ const BookSearchResultPage: React.FC = () => {
 
   const itemsPerPage = 12;
 
-  const displayedBooks = useMemo(() => {
-    let filteredBooks = allDummyBooks;
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: [
+      "booksSearch",
+      currentSearchTerm,
+      activeCategory,
+      currentPage,
+      itemsPerPage,
+    ],
 
-    if (currentSearchTerm) {
-      const processedSearchTerm = currentSearchTerm;
+    queryFn: async () => {
+      if (!currentSearchTerm) {
+        return { books: [], total: 0 };
+      }
 
-      filteredBooks = filteredBooks.filter((book) => {
-        // ✨ 책 제목과 저자에서도 공백을 제거한 후 검색어와 비교 ✨
-        const processedBookTitle = book.title.replace(/\s/g, "");
-        const processedBookAuthor = book.author.replace(/\s/g, "");
+      return searchBooks(
+        currentSearchTerm,
+        currentPage,
+        itemsPerPage,
+        activeCategory
+      );
+    },
 
-        return (
-          processedBookTitle.includes(processedSearchTerm) ||
-          processedBookAuthor.includes(processedSearchTerm)
-        );
-      });
+    enabled: !!currentSearchTerm,
+  });
+
+  const books = data?.books || [];
+  const totalResults = data?.total || 0;
+  const totalPages = Math.ceil(totalResults / itemsPerPage);
+
+  useEffect(() => {
+    if (initialSearchQuery !== currentSearchTerm) {
+      setCurrentSearchTerm(initialSearchQuery);
+      setCurrentPage(1);
+      setActiveCategory(null);
     }
-
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredBooks.slice(startIndex, endIndex);
-  }, [currentPage, itemsPerPage, currentSearchTerm]);
-
-  // 필터링된 결과의 총 페이지 수
-  const totalFilteredBooks = useMemo(() => {
-    let countFilteredBooks = allDummyBooks;
-    if (currentSearchTerm) {
-      const processedSearchTerm = currentSearchTerm;
-      countFilteredBooks = countFilteredBooks.filter((book) => {
-        const processedBookTitle = book.title.replace(/\s/g, "");
-        const processedBookAuthor = book.author.replace(/\s/g, "");
-        return (
-          processedBookTitle.includes(processedSearchTerm) ||
-          processedBookAuthor.includes(processedSearchTerm)
-        );
-      });
-    }
-    return countFilteredBooks.length;
-  }, [currentSearchTerm]);
-
-  const totalPages = Math.ceil(totalFilteredBooks / itemsPerPage);
+  }, [initialSearchQuery, currentSearchTerm]);
 
   const handleSearchSubmit = (term: string) => {
     setCurrentSearchTerm(term);
     setCurrentPage(1);
+    setActiveCategory(null);
     navigate(`/books/search?q=${encodeURIComponent(term)}`);
   };
 
   const handleCategoryClick = (category: string) => {
-    setActiveCategory((prevCategory) =>
-      prevCategory === category ? null : category
-    );
+    const newCategory = activeCategory === category ? null : category;
+    setActiveCategory(newCategory);
     setCurrentPage(1);
-    // TODO: 실제 API 호출 로직: fetchBooks(currentSearchTerm, newCategory, 1);
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // TODO: 실제 API 호출 로직: fetchBooks(currentSearchTerm, activeCategory, page);
   };
-
-  useEffect(() => {
-    setCurrentSearchTerm(initialSearchQuery);
-  }, [initialSearchQuery]);
 
   return (
     <div className="min-h-screen py-10">
@@ -125,17 +102,34 @@ const BookSearchResultPage: React.FC = () => {
       </div>
 
       <div className="container mx-auto px-4 lg:px-20 xl:px-32">
-        <BookGridDisplay
-          books={displayedBooks}
-          className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3"
-        />
+        {isLoading && currentSearchTerm && (
+          <p className="text-center text-gray-600">
+            도서 정보를 불러오는 중...
+          </p>
+        )}
+        {isError && (
+          <p className="text-center text-red-600">
+            오류: {error?.message || "도서 정보를 불러오는 데 실패했습니다."}
+          </p>
+        )}
+        {!isLoading && !isError && books.length === 0 && currentSearchTerm && (
+          <p className="text-center text-gray-600">검색 결과가 없습니다.</p>
+        )}
+        {!isLoading && !isError && books.length > 0 && (
+          <BookGridDisplay
+            books={books}
+            className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3"
+          />
+        )}
       </div>
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
+      {!isLoading && !isError && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
     </div>
   );
 };

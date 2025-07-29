@@ -29,11 +29,11 @@ const BookGridDisplay: React.FC<BookGridDisplayProps> = ({
 
   return (
     <div className={`grid gap-x-8 gap-y-12 justify-items-center ${className}`}>
-      {books.map((book) => (
+      {books.map((book, index) => (
         <Link
-          key={book.isbn13}
+          key={book.isbn13 || index}
           to={`/books/${book.isbn13}`}
-          className="w-52 h-96 flex flex-col items-center max-w-full relative"
+          className="w-52 flex flex-col items-center max-w-full relative"
         >
           {/* 책 커버 이미지 */}
           <img

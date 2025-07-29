@@ -31,9 +31,9 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
   const canGoNext = currentIndex + itemsPerPage < books.length;
 
   return (
-    <div className="mb-48">
-      <h2 className="text-2xl text-gray-800 text-center mb-8">{title}</h2>
-      <div className="flex items-center justify-center space-x-4 mt-20">
+    <div className="mb-16">
+      <h2 className="text-2xl text-gray-800 text-center mb-4">{title}</h2>
+      <div className="flex items-center justify-center space-x-4 mt-10">
         <button
           onClick={handlePrev}
           disabled={!canGoPrev}
@@ -46,11 +46,11 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
 
         {/* 책 목록 */}
         <div className="flex flex-grow justify-center space-x-8 ">
-          {visibleBooks.map((book) => (
+          {visibleBooks.map((book, index) => (
             <Link
-              key={book.isbn13}
+              key={book.isbn13 || index}
               to={`/books/${book.isbn13}`}
-              className="w-60 h-80 rounded-md shadow-md flex-shrink-0"
+              className="w-60 h-80 flex-shrink-0 flex flex-col items-center"
             >
               <img
                 src={
@@ -58,8 +58,12 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
                   "https://via.placeholder.com/160x256/E0E0E0/909090?text=No+Cover"
                 }
                 alt={book.title}
-                className="w-full h-full object-cover rounded-md"
+                className="w-4/5 h-64 object-cover rounded-md mb-4 flex-grow"
               />
+
+              <p className="text-sm font-medium text-gray-800 text-center px-2 w-full truncate">
+                {book.title}
+              </p>
             </Link>
           ))}
 

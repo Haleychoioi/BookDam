@@ -75,13 +75,13 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
               "https://via.placeholder.com/200x450/F0F0F0/B0B0B0?text=Book+Cover"
             }
             alt={book.title}
-            className="w-[381px] h-[528px] object-cover shadow-lg rounded-md"
+            className="w-[280px] h-[390px] object-cover rounded-md"
           />
         </div>
 
-        <div className="flex-grow text-left mt-16">
+        <div className="flex-grow text-left">
           {/* 도서 제목 */}
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-7">
+          <h1 className="text-3xl md:text-3xl font-bold text-gray-800 mb-7">
             {book.title}
           </h1>
           {/* 카테고리/장르 태그 */}
@@ -95,7 +95,7 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
           </p>
 
           {/* 별점 섹션 */}
-          <div className="flex items-center mb-8">
+          <div className="flex items-center justify-center mb-8">
             {Array.from({ length: 5 }).map((_, index) => (
               <span
                 key={index}
