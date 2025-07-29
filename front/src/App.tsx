@@ -23,6 +23,7 @@ import PostDetailPage from "./pages/posts/PostDetailPage";
 import PostWritePage from "./pages/posts/PostWritePage";
 import GeneralBoardPage from "./pages/communities/GeneralBoardPage";
 import MyActivitiesPage from "./pages/mypage/MyActivitiesPage";
+import UserLeavePage from "./pages/mypage/UserLeavePage";
 
 function App() {
   return (
@@ -81,12 +82,25 @@ function App() {
               path="communities/applied"
               element={<MyCommunitiesAppliedPage />}
             />
+            {/* 회원탈퇴 페이지 */}
+            <Route 
+              path="/mypage/user-leave"
+              element={<UserLeavePage />}
+            />
           </Route>
+
+          {/* 회원가입/로그인 페이지 */}
+          <Route
+            path="/auth/register"
+            element={<RegisterPage />}
+          />
+          <Route 
+            path="/auth/login"
+            element={<LoginPage />}
+          />
         </Route>
 
-        {/* 회원가입/로그인 페이지 */}
-        <Route path="/auth/register" element={<RegisterPage />} />
-        <Route path="/auth/login" element={<LoginPage />} />
+
 
         {/* 전체 게시판에 게시물 작성 */}
         <Route path="posts/write" element={<PostWritePage />} />
