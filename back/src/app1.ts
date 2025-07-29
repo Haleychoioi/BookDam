@@ -16,6 +16,9 @@ import errorHandingMiddleware from './middleware/error-handing-middleware';
 import authRouter from './routes/auth.routes';
 import userRouter from './routes/user.routes';
 import bookRouter from './routes/book.routes';
+import wishRouter from './routes/wishList.route';
+import myLibraryRouter from './routes/myLibrary.routes';
+
 // chatController 추가*
 import chatController from './chat/chat.controller';
 import postRouter from './post2/posts2.routes'
@@ -50,6 +53,9 @@ app.use('/static', express.static(path.join(__dirname, '../public')));
 app.use("/auth", authRouter);
 app.use("/users", userRouter);
 app.use("/books", bookRouter);
+app.use('/mypage', wishRouter);
+app.use('/my-library', myLibraryRouter);
+
 app.use("/posts", postRouter);
 
 

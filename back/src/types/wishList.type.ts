@@ -8,7 +8,6 @@ export interface WishListResponse {
     book: {
         isbn13: string;
         title: string;
-        author: string;
         cover: string | null;
     }
     user: {

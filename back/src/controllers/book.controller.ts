@@ -314,6 +314,7 @@ class BookController {
 
 
   // enum 변환 헬퍼 메서드들
+  
   private mapQueryType(type?: string): AladinQueryType {
     switch (type) {
       case 'title': return AladinQueryType.TITLE;
