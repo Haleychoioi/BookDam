@@ -5,26 +5,6 @@ import { aladinApiService } from '../services/aladin-api.service';
 import { bookService } from '../services/book.service';
 import { getCategoryId } from '../constants/categories';
 
-// const getCategoryId = (category?: string): number => {
-//   const categoryIdMap: { [key: string]: number } = {
-//     '소설': 1,
-//     '에세이': 55889,
-//     '자기계발': 336,
-//     '경영': 170,
-//     '인문학': 656,
-//     '역사': 74,
-//     '과학': 983,
-//     '사회과학': 798,
-//     '예술': 517,
-//     '만화': 2551,
-//     '장르소설': 112011,
-//     '고전': 2105,
-//     '전체': 0
-//   };
-
-//   return category ? (categoryIdMap[category] || 0) : 0;
-// };
-
 class BookController {
 
   // searchBooks = async (req: Request, res: Response, next: NextFunction) => {
