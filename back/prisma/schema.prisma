@@ -1,0 +1,258 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum CommunityStatus {
+  RECRUITING
+  ACTIVE
+  INACTIVE
+}
+
+enum CommunityType {
+  GENERAL
+  RECRUITING
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum ReadingStatus {
+  WANT_TO_READ  // 읽고싶어요
+  READING       // 읽는중
+  COMPLETED     // 읽었음
+}
+
+model User {
+  userId       Int          @id @default(autoincrement()) @map("user_id")
+  email        String       @unique @map("email")
+  password     String       @map("password")
+  name         String       @map("name")
+  nickname     String       @unique @map("nickname")
+  phone        String       @map("phone")
+  oneLineIntro String?      @map("one_line_intro")
+  role         UserRole     @default(USER) @map("role")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  // 관계
+  communitiesHosting TeamCommunity[]   @relation("HostUser")
+  communityMembers   TeamCommunityMember[]
+  applications       CommunityApplication[]  
+  posts              Post[]
+  comments           Comment[]
+  myBooks            MyLibrary[]
+  bookmarks          Bookmark[]
+  bookReviews        BookReview[]
+
+  @@map("users")
+}
+
+model Book {
+  isbn13        String   @id @map("isbn13") // 13자리 ISBN (메인 PK)
+  bookId        String?  @unique @map("book_id") // 알라딘 고유 ID (필요시 유지)
+  title         String   @map("title")
+  author        String   @map("author")
+  publisher     String   @map("publisher")
+  pubDate       String?  @map("pub_date")
+  description   String?  @db.Text @map("description")
+  cover         String?  @map("cover")
+  categoryName  String?  @map("category_name")
+  categoryId    Int?     @map("category_id")
+
+  customerReviewRank Int? @map("customer_review_rank")
+  salesPoint    Int?     @map("sales_point")
+  bestRank      Int?     @map("best_rank")
+
+  mallType      String?  @map("mall_type")
+  stockStatus   String?  @map("stock_status")
+  adult         Boolean  @default(false) @map("adult")
+  fixedPrice    Boolean  @default(false) @map("fixed_price")
+
+  subTitle      String?  @map("sub_title")
+  originalTitle String?  @map("original_title")
+  itemPage      Int?     @map("item_page")
+
+  lastUpdated   DateTime @updatedAt @map("last_updated")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // 관계
+  communities   TeamCommunity[]
+  myBooks       MyLibrary[]
+  bookmarks     Bookmark[]
+  reviews       BookReview[]
+
+  @@map("books")
+}
+
+model TeamCommunity {
+  teamId      Int              @id @default(autoincrement()) @map("team_id")
+  bookIsbn13  String?          @map("book_isbn13")
+  name        String           @map("name")
+  description String           @map("description")
+  category    String           @map("category")
+  type        CommunityType    @default(GENERAL) @map("type")
+  status      CommunityStatus  @default(RECRUITING) @map("status")
+  hostUserId  Int              @map("host_user_id")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  hostUser    User             @relation("HostUser", fields: [hostUserId], references: [userId])
+  book        Book?            @relation(fields: [bookIsbn13], references: [isbn13])
+
+  members     TeamCommunityMember[]
+  applications CommunityApplication[]
+  posts       Post[]
+
+  @@map("team_communities")
+}
+
+model TeamCommunityMember {
+  memberId      Int             @id @default(autoincrement()) @map("member_id")
+  userId        Int             @map("user_id")
+  teamId        Int             @map("team_id")
+  role          UserRole        @default(USER) @map("role")
+  joinedAt      DateTime        @default(now()) @map("joined_at")
+
+  user          User            @relation(fields: [userId], references: [userId])
+  community     TeamCommunity   @relation(fields: [teamId], references: [teamId])
+
+  @@unique([userId, teamId])
+  @@index([teamId])
+  @@map("team_community_members")
+}
+
+model CommunityApplication {
+  applicationId      Int              @id @default(autoincrement()) @map("application_id")
+  userId             Int              @map("user_id")
+  teamId             Int              @map("team_id")
+  applicationMessage String?          @map("application_message")
+  status             ApplicationStatus @default(PENDING) @map("status")
+  appliedAt          DateTime         @default(now()) @map("applied_at")
+
+  user      User          @relation(fields: [userId], references: [userId])
+  community TeamCommunity @relation(fields: [teamId], references: [teamId])
+
+  @@unique([userId, teamId])
+  @@index([teamId, status])
+  @@map("community_applications")
+}
+
+model Post {
+  postId      Int           @id @default(autoincrement()) @map("post_id")
+  userId      Int           @map("user_id")
+  teamId      Int?          @map("team_id")
+  type        CommunityType @default(GENERAL) @map("type")
+  title       String        @map("title")
+  content     String        @map("content")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  user        User           @relation(fields: [userId], references: [userId])
+  community   TeamCommunity? @relation(fields: [teamId], references: [teamId])
+
+  comments    Comment[]
+
+  @@index([teamId])
+  @@index([userId])
+  @@index([type])
+  @@map("posts")
+}
+
+model Comment {
+  commentId Int      @id @default(autoincrement()) @map("comment_id")
+  postId    Int      @map("post_id")
+  userId    Int      @map("user_id")
+  content   String   @map("content")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  post Post @relation(fields: [postId], references: [postId])
+  user User @relation(fields: [userId], references: [userId])
+
+  @@index([postId])
+  @@index([userId])
+  @@map("comments")
+}
+
+model MyLibrary {
+  libraryId Int           @id @default(autoincrement()) @map("library_id")
+  userId    Int           @map("user_id")
+  bookIsbn13 String       @map("book_isbn13")
+  myRating  Int?          @map("my_rating")
+  myComment String?       @map("my_comment")
+  status    ReadingStatus @map("status")
+  addedAt   DateTime      @default(now()) @map("added_at")
+
+  user User @relation(fields: [userId], references: [userId])
+  book Book @relation(fields: [bookIsbn13], references: [isbn13])
+
+  @@unique([userId, bookIsbn13])
+  @@index([userId])
+  @@map("my_libraries")
+}
+
+model Bookmark {
+  bookmarkId Int      @id @default(autoincrement()) @map("bookmark_id")
+  userId     Int      @map("user_id")
+  bookIsbn13 String   @map("book_isbn13")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [userId])
+  book Book @relation(fields: [bookIsbn13], references: [isbn13])
+
+  @@unique([userId, bookIsbn13])
+  @@index([userId])
+  @@map("bookmarks")
+}
+
+model BookReview {
+  reviewId   Int      @id @default(autoincrement()) @map("review_id")
+  userId     Int      @map("user_id")
+  bookIsbn13 String   @map("book_isbn13")
+  rating     Int      @map("rating") // 1~5
+  content    String   @map("content")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [userId])
+  book Book @relation(fields: [bookIsbn13], references: [isbn13])
+
+  @@index([userId])
+  @@index([bookIsbn13])
+  @@unique([userId, bookIsbn13])
+  @@map("book_reviews")
+}
+
+model FAQItem {
+  faqId      Int      @id @default(autoincrement()) @map("faq_id")
+  question   String   @map("question")
+  answer     String   @map("answer")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("faq_items")
+}
+
+model AboutContent {
+  aboutId    Int      @id @default(autoincrement()) @map("about_id")
+  title      String   @map("title")
+  content    String   @map("content")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("about_contents")
+}
