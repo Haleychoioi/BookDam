@@ -46,9 +46,9 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
 
         {/* 책 목록 */}
         <div className="flex flex-grow justify-center space-x-8 ">
-          {visibleBooks.map((book) => (
+          {visibleBooks.map((book, index) => (
             <Link
-              key={book.isbn13}
+              key={book.isbn13 || index}
               to={`/books/${book.isbn13}`}
               className="w-60 h-80 flex-shrink-0 flex flex-col items-center"
             >
