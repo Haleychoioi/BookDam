@@ -2,23 +2,25 @@
 
 import { Request, Response, NextFunction } from "express";
 import { TeamPostService } from "../services/team-posts.service";
-import { TeamCommentService } from "../services/team-comments.service";
+// TeamCommentService는 이 컨트롤러에서 직접 댓글 관련 로직을 처리하지 않으므로 제거합니다.
+// import { TeamCommentService } from "../services/team-comments.service";
 import { TeamPostType } from "@prisma/client";
+import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
 
 export class TeamPostController {
   private teamPostService: TeamPostService;
-  private teamCommentService: TeamCommentService;
+  // private teamCommentService: TeamCommentService; // 제거
 
   constructor() {
     this.teamPostService = new TeamPostService();
-    this.teamCommentService = new TeamCommentService();
+    // this.teamCommentService = new TeamCommentService(); // 제거
   }
 
   /**
    * GET /communities/:communityId/posts - 특정 커뮤니티의 게시물 목록 조회
    * 라우트: src/routes/communities.routes.ts
    * communityId: req.params
-   * requestingUserId: req.query
+   * requestingUserId: req.user (인증 미들웨어에서 주입)
    */
   public getTeamPosts = async (
     req: Request,
@@ -27,39 +29,33 @@ export class TeamPostController {
   ) => {
     try {
       const { communityId: rawCommunityId } = req.params; // communityId는 params에서
-      const {
-        page,
-        size,
-        sort,
-        requestingUserId: rawRequestingUserId,
-      } = req.query; // requestingUserId는 query에서
+      const { page, size, sort } = req.query;
+      const requestingUserId = req.user; // req.user에서 requestingUserId 가져오기
 
-      if (rawCommunityId === undefined || rawRequestingUserId === undefined) {
-        return res.status(400).json({
-          message: "필수 정보(communityId, 요청 사용자 ID)가 누락되었습니다.",
-        });
+      // 인증된 사용자 ID가 없는 경우
+      if (requestingUserId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
+
+      if (rawCommunityId === undefined) {
+        throw new CustomError(400, "필수 정보(communityId)가 누락되었습니다.");
       }
 
       const communityId = Number(rawCommunityId);
       if (isNaN(communityId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 커뮤니티 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
-      const requestingUserId = Number(rawRequestingUserId);
-      if (isNaN(requestingUserId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 요청 사용자 ID가 아닙니다." });
-      }
+      const parsedPage = page ? Number(page) : undefined;
+      const parsedPageSize = size ? Number(size) : undefined;
+      const parsedSort = sort ? String(sort) : undefined;
 
       const teamPosts = await this.teamPostService.findAllTeamPosts(
         communityId,
         {
-          page: page ? Number(page) : undefined,
-          pageSize: size ? Number(size) : undefined,
-          sort: sort ? String(sort) : undefined,
+          page: parsedPage,
+          pageSize: parsedPageSize,
+          sort: parsedSort,
         },
         requestingUserId
       );
@@ -68,8 +64,23 @@ export class TeamPostController {
         data: teamPosts,
       });
     } catch (error) {
-      console.error("Error in getTeamPosts:", error);
-      next(error);
+      if (error instanceof Error) {
+        if (error.message === "Community not found") {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message === "Unauthorized: You are not a member of this team."
+        ) {
+          next(new CustomError(403, error.message));
+        } else if (
+          error.message === "No team posts found for this community."
+        ) {
+          next(new CustomError(404, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
@@ -77,7 +88,8 @@ export class TeamPostController {
    * POST /communities/:communityId/posts/write - 특정 커뮤니티에 게시물 작성
    * 라우트: src/routes/communities.routes.ts
    * communityId: req.params
-   * userId, title, content, type: req.body
+   * userId: req.user (인증 미들웨어에서 주입)
+   * title, content, type: req.body
    */
   public createTeamPost = async (
     req: Request,
@@ -86,48 +98,40 @@ export class TeamPostController {
   ) => {
     try {
       const { communityId: rawCommunityId } = req.params; // communityId는 params에서
-      const { userId: rawUserId, title, content, type } = req.body; // 나머지는 body에서
+      const userId = req.user; // req.user에서 userId 가져오기
+
+      // 인증된 사용자 ID가 없는 경우
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
+
+      const { title, content, type } = req.body; // 나머지는 body에서
 
       if (
         rawCommunityId === undefined ||
-        rawUserId === undefined ||
         title === undefined ||
         content === undefined
       ) {
-        return res.status(400).json({
-          message:
-            "필수 필드(communityId, userId, title, content)가 누락되었습니다.",
-        });
+        throw new CustomError(
+          400,
+          "필수 필드(communityId, title, content)가 누락되었습니다."
+        );
       }
 
       const communityId = Number(rawCommunityId);
       if (isNaN(communityId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 커뮤니티 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
-      const userId = Number(rawUserId);
-      if (isNaN(userId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 사용자 ID(userId)가 아닙니다." });
-      }
-
-      if (
-        type &&
-        !Object.values(TeamPostType).includes(
-          type.toUpperCase() as TeamPostType
-        )
-      ) {
-        return res
-          .status(400)
-          .json({ message: "유효하지 않은 팀 게시물 타입입니다." });
+      // type이 제공된 경우 유효성 검사
+      const upperCaseType = type ? type.toUpperCase() : TeamPostType.DISCUSSION;
+      if (!Object.values(TeamPostType).includes(upperCaseType)) {
+        throw new CustomError(400, "유효하지 않은 팀 게시물 타입입니다.");
       }
 
       const newTeamPost = await this.teamPostService.createTeamPost(
         communityId,
-        { userId, title, content, type: type?.toUpperCase() as TeamPostType }
+        { userId, title, content, type: upperCaseType }
       );
       res.status(201).json({
         status: "success",
@@ -135,8 +139,19 @@ export class TeamPostController {
         postId: newTeamPost.teamPostId,
       });
     } catch (error) {
-      console.error("Error in createTeamPost:", error);
-      next(error);
+      if (error instanceof Error) {
+        if (error.message === "Community not found") {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message === "Unauthorized: You are not a member of this team."
+        ) {
+          next(new CustomError(403, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
@@ -144,7 +159,7 @@ export class TeamPostController {
    * GET /communities/:communityId/posts/:teamPostId - 특정 팀 게시물 상세 조회
    * 라우트: src/routes/communities.routes.ts
    * communityId, teamPostId: req.params
-   * requestingUserId: req.query
+   * requestingUserId: req.user (인증 미들웨어에서 주입)
    */
   public getTeamPostById = async (
     req: Request,
@@ -153,38 +168,34 @@ export class TeamPostController {
   ) => {
     try {
       const { communityId: rawCommunityId, teamPostId: rawTeamPostId } =
-        req.params; // communityId, teamPostId는 params에서
-      const { requestingUserId: rawRequestingUserId } = req.query; // requestingUserId는 query에서
+        req.params;
+      const requestingUserId = req.user; // req.user에서 requestingUserId 가져오기
 
-      if (
-        rawCommunityId === undefined ||
-        rawTeamPostId === undefined ||
-        rawRequestingUserId === undefined
-      ) {
-        return res.status(400).json({
-          message:
-            "필수 정보(communityId, teamPostId, 요청 사용자 ID)가 누락되었습니다.",
-        });
+      // 인증된 사용자 ID가 없는 경우
+      if (requestingUserId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
+
+      if (rawCommunityId === undefined || rawTeamPostId === undefined) {
+        throw new CustomError(
+          400,
+          "필수 정보(communityId, teamPostId)가 누락되었습니다."
+        );
       }
 
       const communityId = Number(rawCommunityId);
       const teamPostId = Number(rawTeamPostId);
       if (isNaN(communityId) || isNaN(teamPostId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 커뮤니티 또는 팀 게시물 ID가 아닙니다." });
-      }
-
-      const requestingUserId = Number(rawRequestingUserId);
-      if (isNaN(requestingUserId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 요청 사용자 ID가 아닙니다." });
+        throw new CustomError(
+          400,
+          "유효한 커뮤니티 또는 팀 게시물 ID가 아닙니다."
+        );
       }
 
       const teamPost = await this.teamPostService.findTeamPostById(
+        communityId,
         teamPostId,
-        requestingUserId // communityId는 서비스에서 필요하다면 teamPostId로 조회 가능
+        requestingUserId
       );
 
       res.status(200).json({
@@ -193,8 +204,22 @@ export class TeamPostController {
         data: teamPost,
       });
     } catch (error) {
-      console.error("Error in getTeamPostById:", error);
-      next(error);
+      if (error instanceof Error) {
+        if (
+          error.message ===
+          "Team Post not found or does not belong to this community."
+        ) {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message === "Unauthorized: You are not a member of this team."
+        ) {
+          next(new CustomError(403, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
@@ -202,7 +227,8 @@ export class TeamPostController {
    * PUT /communities/:communityId/posts/:teamPostId - 특정 팀 게시물 수정
    * 라우트: src/routes/communities.routes.ts
    * communityId, teamPostId: req.params
-   * title, content, userId: req.body
+   * userId: req.user (인증 미들웨어에서 주입)
+   * title, content: req.body
    */
   public updateTeamPost = async (
     req: Request,
@@ -211,47 +237,65 @@ export class TeamPostController {
   ) => {
     try {
       const { communityId: rawCommunityId, teamPostId: rawTeamPostId } =
-        req.params; // communityId, teamPostId는 params에서
-      const { title, content, userId: rawUserId } = req.body; // 나머지는 body에서
+        req.params;
+      const userId = req.user; // req.user에서 userId 가져오기
+
+      // 인증된 사용자 ID가 없는 경우
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
+
+      const { title, content } = req.body;
 
       if (
         rawCommunityId === undefined ||
         rawTeamPostId === undefined ||
-        rawUserId === undefined ||
         (!title && !content)
       ) {
-        return res.status(400).json({
-          message:
-            "필수 정보(communityId, teamPostId, userId) 또는 수정할 내용이 누락되었습니다.",
-        });
+        throw new CustomError(
+          400,
+          "필수 정보(communityId, teamPostId) 또는 수정할 내용이 누락되었습니다."
+        );
       }
 
       const communityId = Number(rawCommunityId);
       const teamPostId = Number(rawTeamPostId);
       if (isNaN(communityId) || isNaN(teamPostId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 커뮤니티 또는 팀 게시물 ID가 아닙니다." });
+        throw new CustomError(
+          400,
+          "유효한 커뮤니티 또는 팀 게시물 ID가 아닙니다."
+        );
       }
 
-      const userId = Number(rawUserId);
-      if (isNaN(userId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 사용자 ID(userId)가 아닙니다." });
-      }
-
-      await this.teamPostService.updateTeamPost(communityId, teamPostId, {
-        title,
-        content,
+      // 서비스 계층의 updateTeamPost는 communityId, teamPostId, userId, updateData를 받습니다.
+      // updateData는 { title?: string, content?: string } 형태의 객체입니다.
+      await this.teamPostService.updateTeamPost(
+        communityId,
+        teamPostId,
         userId,
-      });
+        { title, content } // 이 부분이 서비스 메서드의 인자 타입과 일치해야 합니다.
+      );
       res
         .status(200)
         .json({ status: "success", message: "팀 게시물 수정 완료" });
     } catch (error) {
-      console.error("Error in updateTeamPost:", error);
-      next(error);
+      if (error instanceof Error) {
+        if (
+          error.message ===
+          "Team Post not found or does not belong to this community."
+        ) {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message ===
+          "Unauthorized: You can only update your own team posts or be a team leader."
+        ) {
+          next(new CustomError(403, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
@@ -259,7 +303,7 @@ export class TeamPostController {
    * DELETE /communities/:communityId/posts/:teamPostId - 특정 팀 게시물 삭제
    * 라우트: src/routes/communities.routes.ts
    * communityId, teamPostId: req.params
-   * userId: req.body
+   * requestingUserId: req.user (인증 미들웨어에서 주입)
    */
   public deleteTeamPost = async (
     req: Request,
@@ -268,291 +312,65 @@ export class TeamPostController {
   ) => {
     try {
       const { communityId: rawCommunityId, teamPostId: rawTeamPostId } =
-        req.params; // communityId, teamPostId는 params에서
-      const { userId: rawUserId } = req.body; // userId는 body에서
+        req.params;
+      const requestingUserId = req.user; // req.user에서 requestingUserId 가져오기
 
-      if (
-        rawCommunityId === undefined ||
-        rawTeamPostId === undefined ||
-        rawUserId === undefined
-      ) {
-        return res.status(400).json({
-          message:
-            "필수 정보(communityId, teamPostId, userId)가 누락되었습니다.",
-        });
+      // 인증된 사용자 ID가 없는 경우
+      if (requestingUserId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
+
+      if (rawCommunityId === undefined || rawTeamPostId === undefined) {
+        throw new CustomError(
+          400,
+          "필수 정보(communityId, teamPostId)가 누락되었습니다."
+        );
       }
 
       const communityId = Number(rawCommunityId);
       const teamPostId = Number(rawTeamPostId);
       if (isNaN(communityId) || isNaN(teamPostId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 커뮤니티 또는 팀 게시물 ID가 아닙니다." });
+        throw new CustomError(
+          400,
+          "유효한 커뮤니티 또는 팀 게시물 ID가 아닙니다."
+        );
       }
 
-      const userId = Number(rawUserId);
-      if (isNaN(userId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 사용자 ID(userId)가 아닙니다." });
-      }
-
-      const deletedCount = await this.teamPostService.deleteTeamPost(
+      // 서비스 계층에서 삭제 실패 시 CustomError를 던지므로, 별도의 deletedCount 확인 로직은 불필요합니다.
+      await this.teamPostService.deleteTeamPost(
         communityId,
         teamPostId,
-        userId
+        requestingUserId
       );
-
-      if (deletedCount === 0) {
-        return res.status(404).json({
-          status: "error",
-          message: "삭제할 팀 게시물을 찾을 수 없거나, 삭제 권한이 없습니다.",
-        });
-      }
 
       res
         .status(200)
         .json({ status: "success", message: "팀 게시물 삭제 완료" });
     } catch (error) {
-      console.error("Error in deleteTeamPost:", error);
-      next(error);
+      if (error instanceof Error) {
+        if (
+          error.message ===
+          "Team Post not found or does not belong to this community."
+        ) {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message ===
+          "Unauthorized: You can only delete your own team posts or be a team leader."
+        ) {
+          next(new CustomError(403, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
-  // --- 댓글 관련 메서드 ---
-
-  /**
-   * POST /api/team-posts/:teamPostId/comments - 특정 팀 게시물에 댓글 작성
-   * 라우트: src/routes/team-posts.routes.ts (index.ts에서 /team-posts로 마운트됨)
-   * teamPostId: req.params
-   * communityId, userId, content, parentId: req.body
-   */
-  public createComment = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const { teamPostId: rawTeamPostId } = req.params; // teamPostId는 params에서
-      const {
-        communityId: rawCommunityIdFromBody,
-        userId: rawUserId,
-        content,
-        parentId: rawParentId,
-      } = req.body; // communityId, userId 등은 body에서
-
-      if (
-        rawCommunityIdFromBody === undefined || // communityId는 body에서 받음
-        rawTeamPostId === undefined ||
-        rawUserId === undefined ||
-        content === undefined
-      ) {
-        return res.status(400).json({
-          message:
-            "필수 필드(communityId, teamPostId, userId, content)가 누락되었습니다.",
-        });
-      }
-
-      const communityId = Number(rawCommunityIdFromBody); // communityId를 body에서 숫자로 변환
-      const teamPostId = Number(rawTeamPostId);
-      const userId = Number(rawUserId);
-      const parentId = rawParentId ? Number(rawParentId) : undefined;
-
-      if (
-        isNaN(communityId) ||
-        isNaN(teamPostId) ||
-        isNaN(userId) ||
-        (parentId !== undefined && isNaN(parentId))
-      ) {
-        return res
-          .status(400)
-          .json({ message: "유효하지 않은 ID 형식입니다." });
-      }
-
-      const newComment = await this.teamCommentService.createComment({
-        teamPostId,
-        userId,
-        content,
-        parentId,
-      });
-
-      res.status(201).json({
-        status: "success",
-        message: "댓글 작성 완료",
-        data: newComment,
-        teamCommentId: newComment.teamCommentId,
-      });
-    } catch (error) {
-      console.error("Error in createComment:", error);
-      next(error);
-    }
-  };
-
-  /**
-   * GET /api/team-posts/:teamPostId/comments - 특정 팀 게시물의 댓글 목록 조회
-   * 라우트: src/routes/team-posts.routes.ts
-   * teamPostId: req.params
-   * communityId, requestingUserId: req.query
-   */
-  public getCommentsByTeamPostId = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const { teamPostId: rawTeamPostId } = req.params; // teamPostId는 params에서
-      const {
-        communityId: rawCommunityIdFromQuery,
-        requestingUserId: rawRequestingUserId,
-      } = req.query; // communityId, requestingUserId는 query에서
-
-      if (
-        rawCommunityIdFromQuery === undefined ||
-        rawTeamPostId === undefined ||
-        rawRequestingUserId === undefined
-      ) {
-        return res.status(400).json({
-          message:
-            "필수 정보(communityId, teamPostId, requestingUserId)가 누락되었습니다.",
-        });
-      }
-
-      const communityId = Number(rawCommunityIdFromQuery);
-      const teamPostId = Number(rawTeamPostId);
-      const requestingUserId = Number(rawRequestingUserId);
-
-      if (isNaN(communityId) || isNaN(teamPostId) || isNaN(requestingUserId)) {
-        return res
-          .status(400)
-          .json({ message: "유효하지 않은 ID 형식입니다." });
-      }
-
-      const comments = await this.teamCommentService.findCommentsByTeamPostId(
-        teamPostId // 서비스는 teamPostId만 받음
-      );
-      res.status(200).json({
-        message: `팀 게시물 ID ${teamPostId}의 댓글 목록 조회 성공`,
-        data: comments,
-      });
-    } catch (error) {
-      console.error("Error in getCommentsByTeamPostId:", error);
-      next(error);
-    }
-  };
-
-  /**
-   * PUT /api/team-posts/:teamPostId/comments/:commentId - 특정 댓글 수정
-   * 라우트: src/routes/team-posts.routes.ts
-   * teamPostId, commentId: req.params
-   * communityId, userId, content: req.body
-   */
-  public updateComment = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const { teamPostId: rawTeamPostId, commentId: rawCommentId } = req.params; // teamPostId, commentId는 params에서
-      const {
-        communityId: rawCommunityIdFromBody,
-        userId: rawUserId,
-        content,
-      } = req.body; // communityId, userId, content는 body에서
-
-      if (
-        rawCommunityIdFromBody === undefined ||
-        rawTeamPostId === undefined ||
-        rawCommentId === undefined ||
-        rawUserId === undefined ||
-        content === undefined
-      ) {
-        return res.status(400).json({
-          message:
-            "필수 정보(communityId, teamPostId, commentId, userId, content)가 누락되었습니다.",
-        });
-      }
-
-      const communityId = Number(rawCommunityIdFromBody);
-      const teamPostId = Number(rawTeamPostId);
-      const commentId = Number(rawCommentId);
-      const userId = Number(rawUserId);
-
-      if (
-        isNaN(communityId) ||
-        isNaN(teamPostId) ||
-        isNaN(commentId) ||
-        isNaN(userId)
-      ) {
-        return res
-          .status(400)
-          .json({ message: "유효하지 않은 ID 형식입니다." });
-      }
-
-      const updatedComment = await this.teamCommentService.updateComment(
-        commentId,
-        userId,
-        content
-      );
-      res.status(200).json({
-        status: "success",
-        message: "댓글 수정 완료",
-        data: updatedComment,
-      });
-    } catch (error) {
-      console.error("Error in updateComment:", error);
-      next(error);
-    }
-  };
-
-  /**
-   * DELETE /api/team-posts/:teamPostId/comments/:commentId - 특정 댓글 삭제
-   * 라우트: src/routes/team-posts.routes.ts
-   * teamPostId, commentId: req.params
-   * communityId, userId: req.body
-   */
-  public deleteComment = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const { teamPostId: rawTeamPostId, commentId: rawCommentId } = req.params; // teamPostId, commentId는 params에서
-      const { communityId: rawCommunityIdFromBody, userId: rawUserId } =
-        req.body; // communityId, userId는 body에서
-
-      if (
-        rawCommunityIdFromBody === undefined ||
-        rawTeamPostId === undefined ||
-        rawCommentId === undefined ||
-        rawUserId === undefined
-      ) {
-        return res.status(400).json({
-          message:
-            "필수 정보(communityId, teamPostId, commentId, userId)가 누락되었습니다.",
-        });
-      }
-
-      const communityId = Number(rawCommunityIdFromBody);
-      const teamPostId = Number(rawTeamPostId);
-      const commentId = Number(rawCommentId);
-      const userId = Number(rawUserId);
-
-      if (
-        isNaN(communityId) ||
-        isNaN(teamPostId) ||
-        isNaN(commentId) ||
-        isNaN(userId)
-      ) {
-        return res
-          .status(400)
-          .json({ message: "유효하지 않은 ID 형식입니다." });
-      }
-
-      await this.teamCommentService.deleteComment(commentId, userId);
-      res.status(200).json({ status: "success", message: "댓글 삭제 완료" });
-    } catch (error) {
-      console.error("Error in deleteComment:", error);
-      next(error);
-    }
-  };
+  // --- 댓글 관련 메서드 (이 컨트롤러에서는 제거) ---
+  // 이 메서드들은 team-comments.controller.ts에서 관리됩니다.
+  // public createComment = async ( ... ) => { ... };
+  // public getCommentsByTeamPostId = async ( ... ) => { ... };
+  // public updateComment = async ( ... ) => { ... };
+  // public deleteComment = async ( ... ) => { ... };
 }

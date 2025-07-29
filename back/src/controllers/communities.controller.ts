@@ -3,6 +3,7 @@
 import { Request, Response, NextFunction } from "express";
 import { CommunityService } from "../services/communities.service";
 import { CommunityStatus } from "@prisma/client";
+import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
 
 export class CommunityController {
   private communityService: CommunityService;
@@ -30,7 +31,16 @@ export class CommunityController {
         .status(200)
         .json({ message: "커뮤니티 목록 조회 성공", data: communities });
     } catch (error) {
-      next(error);
+      // 서비스 계층에서 발생한 에러는 CustomError로 변환하여 next로 전달
+      if (error instanceof Error) {
+        if (error.message === "No communities found") {
+          next(new CustomError(404, error.message));
+        } else {
+          next(error); // 그 외 에러는 다음 미들웨어로 전달
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
@@ -43,44 +53,38 @@ export class CommunityController {
     next: NextFunction
   ) => {
     try {
-      // NOTE: userId는 실제 애플리케이션에서는 인증 미들웨어에서 req.user.userId 등으로 주입받아야 합니다.
+      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
       const {
-        userId: rawUserId,
         bookIsbn13,
         title,
         content,
         maxMembers: rawMaxMembers,
       } = req.body;
 
-      // 필수 필드 및 타입 유효성 검사
+      // 인증된 사용자 ID가 없는 경우
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
+
+      // 필수 필드 유효성 검사
       if (
-        rawUserId === undefined ||
         title === undefined ||
         content === undefined ||
         rawMaxMembers === undefined
       ) {
-        return res.status(400).json({
-          message:
-            "필수 필드(userId, title, content, maxMembers)가 누락되었습니다.",
-        });
-      }
-
-      const userId = Number(rawUserId);
-      if (isNaN(userId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 사용자 ID(userId)가 아닙니다." });
+        throw new CustomError(
+          400,
+          "필수 필드(title, content, maxMembers)가 누락되었습니다."
+        );
       }
 
       const maxMembers = Number(rawMaxMembers);
       if (isNaN(maxMembers) || maxMembers <= 0) {
-        return res
-          .status(400)
-          .json({ message: "유효한 최대 인원(maxMembers)이 아닙니다." });
+        throw new CustomError(400, "유효한 최대 인원(maxMembers)이 아닙니다.");
       }
 
       const newCommunity = await this.communityService.createCommunity({
-        userId,
+        userId, // req.user에서 가져온 userId 사용
         bookIsbn13,
         title,
         content,
@@ -92,7 +96,22 @@ export class CommunityController {
         communityId: newCommunity.teamId,
       });
     } catch (error) {
-      next(error);
+      // 서비스 계층에서 발생한 에러를 CustomError로 변환하여 전달
+      if (error instanceof Error) {
+        if (error.message === "User not found") {
+          next(new CustomError(404, error.message));
+        } else if (error.message === "Book not found") {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message === "Community with this ISBN already exists"
+        ) {
+          next(new CustomError(409, error.message)); // Conflict
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
@@ -108,16 +127,13 @@ export class CommunityController {
       const { itemId } = req.params; // 도서 ISBN13
 
       if (!itemId) {
-        return res
-          .status(400)
-          .json({ message: "도서 ID(ISBN13)가 필요합니다." });
+        throw new CustomError(400, "도서 ID(ISBN13)가 필요합니다.");
       }
 
       const { size: rawSize } = req.query;
       const size = rawSize ? Number(rawSize) : undefined;
       if (rawSize !== undefined && isNaN(size as number)) {
-        // rawSize가 존재하는데 숫자가 아닐 경우
-        return res.status(400).json({ message: "유효한 size 값이 아닙니다." });
+        throw new CustomError(400, "유효한 size 값이 아닙니다.");
       }
 
       const communities = await this.communityService.findCommunitiesByBook(
@@ -129,7 +145,17 @@ export class CommunityController {
         data: communities,
       });
     } catch (error) {
-      next(error);
+      if (error instanceof Error) {
+        if (error.message === "Book not found") {
+          next(new CustomError(404, error.message));
+        } else if (error.message === "No communities found for this book") {
+          next(new CustomError(404, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
@@ -145,13 +171,11 @@ export class CommunityController {
       const { communityId: rawCommunityId } = req.params;
 
       if (!rawCommunityId) {
-        return res.status(400).json({ message: "커뮤니티 ID가 필요합니다." });
+        throw new CustomError(400, "커뮤니티 ID가 필요합니다.");
       }
       const communityId = Number(rawCommunityId);
       if (isNaN(communityId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 커뮤니티 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
       const community = await this.communityService.findCommunityById(
@@ -162,7 +186,15 @@ export class CommunityController {
         data: community,
       });
     } catch (error) {
-      next(error);
+      if (error instanceof Error) {
+        if (error.message === "Community not found") {
+          next(new CustomError(404, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
@@ -176,27 +208,22 @@ export class CommunityController {
   ) => {
     try {
       const { communityId: rawCommunityId } = req.params;
-      const { userId: rawUserId, ...updateData } = req.body; // userId는 권한 확인용, 나머지는 업데이트 데이터
+      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
+      const updateData = req.body; // userId는 이제 req.user에서 가져오므로 body에서 제거
+
+      // 인증된 사용자 ID가 없는 경우
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
 
       // 필수 필드 및 타입 유효성 검사
-      if (rawCommunityId === undefined || rawUserId === undefined) {
-        return res.status(400).json({
-          message: "필수 정보(communityId, userId)가 누락되었습니다.",
-        });
+      if (rawCommunityId === undefined) {
+        throw new CustomError(400, "필수 정보(communityId)가 누락되었습니다.");
       }
 
       const communityId = Number(rawCommunityId);
       if (isNaN(communityId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 커뮤니티 ID가 아닙니다." });
-      }
-
-      const userId = Number(rawUserId);
-      if (isNaN(userId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 요청 사용자 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
       // updateData에 유효한 필드가 있는지 확인 (recruiting, title, content, maxMembers 등)
@@ -206,9 +233,10 @@ export class CommunityController {
       );
 
       if (!hasValidUpdateData) {
-        return res
-          .status(400)
-          .json({ message: "업데이트할 유효한 필드가 제공되지 않았습니다." });
+        throw new CustomError(
+          400,
+          "업데이트할 유효한 필드가 제공되지 않았습니다."
+        );
       }
 
       // recruiting 필드가 있다면 boolean 타입인지 확인
@@ -216,27 +244,27 @@ export class CommunityController {
         updateData.recruiting !== undefined &&
         typeof updateData.recruiting !== "boolean"
       ) {
-        return res
-          .status(400)
-          .json({ message: "recruiting 필드는 boolean 타입이어야 합니다." });
+        throw new CustomError(
+          400,
+          "recruiting 필드는 boolean 타입이어야 합니다."
+        );
       }
 
       // maxMembers 필드가 있다면 숫자 타입인지 확인
       if (updateData.maxMembers !== undefined) {
         updateData.maxMembers = Number(updateData.maxMembers); // 숫자로 변환
         if (isNaN(updateData.maxMembers) || updateData.maxMembers <= 0) {
-          return res
-            .status(400)
-            .json({ message: "유효한 최대 인원(maxMembers)이 아닙니다." });
+          throw new CustomError(
+            400,
+            "유효한 최대 인원(maxMembers)이 아닙니다."
+          );
         }
       }
 
       const updatedCommunity =
         await this.communityService.updateCommunityDetails(
           communityId,
-          userId,
-          // maxMembers는 서비스 계층에서 Post 모델의 recruitmentPost.maxMembers를 업데이트합니다.
-          // recruiting은 서비스 계층에서 CommunityStatus와 Post 모델의 recruitmentStatus를 업데이트합니다.
+          userId, // req.user에서 가져온 userId 사용
           updateData
         );
       res.status(200).json({
@@ -245,8 +273,21 @@ export class CommunityController {
         data: updatedCommunity,
       });
     } catch (error) {
-      console.error("Error in updateCommunityDetails:", error);
-      next(error);
+      console.error("Error in updateCommunityDetails:", error); // 디버깅용 로그 유지
+      if (error instanceof Error) {
+        if (error.message === "Community not found") {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message ===
+          "Unauthorized: Only the community creator can update details."
+        ) {
+          next(new CustomError(403, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
@@ -260,31 +301,24 @@ export class CommunityController {
   ) => {
     try {
       const { communityId: rawCommunityId } = req.params;
-      const { newStatus, requestingUserId: rawRequestingUserId } = req.body; // requestingUserId는 권한 확인용으로 임시로 body에서 받음
+      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
+      const { newStatus } = req.body;
 
-      if (
-        rawCommunityId === undefined ||
-        newStatus === undefined ||
-        rawRequestingUserId === undefined
-      ) {
-        return res.status(400).json({
-          message:
-            "필수 정보(communityId, newStatus, requestingUserId)가 누락되었습니다.",
-        });
+      // 인증된 사용자 ID가 없는 경우
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
+
+      if (rawCommunityId === undefined || newStatus === undefined) {
+        throw new CustomError(
+          400,
+          "필수 정보(communityId, newStatus)가 누락되었습니다."
+        );
       }
 
       const communityId = Number(rawCommunityId);
       if (isNaN(communityId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 커뮤니티 ID가 아닙니다." });
-      }
-
-      const requestingUserId = Number(rawRequestingUserId);
-      if (isNaN(requestingUserId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 요청 사용자 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
       if (
@@ -292,16 +326,14 @@ export class CommunityController {
           newStatus.toUpperCase() as CommunityStatus
         )
       ) {
-        return res
-          .status(400)
-          .json({ message: "유효하지 않은 커뮤니티 상태입니다." });
+        throw new CustomError(400, "유효하지 않은 커뮤니티 상태입니다.");
       }
 
       const updatedCommunity =
         await this.communityService.updateCommunityStatus(
           communityId,
           newStatus.toUpperCase() as CommunityStatus,
-          requestingUserId
+          userId // req.user에서 가져온 userId 사용
         );
       res.status(200).json({
         status: "success",
@@ -309,7 +341,22 @@ export class CommunityController {
         data: updatedCommunity,
       });
     } catch (error) {
-      next(error);
+      if (error instanceof Error) {
+        if (error.message === "Community not found") {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message ===
+          "Unauthorized: Only the community creator can change status."
+        ) {
+          next(new CustomError(403, error.message));
+        } else if (error.message === "Invalid status transition") {
+          next(new CustomError(400, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
@@ -323,37 +370,44 @@ export class CommunityController {
   ) => {
     try {
       const { communityId: rawCommunityId } = req.params;
-      const { requestingUserId: rawRequestingUserId } = req.body; // requestingUserId는 권한 확인용으로 임시로 body에서 받음
+      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
 
-      if (rawCommunityId === undefined || rawRequestingUserId === undefined) {
-        return res.status(400).json({
-          message: "필수 정보(communityId, requestingUserId)가 누락되었습니다.",
-        });
+      // 인증된 사용자 ID가 없는 경우
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
+
+      if (rawCommunityId === undefined) {
+        throw new CustomError(400, "필수 정보(communityId)가 누락되었습니다.");
       }
 
       const communityId = Number(rawCommunityId);
       if (isNaN(communityId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 커뮤니티 ID가 아닙니다." });
-      }
-
-      const requestingUserId = Number(rawRequestingUserId);
-      if (isNaN(requestingUserId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 요청 사용자 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
       await this.communityService.deleteCommunity(
         communityId,
-        requestingUserId
+        userId // req.user에서 가져온 userId 사용
       );
       res
         .status(200)
         .json({ status: "success", message: "커뮤니티 삭제 완료" });
     } catch (error) {
-      next(error);
+      if (error instanceof Error) {
+        if (error.message === "Community not found") {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message ===
+          "Unauthorized: Only the community creator can delete the community."
+        ) {
+          next(new CustomError(403, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 }

@@ -3,10 +3,11 @@
 import prisma from "../utils/prisma";
 import { Comment, Prisma } from "@prisma/client";
 
-// Prisma의 findMany 결과에 대한 타입을 명확히 정의합니다.
+// Prisma의 findUnique/findMany 결과에 대한 타입을 명확히 정의합니다.
 // Comment 모델에 user (nickname만 포함) 및 replies (Comment와 user 포함) 관계가 포함된 형태입니다.
 type CommentWithRelations = Comment & {
   user: { nickname: string } | null;
+  // replies 타입 정의 수정: user의 nickname을 string으로 명확히 지정
   replies: (Comment & { user: { nickname: string } | null })[];
 };
 
@@ -22,7 +23,6 @@ export class CommentRepository {
     postId: number,
     query: { page?: number; pageSize?: number; sort?: string }
   ): Promise<CommentWithRelations[]> {
-    // 명확한 반환 타입 사용
     const { page = 1, pageSize = 10, sort } = query;
     const skip = (page - 1) * pageSize;
 
@@ -56,7 +56,7 @@ export class CommentRepository {
     }
 
     const comments = await prisma.comment.findMany(findManyOptions);
-    return comments as CommentWithRelations[]; // 명시적 캐스팅
+    return comments as CommentWithRelations[];
   }
 
   /**
@@ -64,6 +64,8 @@ export class CommentRepository {
    * @param postId - 댓글이 속할 게시물 ID
    * @param commentData - 생성할 댓글 데이터 { userId, content, parentId? }
    * @returns 생성된 Comment 객체
+   * @remarks Prisma의 `create`는 `postId`, `userId`, `parentId`에 해당하는 레코드가 없으면 에러를 던집니다.
+   * 이 에러는 서비스 계층으로 전파되어 CustomError로 처리됩니다.
    */
   public async create(
     postId: number,
@@ -94,6 +96,8 @@ export class CommentRepository {
    * @param commentId - 업데이트할 댓글 ID
    * @param updateData - 업데이트할 데이터 { content? }
    * @returns 업데이트된 Comment 객체
+   * @remarks Prisma의 `update`는 `commentId`에 해당하는 레코드가 없으면 `RecordNotFound` 에러를 던집니다.
+   * 이 에러는 서비스 계층으로 전파되어 CustomError로 처리됩니다.
    */
   public async update(
     commentId: number,
@@ -111,6 +115,8 @@ export class CommentRepository {
    * (schema.prisma의 onDelete: SetNull 설정으로 대댓글의 parentId는 자동으로 null이 됩니다.)
    * @param commentId - 삭제할 댓글 ID
    * @returns 삭제된 레코드 수 (0 또는 1)
+   * @remarks `deleteMany`는 삭제된 레코드 수를 반환하며, 해당 ID의 레코드가 없어도 에러를 던지지 않고 0을 반환합니다.
+   * 이 반환 값은 서비스 계층에서 확인하여 CustomError로 처리됩니다.
    */
   public async delete(commentId: number): Promise<number> {
     const result = await prisma.comment.deleteMany({
@@ -122,15 +128,24 @@ export class CommentRepository {
   /**
    * 특정 댓글 ID로 댓글을 조회합니다.
    * @param commentId - 조회할 댓글 ID
-   * @returns Comment 객체 또는 null (작성자 닉네임 포함)
+   * @returns CommentWithRelations 객체 또는 null (작성자 닉네임 및 대댓글 포함)
+   * @remarks 이제 `replies` 관계도 포함하여 `CommentWithRelations` 타입과 일치합니다.
    */
   public async findById(
     commentId: number
-  ): Promise<(Comment & { user: { nickname: string } | null }) | null> {
+  ): Promise<CommentWithRelations | null> {
     const comment = await prisma.comment.findUnique({
       where: { commentId: commentId },
-      include: { user: { select: { nickname: true } } }, // 작성자 닉네임 포함
+      include: {
+        user: { select: { nickname: true } }, // 작성자 닉네임 포함
+        replies: {
+          // replies 관계 추가
+          include: { user: { select: { nickname: true } } }, // 대댓글 작성자 닉네임 포함
+        },
+      },
     });
+    // Prisma가 include를 통해 정확한 타입을 추론하므로,
+    // 불필요한 'as' 캐스팅을 제거하여 타입 추론을 방해하지 않도록 합니다.
     return comment;
   }
 
@@ -138,6 +153,8 @@ export class CommentRepository {
    * 특정 게시물에 연결된 모든 댓글을 삭제합니다. (게시물 삭제 시 사용)
    * @param postId - 게시물 ID
    * @returns 삭제된 레코드 수
+   * @remarks 이 메서드는 게시물 삭제 시 관련된 모든 댓글을 정리하는 데 사용됩니다.
+   * 삭제된 레코드 수를 반환하며, 해당 postId의 댓글이 없어도 에러를 던지지 않고 0을 반환합니다.
    */
   public async deleteManyByPostId(postId: number): Promise<number> {
     const result = await prisma.comment.deleteMany({

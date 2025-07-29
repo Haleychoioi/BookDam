@@ -2,47 +2,40 @@
 
 import { Router } from "express";
 import { TeamPostController } from "../controllers/team-posts.controller"; // TeamPostController를 import합니다.
+// authenticate 미들웨어를 import합니다.
+import authenticate from "../middleware/authenticate-middleware";
 
 const router = Router();
 const teamPostController = new TeamPostController();
 
 // API 명세서 기반 라우트 정의
 
-// GET /api/team-posts - 팀 게시물 목록 조회 (커뮤니티 ID는 쿼리 파라미터 또는 바디로 전달될 수 있음)
-router.get("/", teamPostController.getTeamPosts);
+// GET /api/team-posts - 팀 게시물 목록 조회
+// 인증된 사용자만 접근 가능
+router.get("/", authenticate, teamPostController.getTeamPosts);
 
-// POST /api/team-posts - 새 팀 게시물 생성 (커뮤니티 ID는 바디로 전달)
-router.post("/", teamPostController.createTeamPost);
+// POST /api/team-posts - 새 팀 게시물 생성
+// 인증된 사용자만 접근 가능
+router.post("/", authenticate, teamPostController.createTeamPost);
 
 // GET /api/team-posts/:teamPostId - 특정 팀 게시물 상세 조회
-router.get("/:teamPostId", teamPostController.getTeamPostById);
+// 인증된 사용자만 접근 가능
+router.get("/:teamPostId", authenticate, teamPostController.getTeamPostById);
 
 // PUT /api/team-posts/:teamPostId - 특정 팀 게시물 수정
-router.put("/:teamPostId", teamPostController.updateTeamPost);
+// 인증된 사용자만 접근 가능
+router.put("/:teamPostId", authenticate, teamPostController.updateTeamPost);
 
 // DELETE /api/team-posts/:teamPostId - 특정 팀 게시물 삭제
-router.delete("/:teamPostId", teamPostController.deleteTeamPost);
+// 인증된 사용자만 접근 가능
+router.delete("/:teamPostId", authenticate, teamPostController.deleteTeamPost);
 
 // --- 팀 게시물 댓글 관련 라우트 ---
-// POST /api/team-posts/:teamPostId/comments - 특정 팀 게시물에 댓글 작성
-router.post(
-  "/:teamPostId/comments", // 이 경로가 Postman 요청과 일치해야 합니다.
-  teamPostController.createComment
-);
-
-// GET /api/team-posts/:teamPostId/comments - 특정 팀 게시물의 댓글 목록 조회
-router.get("/:teamPostId/comments", teamPostController.getCommentsByTeamPostId);
-
-// PUT /api/team-posts/:teamPostId/comments/:commentId - 특정 댓글 수정
-router.put(
-  "/:teamPostId/comments/:commentId",
-  teamPostController.updateComment
-);
-
-// DELETE /api/team-posts/:teamPostId/comments/:commentId - 특정 댓글 삭제
-router.delete(
-  "/:teamPostId/comments/:commentId",
-  teamPostController.deleteComment
-);
+// 이 라우트들은 team-comments.controller.ts에서 처리되어야 하며,
+// team-posts.controller.ts에서는 더 이상 존재하지 않으므로 제거합니다.
+// router.post("/:teamPostId/comments", teamPostController.createComment);
+// router.get("/:teamPostId/comments", teamPostController.getCommentsByTeamPostId);
+// router.put("/:teamPostId/comments/:commentId", teamPostController.updateComment);
+// router.delete("/:teamPostId/comments/:commentId", teamPostController.deleteComment);
 
 export default router;
