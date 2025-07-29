@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 import SearchBar from "../../components/common/SearchBar";
 import BookDetailHeroSection from "../../components/bookDetail/BookDetailHeroSection";
@@ -12,23 +13,66 @@ import CreateCommunityModal from "../../components/modals/CreateCommunityModal";
 import type { BookDetail, Community, BookSummary } from "../../types";
 import {
   getBookDetail,
-  fetchBestsellers, // ✨ 새로 임포트 ✨
-  fetchNewBooks, // ✨ 새로 임포트 ✨
-  fetchSpecialNewBooks, // ✨ 새로 임포트 ✨
-  /*, fetchBookCommunities (백엔드 구현 시)*/
+  fetchBestsellers,
+  fetchNewBooks,
+  fetchSpecialNewBooks,
+  // fetchBookCommunities, // 백엔드 구현 시 주석 해제
 } from "../../api/books";
+
+interface BookDetailPageData {
+  book: BookDetail;
+  bestsellers: BookSummary[];
+  newBooks: BookSummary[];
+  specialNewBooks: BookSummary[];
+  communities: Community[];
+}
 
 const BookDetailPage: React.FC = () => {
   const { itemId } = useParams<{ itemId: string }>();
 
-  const [book, setBook] = useState<BookDetail | null>(null);
-  const [communities, setCommunities] = useState<Community[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, isError, error } = useQuery<
+    BookDetailPageData,
+    Error
+  >({
+    queryKey: ["bookDetailPageData", itemId],
 
-  const [bestsellers, setBestsellers] = useState<BookSummary[]>([]);
-  const [newBooks, setNewBooks] = useState<BookSummary[]>([]);
-  const [specialNewBooks, setSpecialNewBooks] = useState<BookSummary[]>([]);
+    queryFn: async () => {
+      if (!itemId) {
+        throw new Error("도서 ID가 제공되지 않았습니다.");
+      }
+
+      const [
+        fetchedBookDetail,
+        fetchedBestsellers,
+        fetchedNewBooks,
+        fetchedSpecialNewBooks,
+      ] = await Promise.all([
+        getBookDetail(itemId),
+        fetchBestsellers(1, 10),
+        fetchNewBooks(1, 10),
+        fetchSpecialNewBooks(1, 10),
+        // fetchBookCommunities(itemId), // 커뮤니티 API 구현 시 주석 해제
+      ]);
+
+      const fetchedCommunities: Community[] = [];
+
+      return {
+        book: fetchedBookDetail,
+        bestsellers: fetchedBestsellers,
+        newBooks: fetchedNewBooks,
+        specialNewBooks: fetchedSpecialNewBooks,
+        communities: fetchedCommunities,
+      };
+    },
+
+    enabled: !!itemId,
+  });
+
+  const book = data?.book || null;
+  const bestsellers = data?.bestsellers || [];
+  const newBooks = data?.newBooks || [];
+  const specialNewBooks = data?.specialNewBooks || [];
+  const communities = data?.communities || []; // 이 부분은 커뮤니티 API 구현 후 data?.communities 로 변경
 
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(
@@ -39,57 +83,7 @@ const BookDetailPage: React.FC = () => {
   const [, setItemIdForCreate] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      setLoading(true);
-      setError(null);
-
-      if (!itemId) {
-        setError("도서 ID가 제공되지 않았습니다.");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const bookDetailPromise = getBookDetail(itemId);
-
-        const bestsellersPromise = fetchBestsellers(1, 10);
-        const newBooksPromise = fetchNewBooks(1, 10);
-        const specialNewBooksPromise = fetchSpecialNewBooks(1, 10);
-
-        const [
-          fetchedBookDetail,
-          fetchedBestsellers,
-          fetchedNewBooks,
-          fetchedSpecialNewBooks,
-        ] = await Promise.all([
-          bookDetailPromise,
-          bestsellersPromise,
-          newBooksPromise,
-          specialNewBooksPromise,
-        ]);
-
-        setBook(fetchedBookDetail);
-        setBestsellers(fetchedBestsellers);
-        setNewBooks(fetchedNewBooks);
-        setSpecialNewBooks(fetchedSpecialNewBooks);
-
-        // 커뮤니티 정보는 백엔드 구현 시 추가
-        setCommunities([]); // 현재는 빈 배열 유지
-      } catch (err) {
-        console.error("데이터 불러오기 실패:", err);
-        setError("페이지 데이터를 불러오는 데 실패했습니다.");
-        setBook(null);
-        setBestsellers([]);
-        setNewBooks([]);
-        setSpecialNewBooks([]);
-        setCommunities([]);
-      } finally {
-        setLoading(false);
-      }
-      window.scrollTo(0, 0);
-    };
-
-    fetchAllData();
+    window.scrollTo(0, 0);
   }, [itemId]);
 
   const handleApplyCommunityClick = (communityId: string) => {
@@ -128,13 +122,14 @@ const BookDetailPage: React.FC = () => {
       // TODO: 커뮤니티 생성 API (POST /communities) 호출 로직 구현
       alert("커뮤니티가 성공적으로 생성되었습니다!");
       handleCreateModalClose();
+      // queryClient.invalidateQueries(['bookDetailPageData', bookIdentifier]); // 커뮤니티 생성 후 데이터 무효화 (useQueryClient 필요)
     } catch (error) {
       console.error("커뮤니티 생성 중 오류 발생:", error);
       alert("커뮤니티 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="text-center py-12 text-xl text-gray-700">
         도서 정보 로딩 중...
@@ -142,9 +137,11 @@ const BookDetailPage: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
-      <div className="text-center py-12 text-xl text-red-700">{error}</div>
+      <div className="text-center py-12 text-xl text-red-700">
+        오류: {error?.message || "페이지 데이터를 불러오는 데 실패했습니다."}
+      </div>
     );
   }
 
@@ -164,7 +161,7 @@ const BookDetailPage: React.FC = () => {
 
       <div className="container mx-auto px-4 lg:px-48">
         <BookDetailHeroSection
-          book={book} // book은 이제 BookDetail 타입 또는 null/undefined. 위에서 null/undefined 체크했으므로 여기서는 BookDetail 확정.
+          book={book}
           onCreateCommunityClick={handleCreateCommunityClick}
         />
 
