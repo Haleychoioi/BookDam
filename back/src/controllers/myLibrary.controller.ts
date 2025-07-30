@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import myLibraryService from "../services/myLibrary.service";
 import { ReadingStatus } from '@prisma/client';
+import { bookService } from '../services/book.service';
 
 class MyLibraryController {
 
@@ -14,6 +15,8 @@ class MyLibraryController {
                 return res.status(400).json({ message: 'isbn13과 status는 필수' });
             }
 
+            await bookService.getBookDetail(isbn13);
+            
             const upsertBook = await myLibraryService.upsertBookInLibrary(userId, {
                 isbn13,
                 status,
