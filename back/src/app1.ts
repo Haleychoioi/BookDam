@@ -16,8 +16,12 @@ import errorHandingMiddleware from './middleware/error-handing-middleware';
 import authRouter from './routes/auth.routes';
 import userRouter from './routes/user.routes';
 import bookRouter from './routes/book.routes';
+import wishRouter from './routes/wishList.route';
+import myLibraryRouter from './routes/myLibrary.routes';
+
 // chatController 추가*
 import chatController from './chat/chat.controller';
+import postRouter from './post2/posts2.routes'
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,19 +29,21 @@ const PORT = process.env.PORT || 3000;
 // Express 앱을 기반으로 HTTP 서버 생성*
 const server = http.createServer(app);
 
-// HTTP 서버 위에 Socket.IO 서버를 연결 => CORS 설정을 해야 클라이언트에서 접속 가능*
+// HTTP 서버 위에 Socket.IO 서버를 연결 => CORS 설정을 해야 클라이언트에서 접속 가능
 const io = new Server(server, {
   cors: {
-    // 클라이언트 주소를 명시적으로 지정 나중에 고쳐야되나(주의)**
-    origin: 'http://127.0.0.1:5500',
+    // 클라이언트 주소를 명시적으로 지정 나중에 고쳐야되나(주의)
+    origin: ["http://localhost:5173", "http://127.0.0.1:5500"],
     methods: ['GET', 'POST'],
   },
 });
 
-// Express 앱에도 cors 미들웨어를 적용합니다. 라우터보다 위에 있어야 됨
+// Express 앱에도 cors 미들웨어를 적용. 라우터보다 위에 있어야 됨
+// 배포할때 다시 변경
 app.use(cors({
-    origin: 'http://127.0.0.1:5500'
+    origin: ["http://localhost:5173", "http://127.0.0.1:5500"]
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // profileImage 링크 이동할때 에러 안나게 하려면
@@ -47,6 +53,10 @@ app.use('/static', express.static(path.join(__dirname, '../public')));
 app.use("/auth", authRouter);
 app.use("/users", userRouter);
 app.use("/books", bookRouter);
+app.use('/mypage', wishRouter);
+app.use('/my-library', myLibraryRouter);
+
+app.use("/posts", postRouter);
 
 
 // --- Socket.IO 인증 미들웨어 설정 ---

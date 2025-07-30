@@ -1,24 +1,34 @@
-// book.service.ts
 import { bookRepository } from '../repositories/book.repository';
 import { aladinApiService } from './aladin-api.service';
 import { AladinBookItem, BookCreateData } from '../types/book.type';
+import { CATEGORY_MAPPING } from '../constants/categories';
+import { AladinItemIdType } from '../types/book.type';
 
 export class BookService {
 
-  // 상품조회 = aladin에서 getBookDetail안만듦
-  // async getBookDetail(isbn13: string) {
-  //   let book = await bookRepository.findByIsbn(isbn13);
-  //   if (!book) {
-  //     const response = await aladinApiService.getBookDetail({
-  //       ItemId: isbn13,
-  //       OptResult: ['Toc', 'Story']
-  //     });
-  //     book = await this.saveBook(response.item[0]);
-  //   }
+  // 상품 조회
+  async getBookDetail(identifier: string) {
+  const isISBN13 = /^97[89]\d{10}$/.test(identifier);
+  
+  let book;
+  
+  // ISBN13이면 DB에서 먼저 찾아보기
+  if (isISBN13) {
+    book = await bookRepository.findByIsbn(identifier);
+  }
+  
+  // DB에 없거나 itemId면 알라딘 API 호출
+  if (!book) {
+    const response = await aladinApiService.getBookDetail({
+      ItemId: identifier,
+      ItemIdType: isISBN13 ? AladinItemIdType.ISBN13 : AladinItemIdType.ITEM_ID, // 이 부분이 핵심!
+      OptResult: ['Toc', 'Story']
+    });
+    book = await this.saveBook(response.item[0]);
+  }
 
-  //   return book;
-  // }
-
+  return book;
+}
 
   //알라딘 책 정보 → DB에 이미 있는지 확인 → 없으면 DB컬럼 형식으로 변환해서 저장
   // 책을 DB에 저장 => 책 캐싱
@@ -52,61 +62,19 @@ export class BookService {
     };
   }
 
-
-  // book.service.ts - mapCategory 개선
   private mapCategory(aladinCategory: string): string | null {
-    // "국내도서>" 다음의 첫 번째 카테고리 추출
     const mainCategory = this.extractMainCategory(aladinCategory);
-
-    const categoryMap: { [key: string]: string } = {
-      '소설/시/희곡': '소설',
-      '에세이': '에세이',
-      '자기계발': '자기계발',
-      '경제경영': '경영',
-      '인문학': '인문학',
-      '역사': '역사',
-      '자연과학': '과학',
-      '요리/살림': '요리',
-      // ...
-    };
-
-    return mainCategory ? (categoryMap[mainCategory] || mainCategory) : null;
+    return mainCategory ? (CATEGORY_MAPPING[mainCategory as keyof typeof CATEGORY_MAPPING] || mainCategory) : null;
   }
 
-  // 메인 카테고리 추출 헬퍼 함수
   private extractMainCategory(fullCategory: string): string | null {
     if (fullCategory.startsWith('국내도서>')) {
       const parts = fullCategory.split('>');
-      return parts[1]?.trim(); // "소설/시/희곡"
+      return parts[1]?.trim();
     }
     return null;
   }
 
-
-  // 카테고리 매핑 (알라딘 카테고리명 → 우리 카테고리)
-  // private mapCategory(aladinCategory: string): string | null {
-  //   const categoryMap: { [key: string]: string } = {
-  //     '소설': '소설',
-  //     '에세이': '에세이',
-  //     '자기계발': '자기계발',
-  //     '경영': '경영',
-  //     '인문학': '인문학',
-  //     '역사': '역사',
-  //     '과학': '과학',
-  //     '철학': '철학',
-  //     '심리학': '심리학',
-  //     '컴퓨터': '컴퓨터',
-  //     '외국어': '외국어',
-  //     '여행': '여행',
-  //     '요리': '요리',
-  //     '건강': '건강',
-  //     '취미': '취미',
-  //     '아동': '아동',
-  //     '청소년': '청소년'
-  //   };
-
-  //   return categoryMap[aladinCategory] || aladinCategory;
-  // }
 }
 
 export const bookService = new BookService();
