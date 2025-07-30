@@ -50,12 +50,32 @@ export default function (
    case "Need login":
    case "TokenNotMatched":
      return res.status(401).send({
-       errorMessage: "로그인을 해주세요"
+       errorMessage: "회원 전용 서비스입니다"
      });
      
      case "Aladin" : 
      return res.send({
       errorMessage: "알라딘 API 오류"
+     });
+
+     case "ExistWish" : 
+     return res.send({
+      errorMessage: "이미 위시리스트에 존재하는 도서입니다."
+     });
+
+     case "BookNotFound" : 
+     return res.send({
+      errorMessage: "존재하지 않은 도서입니다."
+     });
+
+     case "RatingRequiredForCompletion" : 
+     return res.send({
+      errorMessage: "평점을 입력해야 합니다."
+     });
+
+     case "InvalidRatingRange" : 
+     return res.send({
+      errorMessage: "평점은 1~5점 사이로 입력해 주세요."
      });
 
    default: 
