@@ -6,14 +6,19 @@ import type { Post, Comment } from "../../types";
 import CommentInput from "../../components/comments/CommentInput";
 import CommentList from "../../components/comments/CommentList";
 
-// ★★★ FIX: mockPostsDetailData 내 authorId를 number로 변경 ★★★
+const POST_AUTHOR_PROFILE_IMAGE_BASE_URL =
+  "https://via.placeholder.com/40?text=";
+const COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL =
+  "https://via.placeholder.com/30?text=";
+
 const mockPostsDetailData: { [key: string]: Post } = {
   "post-1": {
     id: "post-1",
     title: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
     commentCount: 5,
     author: "홍길동",
-    authorId: 456, // 'user456' -> 456
+    authorId: 456,
+    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "Hong",
     createdAt: "2025년 07월 21일",
     content: `# 마크다운 테스트 제목
 **볼드 텍스트**와 *이탤릭 텍스트*를 포함합니다.
@@ -33,7 +38,8 @@ console.log("코드 블록");
     title: "독서 모임 다음 주제 추천 받아요!",
     commentCount: 12,
     author: "김철수",
-    authorId: 123, // 'user123' -> 123
+    authorId: 123,
+    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "Kim",
     createdAt: "2025년 07월 20일",
     content: `안녕하세요, 다음 독서 모임 주제를 선정하려고 합니다.
 혹시 추천해주실 만한 책이나 특정 주제가 있다면 자유롭게 의견 주세요!
@@ -45,7 +51,8 @@ console.log("코드 블록");
     title: "[해리포터] 1번째 독서 스터디 논의점",
     commentCount: Math.floor(Math.random() * 10) + 1,
     author: "그리핀도르",
-    authorId: 123, // 'user123' -> 123
+    authorId: 123,
+    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "Gry",
     createdAt: "2025년 07월 17일",
     content: `해리포터 독서 모임 논의점
 이것은 '해리포터' 커뮤니티의 1번째 게시물 상세 내용입니다.
@@ -63,7 +70,8 @@ console.log("코드 블록");
     title: "[해리포터] 2번째 독서 스터디 논의점",
     commentCount: Math.floor(Math.random() * 10) + 1,
     author: "슬리데린",
-    authorId: 456, // 'user456' -> 456
+    authorId: 456,
+    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "Sly",
     createdAt: "2025년 07월 16일",
     content: `이것은 '해리포터' 커뮤니티의 2번째 게시물 상세 내용입니다. 논의 내용을 확인하세요.`,
     type: "community",
@@ -73,7 +81,8 @@ console.log("코드 블록");
     title: "[노인과바다] 깊은 바다 이야기 1",
     commentCount: Math.floor(Math.random() * 15) + 1,
     author: "바다사나이",
-    authorId: 123, // 'user123' -> 123
+    authorId: 123,
+    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "Sea",
     createdAt: "2025년 07월 15일",
     content: `노인과 바다의 첫 번째 깊은 이야기.`,
     type: "community",
@@ -83,7 +92,8 @@ console.log("코드 블록");
     title: "[전체] 1번째 흥미로운 이야기",
     commentCount: 5,
     author: "전체 게시판 유저1",
-    authorId: 456, // 'user456' -> 456
+    authorId: 456,
+    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "User1",
     createdAt: "2025년 07월 21일",
     content: `이것은 전체 게시판의 1번째 게시물 상세 내용입니다.`,
     type: "general",
@@ -93,89 +103,226 @@ console.log("코드 블록");
     title: "[전체] 2번째 흥미로운 이야기",
     commentCount: 10,
     author: "전체 게시판 유저2",
-    authorId: 123, // 'user123' -> 123
+    authorId: 123,
+    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "User2",
     createdAt: "2025년 07월 20일",
     content: `이것은 전체 게시판의 2번째 게시물 상세 내용입니다.`,
     type: "general",
   },
 };
 
-// ★★★ FIX: mockCommentsData 내 authorId를 number로 변경 ★★★
-const mockCommentsData: { [key: string]: Comment[] } = {
+const rawMockCommentsData: { [key: string]: Comment[] } = {
   "comm1-post-1": [
     {
       id: "c1",
       author: "책돌이",
-      authorId: 123, // 'user123' -> 123
+      authorId: 123,
+      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "BookD",
       createdAt: "2025.07.20 12:00",
-      content: "정말 흥미로운 논의네요!",
+      content: "정말 흥미로운 논의네요! (Depth 0)",
       postId: "comm1-post-1",
       postTitle: "[해리포터] 1번째 독서 스터디 논의점",
       postType: "community",
       communityId: "comm1",
       isEdited: false,
-      depth: 0, // 최상위 댓글
+      parentId: undefined,
+      depth: 0,
+      replies: [],
+    },
+    {
+      id: "c1-r1",
+      author: "해리팬",
+      authorId: 456,
+      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "HPF",
+      createdAt: "2025.07.20 12:15",
+      content: "맞아요, 그 부분 저도 궁금했어요! (Depth 1, c1의 답글)",
+      postId: "comm1-post-1",
+      postTitle: "[해리포터] 1번째 독서 스터디 논의점",
+      postType: "community",
+      communityId: "comm1",
+      isEdited: false,
+      parentId: "c1",
+      depth: 1,
+      replies: [],
     },
     {
       id: "c2",
       author: "책순이",
-      authorId: 456, // 'user456' -> 456
+      authorId: 456,
+      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "BookS",
       createdAt: "2025.07.20 12:35",
-      content: "저도 그 부분에서 궁금한 점이 많았어요.",
+      content: "저는 다른 관점에서 보고 있었어요! (Depth 0)",
       isEdited: true,
       postId: "comm1-post-1",
       postTitle: "[해리포터] 1번째 독서 스터디 논의점",
       postType: "community",
       communityId: "comm1",
-      depth: 0, // 최상위 댓글
+      parentId: undefined,
+      depth: 0,
+      replies: [],
     },
     {
       id: "c3",
       author: "독서왕",
-      authorId: 123, // 'user123' -> 123
+      authorId: 123,
+      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "BookK",
       createdAt: "2025.07.20 13:10",
-      content: "이런 질문은 정말 좋아요!",
+      content: "이런 질문은 정말 좋아요! (Depth 0)",
       postId: "comm1-post-1",
       postTitle: "[해리포터] 1번째 독서 스터디 논의점",
       postType: "community",
       communityId: "comm1",
-      depth: 0, // 최상위 댓글
+      isEdited: false,
+      parentId: undefined,
+      depth: 0,
+      replies: [],
+    },
+    {
+      id: "c3-r1",
+      author: "새로운 독자",
+      authorId: 789,
+      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "NewR",
+      createdAt: "2025.07.20 13:30",
+      content: "저도 그렇게 생각해요! (Depth 1, c3의 답글)",
+      postId: "comm1-post-1",
+      postTitle: "[해리포터] 1번째 독서 스터디 논의점",
+      postType: "community",
+      communityId: "comm1",
+      isEdited: false,
+      parentId: "c3",
+      depth: 1,
+      replies: [],
     },
   ],
   "post-1": [
     {
       id: "gc1",
       author: "김독자",
-      authorId: 789, // 'user789' -> 789
+      authorId: 789,
+      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "KimD",
       createdAt: "2025.07.21 10:00",
-      content: "좋은 글 잘 읽었습니다.",
+      content: "안녕하세요, 첫 댓글입니다! (Depth 0)",
       postId: "post-1",
       postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
       postType: "general",
       isEdited: false,
-      depth: 0, // 최상위 댓글
+      parentId: undefined,
+      depth: 0,
+      replies: [],
     },
     {
-      id: "gc2",
-      author: "박논평",
-      authorId: 123, // 'user123' -> 123
-      createdAt: "2025.07.21 10:15",
-      content: "저도 같은 의견입니다.",
+      id: "gc1-r1",
+      author: "답글러1",
+      authorId: 456,
+      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "Rep1",
+      createdAt: "2025.07.21 10:30",
+      content:
+        "네, 저도 그 문단에 대해 궁금한 점이 많습니다. (Depth 1, gc1의 답글)",
       postId: "post-1",
       postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
       postType: "general",
       isEdited: false,
-      depth: 0, // 최상위 댓글
+      parentId: "gc1",
+      depth: 1,
+      replies: [],
+    },
+    {
+      id: "gc1-r2",
+      author: "답글러2",
+      authorId: 123,
+      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "Rep2",
+      createdAt: "2025.07.21 10:45",
+      content:
+        "저는 다른 해석을 해봤어요. 혹시 이 부분에 대해 어떻게 생각하시나요? (Depth 1, gc1의 답글)",
+      postId: "post-1",
+      postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
+      postType: "general",
+      isEdited: false,
+      parentId: "gc1",
+      depth: 1,
+      replies: [],
+    },
+    {
+      id: "gc3",
+      author: "책읽는고양이",
+      authorId: 777,
+      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "Cat",
+      createdAt: "2025.07.21 11:00",
+      content: "이 게시물 내용 정말 유익하네요! (Depth 0)",
+      postId: "post-1",
+      postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
+      postType: "general",
+      isEdited: false,
+      parentId: undefined,
+      depth: 0,
+      replies: [],
+    },
+    {
+      id: "gc3-r1",
+      author: "게시판지기",
+      authorId: 100,
+      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "Admin",
+      createdAt: "2025.07.21 11:15",
+      content:
+        "칭찬 감사합니다! 더 좋은 게시물을 올리도록 노력하겠습니다. (Depth 1, gc3의 답글)",
+      postId: "post-1",
+      postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
+      postType: "general",
+      isEdited: false,
+      parentId: "gc3",
+      depth: 1,
+      replies: [],
+    },
+    {
+      id: "gc4",
+      author: "새로운시작",
+      authorId: 888,
+      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "NewS",
+      createdAt: "2025.07.21 11:30",
+      content: "저도 참여해도 될까요? (Depth 0)",
+      postId: "post-1",
+      postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
+      postType: "general",
+      isEdited: false,
+      parentId: undefined,
+      depth: 0,
+      replies: [],
     },
   ],
+};
+
+const buildCommentTree = (
+  flatComments: Comment[],
+  parentId: string | undefined = undefined,
+  currentDepth: number = 0
+): Comment[] => {
+  const nestedComments: Comment[] = [];
+
+  flatComments
+    .filter((comment) => (comment.parentId || undefined) === parentId)
+    .sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    )
+    .forEach((comment) => {
+      const newComment = { ...comment, depth: currentDepth };
+
+      newComment.replies = buildCommentTree(
+        flatComments,
+        newComment.id,
+        currentDepth + 1
+      );
+      nestedComments.push(newComment);
+    });
+  return nestedComments;
 };
 
 const PostDetailPage: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
 
-  // ★★★ FIX: currentUserId를 number로 변경 ★★★
-  const currentUserId = 123; // 임시 로그인 사용자 ID (이 ID를 가진 사용자만 수정/삭제 버튼을 볼 수 있습니다)
+  const currentUserId = 123;
+  const currentUserProfileImage = COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "Me";
 
   const [post, setPost] = useState<Post | undefined>(undefined);
   const [loadingPost, setLoadingPost] = useState(true);
@@ -189,10 +336,11 @@ const PostDetailPage: React.FC = () => {
   const handleAddReply = (parentId: string, content: string) => {
     console.log(`댓글 ${parentId}에 대한 답글 추가:`, content);
 
-    const newReply: Comment = {
-      id: `r-${Date.now()}`,
+    const newComment: Comment = {
+      id: `c-${Date.now()}`,
       author: "현재 사용자",
-      authorId: currentUserId, // 이제 number 타입으로 할당
+      authorId: currentUserId,
+      authorProfileImage: currentUserProfileImage, // ✨ 추가 ✨
       createdAt: new Date().toLocaleString("ko-KR", {
         year: "numeric",
         month: "2-digit",
@@ -211,71 +359,68 @@ const PostDetailPage: React.FC = () => {
           : undefined,
       isEdited: false,
       parentId: parentId,
-      depth: 1, // 대댓글이므로 깊이 1
+      depth: 1,
+      replies: [],
     };
 
     setComments((prevComments) => {
-      return [...prevComments, newReply];
+      const addReplyToTree = (
+        commentsArray: Comment[],
+        targetParentId: string,
+        replyToAdd: Comment,
+        currentLevel: number
+      ): Comment[] => {
+        return commentsArray.map((comment) => {
+          if (comment.id === targetParentId) {
+            const newReplyDepth = (comment.depth || 0) + 1;
+            return {
+              ...comment,
+              replies: [
+                ...(comment.replies || []),
+                { ...replyToAdd, depth: newReplyDepth },
+              ],
+            };
+          } else if (comment.replies && comment.replies.length > 0) {
+            return {
+              ...comment,
+              replies: addReplyToTree(
+                comment.replies,
+                targetParentId,
+                replyToAdd,
+                currentLevel + 1
+              ),
+            };
+          }
+          return comment;
+        });
+      };
+
+      return addReplyToTree(prevComments, parentId, newComment, 0);
     });
     // TODO: 실제 API 호출 (POST /posts/:id/comments with parentId)
   };
 
-  // 게시물 데이터 로딩 및 초기화
   useEffect(() => {
     const fetchPostData = () => {
       setLoadingPost(true);
       setErrorPost(null);
-      const fetchedPost = mockPostsDetailData[postId || ""];
+
+      if (!postId) {
+        setErrorPost("게시물 ID가 제공되지 않았습니다.");
+        setLoadingPost(false);
+        return;
+      }
+
+      const fetchedPost = mockPostsDetailData[postId];
       if (fetchedPost) {
         setPost(fetchedPost);
-        setEditedContent(fetchedPost.content); // 게시물 내용 로드 시 수정 내용도 초기화
+        setEditedContent(fetchedPost.content);
 
-        // 기존 댓글과 Mock 대댓글을 합쳐서 comments 상태 초기화
-        const fetchedComments = mockCommentsData[postId || ""] || [];
-        // ★★★ FIX: mockReplies 내 authorId를 number로 변경 ★★★
-        const mockReplies: Comment[] = [
-          {
-            id: "gc1-r1",
-            author: "답글러1",
-            authorId: 456, // 'user456' -> 456
-            createdAt: "2025.07.21 10:30",
-            content: "첫 댓글에 대한 답글입니다.",
-            postId: "post-1",
-            postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
-            postType: "general",
-            isEdited: false,
-            parentId: "gc1",
-            depth: 1,
-          },
-          {
-            id: "gc1-r2",
-            author: "답글러2",
-            authorId: 789, // 'user789' -> 789
-            createdAt: "2025.07.21 10:45",
-            content: "저도 동의합니다.",
-            postId: "post-1",
-            postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
-            postType: "general",
-            isEdited: false,
-            parentId: "gc1",
-            depth: 1,
-          },
-          {
-            id: "c1-r1",
-            author: "해리팬",
-            authorId: 456, // 'user456' -> 456
-            createdAt: "2025.07.20 12:15",
-            content: "맞아요, 그 부분 저도 궁금했어요!",
-            postId: "comm1-post-1",
-            postTitle: "[해리포터] 1번째 독서 스터디 논의점",
-            postType: "community",
-            communityId: "comm1",
-            isEdited: false,
-            parentId: "c1",
-            depth: 1,
-          },
-        ];
-        setComments([...fetchedComments, ...mockReplies]);
+        const initialFlatComments = rawMockCommentsData[postId] || [];
+
+        const nestedComments = buildCommentTree(initialFlatComments);
+
+        setComments(nestedComments);
       } else {
         setErrorPost("게시물을 찾을 수 없습니다.");
       }
@@ -284,15 +429,12 @@ const PostDetailPage: React.FC = () => {
 
     fetchPostData();
     window.scrollTo(0, 0);
-    setIsEditing(false); // 페이지 이동 시 수정 모드 자동 해제
-  }, [postId]); // postId가 변경될 때마다 재호출
+    setIsEditing(false);
+  }, [postId]);
 
-  // 게시물 작성자 여부 확인
-  const isPostAuthor = post?.authorId === currentUserId; // 이제 number === number 비교
+  const isPostAuthor = post?.authorId === currentUserId;
 
-  // 게시물 수정 시작 (PostDetailTemplate의 "수정" 버튼 클릭 시)
   const handleEditPost = () => {
-    // 현재 로그인된 사용자가 게시물 작성자인지 확인
     if (post && post.authorId !== currentUserId) {
       alert("게시물 작성자만 수정할 수 있습니다.");
       return;
@@ -300,7 +442,6 @@ const PostDetailPage: React.FC = () => {
     setIsEditing(true);
   };
 
-  // 게시물 수정 저장 (PostDetailTemplate의 "저장" 버튼 클릭 시)
   const handleSavePost = () => {
     const trimmedEditedContent = editedContent.trim();
     const trimmedOriginalContent = post?.content.trim() || "";
@@ -311,14 +452,13 @@ const PostDetailPage: React.FC = () => {
     }
     if (trimmedEditedContent === trimmedOriginalContent) {
       alert("수정된 내용이 없습니다.");
-      setIsEditing(false); // 변경 없으면 수정 모드 종료
+      setIsEditing(false);
       return;
     }
 
-    // 실제로는 API 호출 (PUT /posts/:id) [cite: 5]
+    // 실제로는 API 호출 (PUT /posts/:id)
     console.log(`게시물 ${postId} 수정 완료:`, trimmedEditedContent);
 
-    // Mock 데이터 업데이트 예시 (실제 API 호출 성공 후 적용)
     if (post) {
       setPost({
         ...post,
@@ -328,9 +468,9 @@ const PostDetailPage: React.FC = () => {
             year: "numeric",
             month: "2-digit",
             day: "2-digit",
-          }) + " (수정됨)", // 수정일자 업데이트 예시
+          }) + " (수정됨)",
       });
-      // Mock 데이터 객체 자체도 업데이트 (새로고침 없이 반영되도록)
+
       mockPostsDetailData[post.id] = {
         ...mockPostsDetailData[post.id],
         content: trimmedEditedContent,
@@ -343,19 +483,17 @@ const PostDetailPage: React.FC = () => {
       };
     }
 
-    setIsEditing(false); // 수정 완료 후 다시 보기 모드로 전환
+    setIsEditing(false);
   };
 
-  // 게시물 수정 취소 (PostDetailTemplate의 "취소" 버튼 클릭 시)
   const handleCancelEdit = () => {
     setIsEditing(false);
     if (post) {
-      setEditedContent(post.content); // 원본 내용으로 복원
+      setEditedContent(post.content);
     }
   };
 
   const handleDeletePost = () => {
-    // post.authorId 필드를 FullPost 인터페이스에 추가해야 합니다.
     if (post && post.authorId !== currentUserId) {
       alert("게시물 작성자만 삭제할 수 있습니다.");
       return;
@@ -363,9 +501,8 @@ const PostDetailPage: React.FC = () => {
 
     if (window.confirm("정말로 이 게시물을 삭제하시겠습니까?")) {
       console.log(`Delete post ${postId}`);
-      // 실제 API 호출 (DELETE /posts/id) [cite: 5]
-      // Mock 데이터에서 삭제하는 로직도 추가해야 합니다 (여기서는 단순 콘솔 로그 후 리다이렉트)
-      // delete mockPostsDetailData[postId]; // 이런 식으로 직접 Mock 데이터에서 삭제
+
+      delete mockPostsDetailData[postId!];
       navigate("/posts");
       alert("게시물이 삭제되었습니다.");
     }
@@ -376,7 +513,8 @@ const PostDetailPage: React.FC = () => {
     const newComment: Comment = {
       id: `c-${Date.now()}`,
       author: "현재 사용자",
-      authorId: currentUserId, // 이제 number 타입으로 할당
+      authorId: currentUserId,
+      authorProfileImage: currentUserProfileImage,
       createdAt: new Date().toLocaleString("ko-KR", {
         year: "numeric",
         month: "2-digit",
@@ -386,17 +524,18 @@ const PostDetailPage: React.FC = () => {
         hour12: false,
       }),
       content: content,
-      // ✨ Comment 인터페이스에 추가된 필드들 (Mock 데이터이므로 임시 값) ✨
-      postId: postId || `mock-post-${Date.now()}`, // 현재 게시물 ID
-      postTitle: post?.title || "알 수 없는 게시물", // 현재 게시물 제목
-      postType: post?.type || "general", // 현재 게시물 타입
+
+      postId: postId || `mock-post-${Date.now()}`,
+      postTitle: post?.title || "알 수 없는 게시물",
+      postType: post?.type || "general",
       communityId:
         post?.type === "community" && postId?.startsWith("comm")
           ? postId.split("-")[0]
-          : undefined, // 예시: comm1-post-1 -> comm1
-      isEdited: false, // isEdited도 Comment 인터페이스에 포함되므로 추가
-      parentId: undefined, // 최상위 댓글이므로 parentId 없음
-      depth: 0, // 최상위 댓글이므로 깊이 0
+          : undefined,
+      isEdited: false,
+      parentId: undefined,
+      depth: 0,
+      replies: [],
     };
     setComments((prevComments) => [...prevComments, newComment]);
   };
@@ -419,7 +558,6 @@ const PostDetailPage: React.FC = () => {
     );
   }
 
-  // 게시물 ID에서 커뮤니티 ID 추출 및 뒤로 가기 경로 설정
   let backToBoardPath: string = "/posts";
   let backToBoardText: string = "전체 게시판으로";
 
