@@ -48,13 +48,14 @@ export class CommunityService {
 
   /**
    * 도서 기반 커뮤니티를 생성합니다.
-   * @param communityData - 생성할 커뮤니티 데이터 (userId, bookIsbn13?, title, content, maxMembers)
+   * @param communityData - 생성할 커뮤니티 데이터 (userId, isbn13, title, content, maxMembers)
    * @returns 생성된 TeamCommunity 객체
    * @throws CustomError 사용자를 찾을 수 없을 때
    */
   public async createCommunity(communityData: {
     userId: number;
-    bookIsbn13?: string;
+    // ⭐ 변경: bookIsbn13? -> isbn13 (물음표 제거하여 필수로 만듦)
+    isbn13: string;
     title: string;
     content: string;
     maxMembers: number;
@@ -73,13 +74,15 @@ export class CommunityService {
       type: PostType.RECRUITMENT, // 모집글 타입으로 설정
       maxMembers: communityData.maxMembers,
       recruitmentStatus: RecruitmentStatus.RECRUITING, // 모집글 초기 상태: 모집중
-      isbn13: communityData.bookIsbn13, // Post 모델의 isbn13 필드에 값 전달
+      // ⭐ 변경: communityData.bookIsbn13 -> communityData.isbn13
+      isbn13: communityData.isbn13,
     });
 
     // 2. 생성된 모집글의 postId를 사용하여 커뮤니티(TeamCommunity) 생성
     const newCommunity = await this.communityRepository.create({
       postId: recruitmentPost.postId,
-      isbn13: communityData.bookIsbn13, // TeamCommunity 모델의 isbn13 필드에 값 전달
+      // ⭐ 변경: communityData.bookIsbn13 -> communityData.isbn13
+      isbn13: communityData.isbn13,
       status: CommunityStatus.RECRUITING, // 초기 상태: 모집중
       postTitle: recruitmentPost.title, // 모집글 제목 복사
       postContent: recruitmentPost.content, // 모집글 내용 복사

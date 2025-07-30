@@ -55,28 +55,34 @@ export class CommunityController {
     try {
       const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
       const {
-        bookIsbn13,
+        // --- 이 부분부터 수정 ---
+        // req.body에서 'bookIsbn13' 대신 'isbn13'으로 받습니다.
+        isbn13, // ⭐ 변경: bookIsbn13 -> isbn13
         title,
         content,
         maxMembers: rawMaxMembers,
       } = req.body;
+      // --- 이 부분까지 수정 ---
 
       // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
         throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
       }
 
-      // 필수 필드 유효성 검사
+      // --- 이 부분부터 수정 ---
+      // 필수 필드 유효성 검사에 isbn13도 추가합니다.
       if (
+        isbn13 === undefined || // ⭐ 추가: isbn13 유효성 검사
         title === undefined ||
         content === undefined ||
         rawMaxMembers === undefined
       ) {
         throw new CustomError(
           400,
-          "필수 필드(title, content, maxMembers)가 누락되었습니다."
+          "필수 필드(isbn13, title, content, maxMembers)가 누락되었습니다." // ⭐ 메시지 수정
         );
       }
+      // --- 이 부분까지 수정 ---
 
       const maxMembers = Number(rawMaxMembers);
       if (isNaN(maxMembers) || maxMembers <= 0) {
@@ -85,11 +91,14 @@ export class CommunityController {
 
       const newCommunity = await this.communityService.createCommunity({
         userId, // req.user에서 가져온 userId 사용
-        bookIsbn13,
+        // --- 이 부분부터 수정 ---
+        // 서비스로 전달할 때 'bookIsbn13' 필드에 'isbn13' 변수를 사용합니다.
+        isbn13, // ⭐ 변경: bookIsbn13 -> isbn13
         title,
         content,
         maxMembers,
       });
+      // --- 이 부분까지 수정 ---
       res.status(201).json({
         status: "success",
         message: "커뮤니티 생성 완료",

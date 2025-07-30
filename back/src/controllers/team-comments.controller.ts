@@ -83,7 +83,7 @@ export class TeamCommentController {
 
   /**
    * POST /team-posts/:teamPostId/comments - 특정 팀 게시물에 댓글 또는 대댓글 작성
-   * `communityId`와 `content`, `parentId`는 요청 바디로 받습니다. `userId`는 `req.user`에서 가져옵니다.
+   * `communityId`는 쿼리 파라미터에서, `content`, `parentId`는 요청 바디로 받습니다. `userId`는 `req.user`에서 가져옵니다.
    */
   public createTeamComment = async (
     req: Request,
@@ -92,11 +92,9 @@ export class TeamCommentController {
   ) => {
     try {
       const { teamPostId: rawTeamPostId } = req.params;
-      const {
-        communityId: rawCommunityId, // communityId는 body에서 받음
-        content,
-        parentId: rawParentId,
-      } = req.body;
+      // ⭐ 변경: communityId를 req.body가 아닌 req.query에서 가져옵니다.
+      const { communityId: rawCommunityId } = req.query;
+      const { content, parentId: rawParentId } = req.body;
       const userId = req.user; // req.user에서 userId 가져오기
 
       // 인증된 사용자 ID가 없는 경우
@@ -105,6 +103,7 @@ export class TeamCommentController {
       }
 
       // 필수 필드 및 타입 유효성 검사
+      // rawCommunityId가 이제 req.query에서 오므로, undefined 체크는 그대로 유지합니다.
       if (
         rawTeamPostId === undefined ||
         rawCommunityId === undefined ||
@@ -189,7 +188,9 @@ export class TeamCommentController {
   ) => {
     try {
       const { id: rawTeamCommentId } = req.params;
-      const { communityId: rawCommunityId, content } = req.body; // communityId는 body에서 받음
+      // ⭐ 변경: communityId를 req.body가 아닌 req.query에서 가져옵니다.
+      const { communityId: rawCommunityId } = req.query;
+      const { content } = req.body; // content는 body에서 받음
       const userId = req.user; // req.user에서 userId 가져오기
 
       // 인증된 사용자 ID가 없는 경우
@@ -200,7 +201,7 @@ export class TeamCommentController {
       // 필수 필드 및 타입 유효성 검사
       if (
         rawTeamCommentId === undefined ||
-        rawCommunityId === undefined ||
+        rawCommunityId === undefined || // req.query에서 오므로 undefined 체크 유지
         content === undefined
       ) {
         throw new CustomError(
@@ -263,8 +264,12 @@ export class TeamCommentController {
   ) => {
     try {
       const { id: rawTeamCommentId } = req.params;
-      const { communityId: rawCommunityId, teamPostId: rawTeamPostIdFromBody } =
-        req.body; // communityId, teamPostId는 body에서 받음
+      // ⭐ 변경: communityId를 req.body가 아닌 req.query에서 가져옵니다.
+      // ⭐ 변경: teamPostId도 req.body가 아닌 req.query에서 가져옵니다.
+      const {
+        communityId: rawCommunityId,
+        teamPostId: rawTeamPostIdFromQuery,
+      } = req.query;
       const userId = req.user; // req.user에서 userId 가져오기
 
       // 인증된 사용자 ID가 없는 경우
@@ -276,7 +281,7 @@ export class TeamCommentController {
       if (
         rawTeamCommentId === undefined ||
         rawCommunityId === undefined ||
-        rawTeamPostIdFromBody === undefined
+        rawTeamPostIdFromQuery === undefined
       ) {
         throw new CustomError(
           400,
@@ -294,15 +299,15 @@ export class TeamCommentController {
         throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
-      const teamPostIdFromBody = Number(rawTeamPostIdFromBody); // body에서 받은 teamPostId
-      if (isNaN(teamPostIdFromBody)) {
+      const teamPostIdFromQuery = Number(rawTeamPostIdFromQuery); // query에서 받은 teamPostId
+      if (isNaN(teamPostIdFromQuery)) {
         throw new CustomError(400, "유효한 팀 게시물 ID가 아닙니다.");
       }
 
       // 서비스 계층의 deleteTeamComment는 communityId, teamPostId, teamCommentId, userId를 받습니다.
       const deletedCount = await this.teamCommentService.deleteTeamComment(
         communityId,
-        teamPostIdFromBody, // body에서 받은 teamPostId 전달
+        teamPostIdFromQuery, // query에서 받은 teamPostId 전달
         teamCommentId,
         userId // req.user에서 가져온 userId 전달
       );
