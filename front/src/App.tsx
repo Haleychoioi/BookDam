@@ -24,6 +24,7 @@ import PostWritePage from "./pages/posts/PostWritePage";
 import GeneralBoardPage from "./pages/communities/GeneralBoardPage";
 import MyActivitiesPage from "./pages/mypage/MyActivitiesPage";
 import UserLeavePage from "./pages/mypage/UserLeavePage";
+import ChangePassWordPage from "./pages/mypage/ChangePasswordPage";
 
 function App() {
   return (
@@ -81,6 +82,11 @@ function App() {
             <Route
               path="communities/applied"
               element={<MyCommunitiesAppliedPage />}
+            />
+            {/* 비밀번호 수정 페이지 */}
+            <Route
+              path="/mypage/change-password"
+              element={<ChangePassWordPage />}
             />
             {/* 회원탈퇴 페이지 */}
             <Route 
