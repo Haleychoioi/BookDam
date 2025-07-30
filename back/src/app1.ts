@@ -21,7 +21,6 @@ import myLibraryRouter from './routes/myLibrary.routes';
 
 // chatController 추가*
 import chatController from './chat/chat.controller';
-import postRouter from './post2/posts2.routes'
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,7 +55,6 @@ app.use("/books", bookRouter);
 app.use('/mypage', wishRouter);
 app.use('/my-library', myLibraryRouter);
 
-app.use("/posts", postRouter);
 
 
 // --- Socket.IO 인증 미들웨어 설정 ---
