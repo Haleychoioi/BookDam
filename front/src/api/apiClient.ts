@@ -2,14 +2,10 @@ import axios from "axios";
 
 // 1. Axios 기본 인스턴스 생성
 const apiClient = axios.create({
-  // 백엔드 서버의 기본 URL을 설정합니다.
-  // 개발 환경에서는 'http://localhost:3000'을 사용하고,
-  // 배포 시에는 실제 배포된 백엔드 URL로 변경해야 합니다.
-  // 환경 변수를 사용하는 것이 좋습니다. (예: .env 파일에 REACT_APP_API_BASE_URL=http://localhost:3000)
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
-  timeout: 10000, // 요청 타임아웃 10초
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api",
+  timeout: 10000,
   headers: {
-    "Content-Type": "application/json", // 기본 요청 헤더
+    "Content-Type": "application/json",
   },
 });
 
