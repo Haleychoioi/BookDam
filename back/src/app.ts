@@ -35,7 +35,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 허용할 CORS Origin 설정 (환경 변수 사용, 기본값 제공)
-const allowedOrigin = process.env.CORS_ORIGIN || "http://127.0.0.1:5500";
+// const allowedOrigin = process.env.CORS_ORIGIN || "http://127.0.0.1:5500";
 
 // Express 앱을 기반으로 HTTP 서버 생성
 const server = http.createServer(app);
@@ -44,7 +44,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     // 클라이언트 주소를 환경 변수에서 가져와 사용
-    origin: allowedOrigin,
+    origin: ["http://localhost:5173", "http://127.0.0.1:5500"],
     methods: ["GET", "POST"],
   },
 });
@@ -52,7 +52,7 @@ const io = new Server(server, {
 // Express 앱에도 cors 미들웨어를 적용합니다. 라우터보다 위에 있어야 됨
 app.use(
   cors({
-    origin: allowedOrigin, // 환경 변수에서 가져온 origin 사용
+    origin: ["http://localhost:5173", "http://127.0.0.1:5500"], // 환경 변수에서 가져온 origin 사용
   })
 );
 
@@ -170,7 +170,7 @@ server.listen(PORT, async () => {
   console.log(
     `ALADIN_API_KEY: ${process.env.ALADIN_API_KEY ? "설정됨" : "설정 안됨"}`
   );
-  console.log(`CORS_ORIGIN: ${allowedOrigin}`); // 설정된 CORS Origin 로그 출력
+  // console.log(`CORS_ORIGIN: ${allowedOrigin}`); // 설정된 CORS Origin 로그 출력
 
   // 데이터베이스 연결
   await connectToDatabase();
