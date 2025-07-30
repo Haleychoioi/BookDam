@@ -2,6 +2,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import { CommentService } from "../services/comments.service";
+import { CustomError } from "../middleware/error-handing-middleware";
 
 export class CommentController {
   private commentService: CommentService;
@@ -19,19 +20,16 @@ export class CommentController {
     next: NextFunction
   ) => {
     try {
-      const { postId: rawPostId } = req.params; // 게시물 ID
-      // 쿼리 파라미터 (page, size, sort) 처리
+      const { postId: rawPostId } = req.params;
       const { page, size, sort } = req.query;
 
-      // 필수 필드 및 타입 유효성 검사
       if (rawPostId === undefined) {
-        return res.status(400).json({ message: "게시물 ID가 필요합니다." });
+        throw new CustomError(400, "게시물 ID가 필요합니다.");
       }
+
       const postId = Number(rawPostId);
       if (isNaN(postId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 게시물 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 게시물 ID가 아닙니다.");
       }
 
       const comments = await this.commentService.findCommentsByPost(postId, {
@@ -39,23 +37,26 @@ export class CommentController {
         pageSize: size ? Number(size) : undefined,
         sort: sort ? String(sort) : undefined,
       });
+
       res.status(200).json({
-        status: "success",
         message: `게시물 ID ${postId}의 댓글 목록 조회 성공`,
         data: comments,
       });
-    } catch (error: any) {
-      // 에러 타입 명시
-      // 서비스 계층에서 발생한 에러 메시지를 클라이언트에 전달
-      if (error.message === "Post not found") {
-        return res.status(404).json({ message: error.message });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "Post not found") {
+          next(new CustomError(404, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
       }
-      next(error); // 그 외 에러는 다음 미들웨어로 전달
     }
   };
 
   /**
-   * POST /posts/:postId/comments - 특정 게시물에 댓글 작성 (대댓글 포함)
+   * POST /posts/:postId/comments - 특정 게시물에 댓글 작성
    */
   public createComment = async (
     req: Request,
@@ -63,53 +64,29 @@ export class CommentController {
     next: NextFunction
   ) => {
     try {
-      // --- 디버깅 로그 추가 시작 ---
-      console.log("createComment - req.params:", req.params);
-      console.log("createComment - req.body:", req.body);
-      // --- 디버깅 로그 추가 끝 ---
+      const { postId: rawPostId } = req.params;
+      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
+      const { content, parentId: rawParentId } = req.body;
 
-      const { postId: rawPostId } = req.params; // 게시물 ID
-      const { userId: rawUserId, content, parentId: rawParentId } = req.body;
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID는 필수입니다.");
+      }
 
-      // 필수 필드 및 타입 유효성 검사
-      if (
-        rawPostId === undefined ||
-        rawUserId === undefined ||
-        content === undefined
-      ) {
-        // --- 디버깅 로그 추가 시작 ---
-        console.log("Validation failed:");
-        console.log("  rawPostId:", rawPostId);
-        console.log("  rawUserId:", rawUserId);
-        console.log("  content:", content);
-        // --- 디버깅 로그 추가 끝 ---
-        return res.status(400).json({
-          message: "필수 필드(게시물 ID, 사용자 ID, 내용)가 누락되었습니다.",
-        });
+      if (rawPostId === undefined || content === undefined) {
+        throw new CustomError(
+          400,
+          "필수 필드(게시물 ID, 내용)가 누락되었습니다."
+        );
       }
 
       const postId = Number(rawPostId);
       if (isNaN(postId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 게시물 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 게시물 ID가 아닙니다.");
       }
 
-      const userId = Number(rawUserId);
-      if (isNaN(userId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 사용자 ID(userId)가 아닙니다." });
-      }
-
-      let parentId: number | undefined;
-      if (rawParentId !== undefined) {
-        parentId = Number(rawParentId);
-        if (isNaN(parentId)) {
-          return res
-            .status(400)
-            .json({ message: "유효한 부모 댓글 ID(parentId)가 아닙니다." });
-        }
+      const parentId = rawParentId ? Number(rawParentId) : undefined;
+      if (rawParentId !== undefined && isNaN(parentId as number)) {
+        throw new CustomError(400, "유효한 부모 댓글 ID가 아닙니다.");
       }
 
       const newComment = await this.commentService.createComment(postId, {
@@ -117,19 +94,27 @@ export class CommentController {
         content,
         parentId,
       });
+
       res.status(201).json({
         status: "success",
         message: "댓글 작성 완료",
         commentId: newComment.commentId,
       });
-    } catch (error: any) {
-      if (error.message === "Post not found") {
-        return res.status(404).json({ message: error.message });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "Post not found") {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message ===
+          "Invalid parent comment: Parent comment not found, does not belong to this post, or is already a reply."
+        ) {
+          next(new CustomError(400, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
       }
-      if (error.message.startsWith("Invalid parent comment")) {
-        return res.status(400).json({ message: error.message });
-      }
-      next(error);
     }
   };
 
@@ -143,42 +128,43 @@ export class CommentController {
   ) => {
     try {
       const { id: rawCommentId } = req.params;
-      const { content, userId: rawUserId } = req.body;
+      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
+      const { content } = req.body;
 
-      if (
-        rawCommentId === undefined ||
-        rawUserId === undefined ||
-        content === undefined
-      ) {
-        return res.status(400).json({
-          message: "필수 정보(댓글 ID, 사용자 ID, 내용)가 누락되었습니다.",
-        });
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID는 필수입니다.");
+      }
+
+      if (rawCommentId === undefined || content === undefined) {
+        throw new CustomError(
+          400,
+          "필수 필드(댓글 ID, 내용)가 누락되었습니다."
+        );
       }
 
       const commentId = Number(rawCommentId);
       if (isNaN(commentId)) {
-        return res.status(400).json({ message: "유효한 댓글 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 댓글 ID가 아닙니다.");
       }
 
-      const userId = Number(rawUserId);
-      if (isNaN(userId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 사용자 ID(userId)가 아닙니다." });
-      }
+      await this.commentService.updateComment(commentId, { userId, content });
 
-      await this.commentService.updateComment(commentId, { content, userId });
       res.status(200).json({ status: "success", message: "댓글 수정 완료" });
-    } catch (error: any) {
-      if (error.message === "Comment not found") {
-        return res.status(404).json({ message: error.message });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "Comment not found") {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message ===
+          "Unauthorized: You can only update your own comments."
+        ) {
+          next(new CustomError(403, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
       }
-      if (
-        error.message === "Unauthorized: You can only update your own comments."
-      ) {
-        return res.status(403).json({ message: error.message });
-      }
-      next(error);
     }
   };
 
@@ -192,47 +178,79 @@ export class CommentController {
   ) => {
     try {
       const { id: rawCommentId } = req.params;
-      const { userId: rawUserId } = req.body;
+      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
 
-      if (rawCommentId === undefined || rawUserId === undefined) {
-        return res
-          .status(400)
-          .json({ message: "필수 정보(댓글 ID, 사용자 ID)가 누락되었습니다." });
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID는 필수입니다.");
+      }
+
+      if (rawCommentId === undefined) {
+        throw new CustomError(400, "댓글 ID가 필요합니다.");
       }
 
       const commentId = Number(rawCommentId);
       if (isNaN(commentId)) {
-        return res.status(400).json({ message: "유효한 댓글 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 댓글 ID가 아닙니다.");
       }
 
-      const userId = Number(rawUserId);
-      if (isNaN(userId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 사용자 ID(userId)가 아닙니다." });
-      }
+      await this.commentService.deleteComment(commentId, userId);
 
-      const deleted = await this.commentService.deleteComment(
-        commentId,
-        userId
-      );
-      if (deleted) {
-        res.status(200).json({ status: "success", message: "댓글 삭제 완료" });
+      res.status(200).json({ status: "success", message: "댓글 삭제 완료" });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "Comment not found") {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message ===
+          "Unauthorized: You can only delete your own comments."
+        ) {
+          next(new CustomError(403, error.message));
+        } else {
+          next(error);
+        }
       } else {
-        res
-          .status(404)
-          .json({ status: "fail", message: "삭제할 댓글을 찾을 수 없습니다." });
+        next(error);
       }
-    } catch (error: any) {
-      if (error.message === "Comment not found") {
-        return res.status(404).json({ message: error.message });
+    }
+  };
+
+  /**
+   * GET /comments/:id - 특정 댓글 상세 정보 조회 (새로 추가)
+   */
+  public getCommentById = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const { id: rawCommentId } = req.params;
+
+      if (rawCommentId === undefined) {
+        throw new CustomError(400, "댓글 ID가 필요합니다.");
       }
-      if (
-        error.message === "Unauthorized: You can only delete your own comments."
-      ) {
-        return res.status(403).json({ message: error.message });
+
+      const commentId = Number(rawCommentId);
+      if (isNaN(commentId)) {
+        throw new CustomError(400, "유효한 댓글 ID가 아닙니다.");
       }
-      next(error);
+
+      const comment = await this.commentService.findCommentById(commentId);
+
+      res.status(200).json({
+        status: "success",
+        message: `댓글 ID ${commentId} 상세 조회 성공`,
+        data: comment,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "Comment not found") {
+          next(new CustomError(404, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 }

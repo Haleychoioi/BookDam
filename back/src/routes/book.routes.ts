@@ -26,7 +26,7 @@ router.get('/specialNewBooks', bookController.getSpecialNewBooks);
 
 
 // 도서 조회(book.service)
-router.get('/detail/:itemId', bookController.getBookDetail);
+router.get('/:itemId', bookController.getBookDetail);
 
 
 

@@ -153,7 +153,7 @@ const MyPageLayout: React.FC = () => {
                 <Link
                   to="/mypage/user-leave"
                   className={`${getNavLinkClass(
-                    "/mypage/profile-leave"
+                    "/mypage/user-leave"
                   )} text-sm text-gray-300`}
                   onClick={toggleMobileMenu}
                 >

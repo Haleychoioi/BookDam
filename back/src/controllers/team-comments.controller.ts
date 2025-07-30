@@ -2,6 +2,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import { TeamCommentService } from "../services/team-comments.service";
+import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
 
 export class TeamCommentController {
   private teamCommentService: TeamCommentService;
@@ -12,6 +13,7 @@ export class TeamCommentController {
 
   /**
    * GET /team-posts/:teamPostId/comments - 특정 팀 게시물의 댓글 목록 조회 (최상위 댓글 및 1단계 대댓글 포함)
+   * `requestingUserId`는 인증 미들웨어에서 `req.user`에 설정됩니다.
    */
   public getTeamCommentsByTeamPost = async (
     req: Request,
@@ -20,50 +22,68 @@ export class TeamCommentController {
   ) => {
     try {
       const { teamPostId: rawTeamPostId } = req.params;
+      const { communityId: rawCommunityId } = req.query; // communityId는 쿼리 파라미터에서 받음
+      const requestingUserId = req.user; // req.user에서 requestingUserId 가져오기
 
-      // NOTE: 실제 애플리케이션에서는 인증 미들웨어에서 req.user.userId 등으로 주입받아 사용합니다.
-      // 여기서는 예시를 위해 쿼리 파라미터에서 받지만, 실제 프로덕션에서는 보안상 적절하지 않습니다.
-      const { requestingUserId: rawRequestingUserId } = req.query;
+      // 인증된 사용자 ID가 없는 경우
+      if (requestingUserId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
 
       // 필수 필드 및 타입 유효성 검사
-      if (rawTeamPostId === undefined) {
-        return res
-          .status(400)
-          .json({ message: "필수 정보(팀 게시물 ID)가 누락되었습니다." });
+      if (rawTeamPostId === undefined || rawCommunityId === undefined) {
+        throw new CustomError(
+          400,
+          "필수 정보(팀 게시물 ID, 커뮤니티 ID)가 누락되었습니다."
+        );
       }
 
       const teamPostId = Number(rawTeamPostId);
       if (isNaN(teamPostId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 팀 게시물 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 팀 게시물 ID가 아닙니다.");
       }
 
-      // requestingUserId는 현재 서비스 계층에서 사용되지 않으므로, 유효성 검사만 수행하고 전달하지 않습니다.
-      if (rawRequestingUserId !== undefined) {
-        const requestingUserId = Number(rawRequestingUserId);
-        if (isNaN(requestingUserId)) {
-          return res
-            .status(400)
-            .json({ message: "유효한 요청 사용자 ID가 아닙니다." });
-        }
+      const communityId = Number(rawCommunityId);
+      if (isNaN(communityId)) {
+        throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
-      // 서비스 계층의 findCommentsByTeamPostId는 이제 추가 쿼리 파라미터나 requestingUserId를 받지 않습니다.
-      const teamComments =
-        await this.teamCommentService.findCommentsByTeamPostId(teamPostId);
+      // 서비스 계층의 findTeamComments는 communityId, teamPostId, requestingUserId를 받습니다.
+      const teamComments = await this.teamCommentService.findTeamComments(
+        communityId,
+        teamPostId,
+        requestingUserId
+      );
 
       res.status(200).json({
+        status: "success",
         message: `팀 게시물 ID ${teamPostId}의 댓글 목록 조회 성공`,
         data: teamComments,
       });
     } catch (error) {
-      next(error);
+      // 서비스 계층에서 발생한 에러는 CustomError로 변환하여 next로 전달
+      if (error instanceof Error) {
+        if (
+          error.message ===
+          "Team Post not found or does not belong to this community."
+        ) {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message === "Unauthorized: You are not a member of this team."
+        ) {
+          next(new CustomError(403, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
   /**
    * POST /team-posts/:teamPostId/comments - 특정 팀 게시물에 댓글 또는 대댓글 작성
+   * `communityId`와 `content`, `parentId`는 요청 바디로 받습니다. `userId`는 `req.user`에서 가져옵니다.
    */
   public createTeamComment = async (
     req: Request,
@@ -72,61 +92,95 @@ export class TeamCommentController {
   ) => {
     try {
       const { teamPostId: rawTeamPostId } = req.params;
-      // NOTE: userId는 실제 애플리케이션에서는 인증 미들웨어에서 req.user.userId 등으로 주입받아 사용합니다.
-      const { userId: rawUserId, content, parentId: rawParentId } = req.body;
+      const {
+        communityId: rawCommunityId, // communityId는 body에서 받음
+        content,
+        parentId: rawParentId,
+      } = req.body;
+      const userId = req.user; // req.user에서 userId 가져오기
+
+      // 인증된 사용자 ID가 없는 경우
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
 
       // 필수 필드 및 타입 유효성 검사
       if (
         rawTeamPostId === undefined ||
-        rawUserId === undefined ||
+        rawCommunityId === undefined ||
         content === undefined
       ) {
-        return res.status(400).json({
-          message: "필수 필드(팀 게시물 ID, 사용자 ID, 내용)가 누락되었습니다.",
-        });
+        throw new CustomError(
+          400,
+          "필수 필드(팀 게시물 ID, 커뮤니티 ID, 내용)가 누락되었습니다."
+        );
       }
 
       const teamPostId = Number(rawTeamPostId);
       if (isNaN(teamPostId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 팀 게시물 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 팀 게시물 ID가 아닙니다.");
       }
 
-      const userId = Number(rawUserId);
-      if (isNaN(userId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 사용자 ID(userId)가 아닙니다." });
+      const communityId = Number(rawCommunityId);
+      if (isNaN(communityId)) {
+        throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
-      const parentId = rawParentId ? Number(rawParentId) : undefined;
-      if (rawParentId !== undefined && isNaN(parentId as number)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 부모 댓글 ID(parentId)가 아닙니다." });
+      let parentId: number | undefined;
+      if (rawParentId !== undefined) {
+        parentId = Number(rawParentId);
+        if (isNaN(parentId)) {
+          throw new CustomError(
+            400,
+            "유효한 부모 댓글 ID(parentId)가 아닙니다."
+          );
+        }
       }
 
-      // 서비스 계층의 createComment는 단일 객체를 받습니다.
-      const newTeamComment = await this.teamCommentService.createComment({
+      // 서비스 계층의 createTeamComment는 communityId, teamPostId, userId, content, parentId를 받습니다.
+      const newTeamComment = await this.teamCommentService.createTeamComment(
+        communityId,
         teamPostId,
-        userId,
+        userId, // req.user에서 가져온 userId 전달
         content,
-        parentId, // parentId를 포함하여 전달
-      });
+        parentId
+      );
 
       res.status(201).json({
         status: "success",
-        message: "팀 댓글 작성 완료",
-        teamCommentId: newTeamComment.teamCommentId,
+        message: "댓글이 성공적으로 작성되었습니다.",
+        data: newTeamComment,
+        teamCommentId: newTeamComment.teamCommentId, // 추가
       });
     } catch (error) {
-      next(error);
+      // 서비스 계층에서 발생한 에러는 CustomError로 변환하여 next로 전달
+      if (error instanceof Error) {
+        if (
+          error.message ===
+          "Team Post not found or does not belong to this community."
+        ) {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message === "Unauthorized: You are not a member of this team."
+        ) {
+          next(new CustomError(403, error.message));
+        } else if (
+          error.message ===
+          "Parent comment not found or does not belong to this post."
+        ) {
+          next(new CustomError(400, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
   /**
    * PUT /team-comments/:id - 특정 팀 댓글 수정
+   * `communityId`와 `content`는 요청 바디로 받습니다. `userId`는 `req.user`에서 가져옵니다.
    */
   public updateTeamComment = async (
     req: Request,
@@ -135,50 +189,72 @@ export class TeamCommentController {
   ) => {
     try {
       const { id: rawTeamCommentId } = req.params;
-      // NOTE: userId는 실제 애플리케이션에서는 인증 미들웨어에서 가져와야 합니다.
-      const { content, userId: rawUserId } = req.body;
+      const { communityId: rawCommunityId, content } = req.body; // communityId는 body에서 받음
+      const userId = req.user; // req.user에서 userId 가져오기
+
+      // 인증된 사용자 ID가 없는 경우
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
 
       // 필수 필드 및 타입 유효성 검사
       if (
         rawTeamCommentId === undefined ||
-        rawUserId === undefined ||
+        rawCommunityId === undefined ||
         content === undefined
       ) {
-        return res.status(400).json({
-          message:
-            "필수 정보(팀 댓글 ID, 사용자 ID) 또는 수정할 내용이 누락되었습니다.",
-        });
+        throw new CustomError(
+          400,
+          "필수 정보(팀 댓글 ID, 커뮤니티 ID, 내용)가 누락되었습니다."
+        );
       }
 
       const teamCommentId = Number(rawTeamCommentId);
       if (isNaN(teamCommentId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 팀 댓글 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 팀 댓글 ID가 아닙니다.");
       }
 
-      const userId = Number(rawUserId);
-      if (isNaN(userId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 사용자 ID(userId)가 아닙니다." });
+      const communityId = Number(rawCommunityId);
+      if (isNaN(communityId)) {
+        throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
-      // 서비스 계층의 updateComment는 teamCommentId, userId, content를 개별 인자로 받습니다.
-      await this.teamCommentService.updateComment(
+      // 서비스 계층의 updateTeamComment는 communityId, teamCommentId, userId, content를 받습니다.
+      await this.teamCommentService.updateTeamComment(
+        communityId,
         teamCommentId,
-        userId,
+        userId, // req.user에서 가져온 userId 전달
         content
       );
 
       res.status(200).json({ status: "success", message: "팀 댓글 수정 완료" });
     } catch (error) {
-      next(error);
+      // 서비스 계층에서 발생한 에러는 CustomError로 변환하여 next로 전달
+      if (error instanceof Error) {
+        if (error.message === "Comment not found") {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message ===
+          "Associated team post not found or does not belong to this community."
+        ) {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message ===
+          "Unauthorized: You can only update your own comments or be a team leader."
+        ) {
+          next(new CustomError(403, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 
   /**
    * DELETE /team-comments/:id - 특정 팀 댓글 삭제
+   * `communityId`는 요청 바디로 받습니다. `userId`는 `req.user`에서 가져옵니다.
    */
   public deleteTeamComment = async (
     req: Request,
@@ -187,50 +263,81 @@ export class TeamCommentController {
   ) => {
     try {
       const { id: rawTeamCommentId } = req.params;
-      // NOTE: userId는 실제 애플리케이션에서는 인증 미들웨어에서 가져와야 합니다.
-      const { userId: rawUserId } = req.body;
+      const { communityId: rawCommunityId, teamPostId: rawTeamPostIdFromBody } =
+        req.body; // communityId, teamPostId는 body에서 받음
+      const userId = req.user; // req.user에서 userId 가져오기
+
+      // 인증된 사용자 ID가 없는 경우
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
+      }
 
       // 필수 필드 및 타입 유효성 검사
-      if (rawTeamCommentId === undefined || rawUserId === undefined) {
-        return res
-          .status(400)
-          .json({
-            message: "필수 정보(팀 댓글 ID, 사용자 ID)가 누락되었습니다.",
-          });
+      if (
+        rawTeamCommentId === undefined ||
+        rawCommunityId === undefined ||
+        rawTeamPostIdFromBody === undefined
+      ) {
+        throw new CustomError(
+          400,
+          "필수 정보(팀 댓글 ID, 커뮤니티 ID, 팀 게시물 ID)가 누락되었습니다."
+        );
       }
 
       const teamCommentId = Number(rawTeamCommentId);
       if (isNaN(teamCommentId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 팀 댓글 ID가 아닙니다." });
+        throw new CustomError(400, "유효한 팀 댓글 ID가 아닙니다.");
       }
 
-      const userId = Number(rawUserId);
-      if (isNaN(userId)) {
-        return res
-          .status(400)
-          .json({ message: "유효한 사용자 ID(userId)가 아닙니다." });
+      const communityId = Number(rawCommunityId);
+      if (isNaN(communityId)) {
+        throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
-      // 서비스 계층의 deleteComment는 삭제된 레코드 수를 반환합니다.
-      const deletedCount = await this.teamCommentService.deleteComment(
+      const teamPostIdFromBody = Number(rawTeamPostIdFromBody); // body에서 받은 teamPostId
+      if (isNaN(teamPostIdFromBody)) {
+        throw new CustomError(400, "유효한 팀 게시물 ID가 아닙니다.");
+      }
+
+      // 서비스 계층의 deleteTeamComment는 communityId, teamPostId, teamCommentId, userId를 받습니다.
+      const deletedCount = await this.teamCommentService.deleteTeamComment(
+        communityId,
+        teamPostIdFromBody, // body에서 받은 teamPostId 전달
         teamCommentId,
-        userId
+        userId // req.user에서 가져온 userId 전달
       );
 
       if (deletedCount === 0) {
-        return res
-          .status(404)
-          .json({
-            status: "fail",
-            message: "삭제할 댓글을 찾을 수 없거나 권한이 없습니다.",
-          });
+        // 서비스 계층에서 에러를 던지지 않고 0을 반환하는 경우에만 이 로직이 실행됩니다.
+        // 서비스 계층에서 CustomError를 던지도록 수정했으므로, 이 부분은 사실상 도달하지 않을 수 있습니다.
+        throw new CustomError(
+          404,
+          "삭제할 댓글을 찾을 수 없거나 권한이 없습니다."
+        );
       }
 
       res.status(200).json({ status: "success", message: "팀 댓글 삭제 완료" });
     } catch (error) {
-      next(error);
+      // 서비스 계층에서 발생한 에러는 CustomError로 변환하여 next로 전달
+      if (error instanceof Error) {
+        if (error.message === "Comment not found") {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message ===
+          "Associated team post not found or does not belong to this community/post."
+        ) {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message ===
+          "Unauthorized: You can only delete your own comments or be a team leader."
+        ) {
+          next(new CustomError(403, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
     }
   };
 }

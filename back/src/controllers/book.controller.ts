@@ -5,26 +5,6 @@ import { aladinApiService } from '../services/aladin-api.service';
 import { bookService } from '../services/book.service';
 import { getCategoryId } from '../constants/categories';
 
-// const getCategoryId = (category?: string): number => {
-//   const categoryIdMap: { [key: string]: number } = {
-//     '소설': 1,
-//     '에세이': 55889,
-//     '자기계발': 336,
-//     '경영': 170,
-//     '인문학': 656,
-//     '역사': 74,
-//     '과학': 983,
-//     '사회과학': 798,
-//     '예술': 517,
-//     '만화': 2551,
-//     '장르소설': 112011,
-//     '고전': 2105,
-//     '전체': 0
-//   };
-
-//   return category ? (categoryIdMap[category] || 0) : 0;
-// };
-
 class BookController {
 
   // searchBooks = async (req: Request, res: Response, next: NextFunction) => {
@@ -119,8 +99,7 @@ class BookController {
   //   }
   // }
 
-  // 상품 리스트 -  베스트셀러
-  
+  // 도서 검색 , 검색안하면 전체 리스트 반환
   searchBooks = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { keyword, type, category, page, limit, sort } = req.query;
@@ -268,7 +247,7 @@ class BookController {
   }
 
 
-  // 상품 조회
+  // 상품 상세 조회
   getBookDetail = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { itemId } = req.params;
@@ -334,6 +313,7 @@ class BookController {
 
 
   // enum 변환 헬퍼 메서드들
+  
   private mapQueryType(type?: string): AladinQueryType {
     switch (type) {
       case 'title': return AladinQueryType.TITLE;

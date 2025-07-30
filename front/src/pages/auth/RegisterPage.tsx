@@ -57,6 +57,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               value={form.name}
               onChange={handleChange}
               required
+              placeholder="이름을 입력하세요"
               className="w-full border border-gray-300 rounded px-4 py-2"
             />
           </div>
@@ -70,6 +71,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               name="nickname"
               value={form.nickname}
               onChange={handleChange}
+              placeholder="닉네임을 입력하세요"
               required
               className="w-full border border-gray-300 rounded px-4 py-2"
             />
@@ -85,6 +87,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               value={form.phone}
               onChange={handleChange}
               required
+              placeholder="전화번호를 입력하세요"
               className="w-full border border-gray-300 rounded px-4 py-2"
             />
           </div>
@@ -99,6 +102,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               value={form.email}
               onChange={handleChange}
               required
+              placeholder="이메일 주소를 입력하세요"
               className="w-full border border-gray-300 rounded px-4 py-2"
             />
           </div>
@@ -113,6 +117,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               value={form.password}
               onChange={handleChange}
               required
+              placeholder="비밀번호를 입력하세요"
               className="w-full border border-gray-300 rounded px-4 py-2"
             />
           </div>
@@ -127,6 +132,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               value={form.confirmPassword}
               onChange={handleChange}
               required
+              placeholder="비밀번호를 다시 입력하세요"
               className="w-full border border-gray-300 rounded px-4 py-2"
             />
           </div>
@@ -140,6 +146,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               name="introduction"
               value={form.introduction}
               onChange={handleChange}
+              placeholder="자신을 한 줄로 소개해보세요 (선택사항)"
               className="w-full border border-gray-300 rounded px-4 py-2"
             />
           </div>
@@ -157,7 +164,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               이용약관에 동의합니다
             </label>
           </div>
-          <div className="text-center pt-4">
+          <div className="text-center pt-5">
             <Button type="submit">가입하기</Button>
           </div>
         </form>

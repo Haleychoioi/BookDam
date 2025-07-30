@@ -12,7 +12,7 @@ class UserController {
 
             res.status(201).json(result);
         } catch (error) {
-            next(error);  // 에러 미들웨어로 전달
+            next(error);
         }
     };
 
@@ -24,7 +24,7 @@ class UserController {
 
             res.status(200).json(result);
         } catch (error) {
-            next(error);  // 에러 미들웨어로 전달
+            next(error);
         }
     };
 
@@ -40,7 +40,7 @@ class UserController {
                 message: "내 정보 조회 성공"
             });
         } catch (error) {
-            next(error);  // 에러 미들웨어로 전달
+            next(error);
         }
     };
 

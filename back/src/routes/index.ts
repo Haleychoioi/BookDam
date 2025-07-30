@@ -6,7 +6,7 @@ import { Router } from "express";
 import communitiesRouter from "./communities.routes";
 import postsRouter from "./posts.routes";
 import teamPostsRouter from "./team-posts.routes";
-// 퍼블릭 댓글 라우터 (이전 대화에서 수정 완료)
+// 퍼블릭 댓글 라우터
 import {
   postCommentsRouter,
   standaloneCommentsRouter,
@@ -17,7 +17,7 @@ import {
   standaloneTeamCommentsRouter,
 } from "./team-comments.routes";
 import applicationsRouter from "./applications.routes";
-import booksRouter from "./book.routes";
+import booksRouter from "./book.routes"; // book.routes 파일이 존재한다고 가정합니다.
 
 const router = Router();
 
@@ -29,6 +29,8 @@ router.use("/communities", communitiesRouter);
 // 퍼블릭 게시물 라우트: /api/posts
 router.use("/posts", postsRouter);
 // 게시물에 종속된 퍼블릭 댓글 라우트: /api/posts/:postId/comments
+// 이 라우터는 "/posts" 경로에 마운트되므로, comments.routes.ts 내부의
+// "/:postId/comments" 경로와 결합되어 완전한 경로를 형성합니다.
 router.use("/posts", postCommentsRouter);
 
 // 개별 퍼블릭 댓글 수정/삭제 라우트: /api/comments/:id

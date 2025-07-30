@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'
 import { IoIosArrowUp, IoIosArrowDown  } from "react-icons/io";
 import { IoMailOutline , IoCallOutline, IoLocationOutline } from "react-icons/io5";
 
@@ -29,7 +29,7 @@ const FAQPage: React.FC = () => {
 const [openIndex, setOpenIndex] = useState<number | null>(null);;
   return (
   <div>
-    <section id="faq" className="container mx-auto py-12 px-4">
+    <section id="faq" className="container mx-auto py-12 px-20 mt-10">
       <h1 className="text-3xl font-bold mb-5">자주 묻는 질문</h1>
         {faqList.map((item, index) => (
           <div key={index} className="border-b py-6">
@@ -45,7 +45,7 @@ const [openIndex, setOpenIndex] = useState<number | null>(null);;
           </div>
         ))}
     </section>
-    <section id="contact" className="container mx-auto py-12 px-4">
+    <section id="contact" className="container mx-auto py-12 px-20">
       <h1 className="text-3xl font-bold mb-8">문의하기</h1>
       <p>추가 질문이 있으시면 언제든지 연락주세요</p>
         <div className="flex flex-col md:flex-row justify-between gap-8 mt-20">

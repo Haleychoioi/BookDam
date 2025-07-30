@@ -3,25 +3,26 @@
 import { ApplicationRepository } from "../repositories/applications.repository";
 import { CommunityRepository } from "../repositories/communities.repository";
 import { PostRepository } from "../repositories/posts.repository";
-import { TeamMemberRepository } from "../repositories/team-members.repository"; // 실제 TeamMemberRepository를 import합니다.
+import { TeamMemberRepository } from "../repositories/team-members.repository";
 import {
   ApplicationStatus,
   CommunityStatus,
   PostType,
   TeamRole,
 } from "@prisma/client";
+import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
 
 export class ApplicationService {
   private applicationRepository: ApplicationRepository;
   private communityRepository: CommunityRepository;
   private postRepository: PostRepository;
-  private teamMemberRepository: TeamMemberRepository; // 실제 레포지토리 사용
+  private teamMemberRepository: TeamMemberRepository;
 
   constructor() {
     this.applicationRepository = new ApplicationRepository();
     this.communityRepository = new CommunityRepository();
     this.postRepository = new PostRepository();
-    this.teamMemberRepository = new TeamMemberRepository(); // 실제 레포지토리 인스턴스 생성
+    this.teamMemberRepository = new TeamMemberRepository();
   }
 
   /**
@@ -29,7 +30,7 @@ export class ApplicationService {
    * @param communityId - 지원할 커뮤니티 ID (모집글 ID와 연결됨)
    * @param applicationData - 지원서 데이터 { userId, applicationMessage }
    * @returns boolean - 신청 성공 여부
-   * @throws Error 커뮤니티를 찾을 수 없을 때, 모집 중이 아닐 때, 중복 신청일 때, 모집 인원 초과일 때
+   * @throws CustomError 커뮤니티를 찾을 수 없을 때, 모집 중이 아닐 때, 중복 신청일 때, 모집 인원 초과일 때
    */
   public async createApplication(
     communityId: number,
@@ -37,10 +38,10 @@ export class ApplicationService {
   ): Promise<boolean> {
     const community = await this.communityRepository.findById(communityId);
     if (!community) {
-      throw new Error("Community not found");
+      throw new CustomError(404, "Community not found");
     }
     if (community.status !== CommunityStatus.RECRUITING) {
-      throw new Error("This community is not currently recruiting.");
+      throw new CustomError(400, "This community is not currently recruiting.");
     }
 
     // 중복 신청 방지
@@ -50,7 +51,7 @@ export class ApplicationService {
         community.postId
       );
     if (existingApplication) {
-      throw new Error("You have already applied to this community.");
+      throw new CustomError(409, "You have already applied to this community."); // Conflict
     }
 
     // 모집 인원 초과 여부 확인
@@ -58,7 +59,10 @@ export class ApplicationService {
       community.postId
     );
     if (!recruitmentPost || recruitmentPost.type !== PostType.RECRUITMENT) {
-      throw new Error("Associated recruitment post not found or invalid.");
+      throw new CustomError(
+        404,
+        "Associated recruitment post not found or invalid."
+      );
     }
     const currentMembersCount =
       await this.teamMemberRepository.countMembersByTeamId(communityId); // 현재 멤버 수
@@ -66,7 +70,8 @@ export class ApplicationService {
       recruitmentPost.maxMembers &&
       currentMembersCount >= recruitmentPost.maxMembers
     ) {
-      throw new Error(
+      throw new CustomError(
+        409, // Conflict
         "The community has reached its maximum number of members."
       );
     }
@@ -80,7 +85,7 @@ export class ApplicationService {
    * @param communityId - 모집 커뮤니티 ID
    * @param requestingUserId - 요청하는 사용자 ID (팀장만 조회 가능)
    * @returns TeamApplication 배열 (지원자 정보 포함)
-   * @throws Error 커뮤니티를 찾을 수 없을 때 또는 권한이 없을 때
+   * @throws CustomError 커뮤니티를 찾을 수 없을 때 또는 권한이 없을 때
    */
   public async findApplicantsByCommunity(
     communityId: number,
@@ -88,7 +93,7 @@ export class ApplicationService {
   ): Promise<any[]> {
     const community = await this.communityRepository.findById(communityId);
     if (!community) {
-      throw new Error("Community not found");
+      throw new CustomError(404, "Community not found");
     }
 
     // 요청 userId가 해당 커뮤니티의 팀장인지 확인 (권한 검증)
@@ -97,7 +102,8 @@ export class ApplicationService {
       communityId
     );
     if (!teamMember || teamMember.role !== TeamRole.LEADER) {
-      throw new Error(
+      throw new CustomError(
+        403,
         "Unauthorized: Only the team leader can view applicants."
       );
     }
@@ -105,6 +111,10 @@ export class ApplicationService {
     const applicants = await this.applicationRepository.findManyByCommunityId(
       community.postId
     );
+    // 신청자가 없는 경우 빈 배열 반환 (에러 아님)
+    if (!applicants || applicants.length === 0) {
+      return [];
+    }
     return applicants;
   }
 
@@ -115,7 +125,7 @@ export class ApplicationService {
    * @param newStatus - 변경할 상태 (ACCEPTED 또는 REJECTED)
    * @param requestingUserId - 요청하는 사용자 ID (팀장만 가능)
    * @returns boolean - 처리 성공 여부
-   * @throws Error 커뮤니티를 찾을 수 없을 때, 권한이 없을 때, 지원서를 찾을 수 없을 때, 상태 변경이 유효하지 않을 때
+   * @throws CustomError 커뮤니티를 찾을 수 없을 때, 권한이 없을 때, 지원서를 찾을 수 없을 때, 상태 변경이 유효하지 않을 때
    */
   public async updateApplicationStatus(
     communityId: number,
@@ -125,7 +135,7 @@ export class ApplicationService {
   ): Promise<boolean> {
     const community = await this.communityRepository.findById(communityId);
     if (!community) {
-      throw new Error("Community not found");
+      throw new CustomError(404, "Community not found");
     }
 
     // 요청 userId가 해당 커뮤니티의 팀장인지 확인 (권한 검증)
@@ -134,7 +144,8 @@ export class ApplicationService {
       communityId
     );
     if (!teamLeader || teamLeader.role !== TeamRole.LEADER) {
-      throw new Error(
+      throw new CustomError(
+        403,
         "Unauthorized: Only the team leader can process applications."
       );
     }
@@ -144,10 +155,11 @@ export class ApplicationService {
       community.postId
     );
     if (!application) {
-      throw new Error("Application not found.");
+      throw new CustomError(404, "Application not found.");
     }
     if (application.status !== ApplicationStatus.PENDING) {
-      throw new Error(
+      throw new CustomError(
+        400,
         "Application is not in PENDING status and cannot be processed."
       );
     }
@@ -166,7 +178,7 @@ export class ApplicationService {
           communityId
         );
       if (existingTeamMember) {
-        throw new Error("Applicant is already a team member.");
+        throw new CustomError(409, "Applicant is already a team member."); // Conflict
       }
       await this.teamMemberRepository.create({
         userId: applicantUserId,
@@ -196,7 +208,7 @@ export class ApplicationService {
    * @param communityId - 모집 커뮤니티 ID
    * @param requestingUserId - 요청하는 사용자 ID (팀장만 가능)
    * @returns boolean - 처리 성공 여부
-   * @throws Error 커뮤니티를 찾을 수 없을 때 또는 권한이 없을 때
+   * @throws CustomError 커뮤니티를 찾을 수 없을 때 또는 권한이 없을 때
    */
   public async cancelRecruitment(
     communityId: number,
@@ -204,7 +216,7 @@ export class ApplicationService {
   ): Promise<boolean> {
     const community = await this.communityRepository.findById(communityId);
     if (!community) {
-      throw new Error("Community not found");
+      throw new CustomError(404, "Community not found");
     }
 
     // 요청 userId가 해당 커뮤니티의 팀장인지 확인 (권한 검증)
@@ -213,7 +225,8 @@ export class ApplicationService {
       communityId
     );
     if (!teamLeader || teamLeader.role !== TeamRole.LEADER) {
-      throw new Error(
+      throw new CustomError(
+        403,
         "Unauthorized: Only the team leader can cancel recruitment."
       );
     }
