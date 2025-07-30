@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Button from "../../components/common/Button";
+import { useNavigate } from "react-router-dom";
 
 import axios from "axios";
 
@@ -8,7 +9,9 @@ const DEFAULT_PROFILE =
   "https://via.placeholder.com/120?text=Profile";
 
 const RegisterPage: React.FC = () => {
-    const [form, setForm] = useState({
+  const navigate = useNavigate();
+  
+  const [form, setForm] = useState({
     name: "",
     nickname: "",
     phone: "",
@@ -19,13 +22,40 @@ const RegisterPage: React.FC = () => {
     agreement: false,
   });
 
-const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const { name, value, type, checked } = e.target;
-  setForm({
-    ...form,
-    [name]: type === "checkbox" ? checked : value,
-  });
-};
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setForm({
+      ...form,
+      [name]: type === "checkbox" ? checked : value,
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // 간단한 유효성 검사 (필요 시 강화 가능)
+    if (form.password !== form.confirmPassword) {
+      alert("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
+    try {
+      const response = await axios.post("http://localhost:3000/auth/register", {
+        name: form.name,
+        nickname: form.nickname,
+        phone: form.phone,
+        email: form.email,
+        password: form.password,
+        introduction: form.introduction,
+        agreement: form.agreement,
+      });
+
+      alert("회원가입 성공!");
+      navigate("/auth/login");
+    } catch (error: any) {
+      alert("회원가입 실패: " + error.response?.data?.message);
+    }
+  };
   
   return (
     <div className="container mx-auto px-4 py-12">
@@ -37,15 +67,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             간단한 절차로 회원 가입을 통해 다양한 혜택을 누리실 수 있습니다.
           </h2>
         </div>
-        <form className="max-w-md mx-auto space-y-4">
-          <div className="flex flex-col items-center mb-6">
-            <img
-              src={DEFAULT_PROFILE}
-              alt="프로필 이미지"
-              className="w-24 h-24 rounded-full border object-cover"
-            />
-            <p className="text-sm text-gray-500 mt-2">랜덤 프로필 이미지입니다.</p>
-          </div>
+        <form className="max-w-md mx-auto space-y-4"onSubmit={handleSubmit}>
           <div>
             <label htmlFor="name" className="block text-sm font-semibold mb-1">
               이름

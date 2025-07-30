@@ -74,7 +74,7 @@ const UserLeavePage: React.FC = () => {
           name="password"
           required
           placeholder="현재 비밀번호 입력"
-          className="w-full max-w-md px-4 py-3 mb-5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-main text-gray-800"
+          className="w-full max-w-md px-4 py-3 mb-5 border border-gray-300 rounded-md focus:outline-none text-gray-800"
         />
         <h2 className="block text-gray-700 text-lg font-medium mt-5 mb-4">회원 탈퇴 약관</h2>
         <div className="border border-gray-300 rounded-md p-7">

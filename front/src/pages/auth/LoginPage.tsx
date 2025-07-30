@@ -1,11 +1,29 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/common/Button";
+import axios from "axios";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate()
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.post("http://localhost:3000/auth/login", {
+        email,
+        password,
+      });
+
+      alert("로그인 성공!");
+      // localStorage.setItem("token", response.data.token); // 필요한 경우
+      navigate("/");
+    } catch (error: any) {
+      alert("로그인 실패: " + (error.response?.data?.message || "알 수 없는 오류"));
+    }
+  };
 
   return (
   <div>
@@ -14,7 +32,7 @@ const LoginPage: React.FC = () => {
       <p>당신의 독서 여정을 시작하기 위해 로그인하세요.함께 책을 나누고 소통합시다.</p>
     </section>
     <section id="login" className="container mx-auto py-12 px-20">
-        <form className="space-y-4 max-w-md mx-auto">
+        <form className="space-y-4 max-w-md mx-auto" onSubmit={handleLogin}>
           <div>
             <input
               type="email"
@@ -37,7 +55,7 @@ const LoginPage: React.FC = () => {
               className="w-full border border-gray-300 rounded px-4 py-2"
             />
           </div>
-          <Button>로그인</Button>
+          <Button type="submit">로그인</Button>
         </form>
 
     </section>
