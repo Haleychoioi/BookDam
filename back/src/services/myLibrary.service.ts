@@ -7,6 +7,7 @@ class MyLibraryService {
     // 에러 미들웨어에 추가해야됨
     // 읽었음이면 별점 필수
     upsertBookInLibrary = async (userId: number, data: UpsertMyLibraryRequest) => {
+      
     // 읽었음 상태로 변경 -> 별점은 필수
     if (data.status === 'COMPLETED' && (data.myRating === null || data.myRating === undefined)) {
       throw new Error('RatingRequiredForCompletion');

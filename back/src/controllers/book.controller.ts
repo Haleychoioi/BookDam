@@ -99,8 +99,7 @@ class BookController {
   //   }
   // }
 
-  // 상품 리스트 -  베스트셀러
-  
+  // 도서 검색 , 검색안하면 전체 리스트 반환
   searchBooks = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { keyword, type, category, page, limit, sort } = req.query;
@@ -248,7 +247,7 @@ class BookController {
   }
 
 
-  // 상품 조회
+  // 상품 상세 조회
   getBookDetail = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { itemId } = req.params;

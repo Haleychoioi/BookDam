@@ -52,8 +52,8 @@ app.use('/static', express.static(path.join(__dirname, '../public')));
 app.use("/auth", authRouter);
 app.use("/users", userRouter);
 app.use("/books", bookRouter);
-app.use('/mypage', wishRouter);
-app.use('/my-library', myLibraryRouter);
+app.use('/mypage/wishlist', wishRouter);
+app.use('/mypage/my-library', myLibraryRouter);
 
 
 
