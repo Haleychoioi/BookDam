@@ -21,8 +21,8 @@ import { CustomError } from "./middleware/error-handing-middleware";
 import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
 import bookRouter from "./routes/book.routes";
-import wishRouter from './routes/wishList.route';
-import myLibraryRouter from './routes/myLibrary.routes';
+import wishRouter from "./routes/wishList.route";
+import myLibraryRouter from "./routes/myLibrary.routes";
 
 // chatController 추가
 import chatController from "./chat/chat.controller";
@@ -35,7 +35,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 허용할 CORS Origin 설정 (환경 변수 사용, 기본값 제공)
-// const allowedOrigin = process.env.CORS_ORIGIN || "http://127.0.0.1:5500";
+// .env 파일에 CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5500 처럼 설정하면 됨
+const rawOrigins =
+  process.env.CORS_ORIGIN || "http://localhost:5173,http://127.0.0.1:5500";
+const allowedOrigins = rawOrigins.split(",").map((origin) => origin.trim());
 
 // Express 앱을 기반으로 HTTP 서버 생성
 const server = http.createServer(app);
@@ -43,8 +46,7 @@ const server = http.createServer(app);
 // HTTP 서버 위에 Socket.IO 서버를 연결 => CORS 설정을 해야 클라이언트에서 접속 가능
 const io = new Server(server, {
   cors: {
-    // 클라이언트 주소를 환경 변수에서 가져와 사용
-    origin: ["http://localhost:5173", "http://127.0.0.1:5500"],
+    origin: allowedOrigins, // allowedOrigins 사용
     methods: ["GET", "POST"],
   },
 });
@@ -52,7 +54,8 @@ const io = new Server(server, {
 // Express 앱에도 cors 미들웨어를 적용합니다. 라우터보다 위에 있어야 됨
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5500"], // 환경 변수에서 가져온 origin 사용
+    origin: allowedOrigins,
+    credentials: true,
   })
 );
 
@@ -72,8 +75,8 @@ app.get("/", (req: Request, res: Response) => {
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/books", bookRouter);
-app.use('/api/mypage/wishlist', wishRouter);
-app.use('/api/mypage/my-library', myLibraryRouter);
+app.use("/api/mypage/wishlist", wishRouter);
+app.use("/api/mypage/my-library", myLibraryRouter);
 
 // 새로운 커뮤니티 관련 라우터들
 app.use("/api", routes);
