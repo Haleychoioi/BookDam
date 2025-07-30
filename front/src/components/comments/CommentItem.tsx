@@ -17,6 +17,14 @@ const CommentItem: React.FC<CommentItemProps> = ({
   onAddReply,
   currentUserId,
 }) => {
+  console.log(
+    `[CommentItem] Rendering comment: ${comment.id}, depth: ${
+      comment.depth
+    }, parentId: ${comment.parentId || "none"}, has replies: ${
+      comment.replies && comment.replies.length > 0
+    }`
+  );
+
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [isEditingComment, setIsEditingComment] = useState(false);
   const [editedCommentContent, setEditedCommentContent] = useState(
@@ -109,33 +117,25 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
   const canReply = (comment.depth || 0) < 1;
 
+  const DEFAULT_AVATAR_URL = "https://via.placeholder.com/40?text=User";
+
   return (
     <OuterWrapper>
       <div
-        className="mb-4 border-b border-gray-100 last:border-b-0"
+        className="mb-2 border-t border-gray-300 last:border-b-0 p-8"
         style={{ paddingLeft }}
       >
-        {comment.depth !== undefined && comment.depth > 0 && (
-          <div className="flex items-center mb-2 text-gray-500 text-sm">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 mr-1 transform rotate-180"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            <span className="font-semibold text-gray-600">Re:</span>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center">
+            <img
+              src={comment.authorProfileImage || DEFAULT_AVATAR_URL}
+              alt={comment.author}
+              className="w-8 h-8 rounded-full mr-3 object-cover border border-gray-200"
+            />
+            <span className="font-semibold text-gray-700">
+              {comment.author}
+            </span>
           </div>
-        )}
-        <div className="flex justify-between items-center mb-1">
-          <span className="font-semibold text-gray-700">{comment.author}</span>
           <span className="text-gray-500 text-sm">
             {comment.createdAt}
             {comment.isEdited && " (수정됨)"}
@@ -166,7 +166,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             </div>
           </div>
         ) : (
-          <p className="text-gray-800 mb-2 whitespace-pre-wrap">
+          <p className="text-gray-800 mb-2 whitespace-pre-wrap mt-2">
             {comment.content}
           </p>
         )}
@@ -207,7 +207,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
           </div>
         )}
 
-        {comment.replies && comment.replies.length > 0 && (
+        {Array.isArray(comment.replies) && comment.replies.length > 0 && (
           <div className="mt-4">
             <CommentList
               comments={comment.replies}

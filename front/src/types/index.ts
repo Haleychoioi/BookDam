@@ -36,10 +36,11 @@ export interface Post {
   commentCount: number;
   createdAt: string;
   updatedAt?: string;
-  type: "community" | "general"; // 'community' 또는 'general' 게시물 타입
-  author: string; // 게시물 작성자 이름
-  authorId: number; // 게시물 작성자 ID
-  content: string; // 게시물 본문 내용
+  type: "community" | "general";
+  author: string;
+  authorId: number;
+  authorProfileImage?: string;
+  content: string;
 }
 
 // 1.4 댓글 기본 타입
@@ -47,17 +48,18 @@ export interface Comment {
   id: string;
   author: string;
   authorId: number;
+  authorProfileImage?: string;
   createdAt: string;
   updatedAt?: string;
   content: string;
   isEdited?: boolean;
-  postId: string; // 댓글이 달린 게시물 ID
-  postTitle: string; // 댓글이 달린 게시물 제목
-  postType: "community" | "general"; // 게시물 타입 ('community' 또는 'general')
-  communityId?: string; // 커뮤니티 게시물인 경우 커뮤니티 ID (선택적)
-  parentId?: string; // 이 댓글이 대댓글인 경우 부모 댓글의 ID
-  replies?: Comment[]; // 자식 댓글 목록
-  depth?: number; // 댓글의 깊이
+  postId: string;
+  postTitle: string;
+  postType: "community" | "general";
+  communityId?: string;
+  parentId?: string;
+  replies?: Comment[];
+  depth?: number;
 }
 
 // =========================================================
@@ -88,8 +90,8 @@ export interface Community {
   hostName: string;
   currentMembers: number;
   maxMembers: number;
-  role: "host" | "member"; // 사용자의 커뮤니티 역할 (필수)
-  status: "모집중" | "모집종료"; // 커뮤니티 자체의 모집 상태 (필수)
+  role: "host" | "member";
+  status: "모집중" | "모집종료";
 }
 
 // 3.2 마이페이지 커뮤니티 정보 타입 (CommunityBoardPage에서 사용)
@@ -105,32 +107,32 @@ export interface CommunityInfo {
 
 // 4.1 마이페이지 - 내 서재 도서 타입 (Book을 확장)
 export interface MyLibraryBook extends Book {
-  publisher: string; // BookDetail에서 가져옴
-  pubDate: string; // MyLibraryBook에만 있는 필드 (BookDetail의 publicationDate와 별개로 존재할 수 있음)
+  publisher: string;
+  pubDate: string;
   averageRating: number;
-  description: string; // BookDetail에서 가져옴
-  genre: string; // BookDetail에서 가져옴
-  summary: string; // BookDetail에서 가져옴
-  status: "reading" | "read" | "to-read"; // 서재 내 도서 상태
-  myRating?: number; // 내가 매긴 별점
+  description: string;
+  genre: string;
+  summary: string;
+  status: "reading" | "read" | "to-read";
+  myRating?: number;
 }
 
 // 4.2 마이페이지 - 커뮤니티 신청자 타입
 export interface ApplicantWithStatus {
-  id: string; // 신청자 ID (userId)
+  id: string;
   nickname: string;
-  appliedAt: string; // 신청 일시 (ISO String)
-  applicationMessage: string; // 신청 메시지
-  status: "pending" | "accepted" | "rejected"; // 신청 상태
+  appliedAt: string;
+  applicationMessage: string;
+  status: "pending" | "accepted" | "rejected";
 }
 
 // 4.3 마이페이지 - 커뮤니티 참여 이력 타입
 export interface CommunityHistoryEntry {
-  communityName: string; // 참여 커뮤니티 이름
-  role: "host" | "member"; // 역할 (호스트/멤버)
-  startDate: string; // 활동 시작일 (예: "YYYY-MM-DD" 형식의 문자열)
-  endDate?: string; // 활동 종료일 (현재 활동 중이면 없을 수 있으므로 선택적)
-  status: "활동중" | "활동종료"; // 활동 상태
+  communityName: string;
+  role: "host" | "member";
+  startDate: string;
+  endDate?: string;
+  status: "활동중" | "활동종료";
 }
 
 // 4.4 마이페이지 - 내가 신청한 커뮤니티 타입 (Community를 확장)
@@ -220,35 +222,35 @@ export type AladinItemIdType =
 
 // 알라딘 API 공통 응답 구조
 export interface AladinApiResponse<T = AladinBookItem> {
-  version: string; // API 버전
-  title: string; // API 결과 제목
-  link: string; // 관련 알라딘 페이지 URL
-  pubDate: string; // API 출력일
-  totalResults: number; // 총 결과 수
-  startIndex: number; // 시작 인덱스
-  itemsPerPage: number; // 페이지당 항목 수
-  query?: string; // 검색 쿼리
-  searchCategoryId?: number; // 검색 카테고리 ID
-  searchCategoryName?: string; // 검색 카테고리명
-  item: T[]; // 상품 목록
+  version: string;
+  title: string;
+  link: string;
+  pubDate: string;
+  totalResults: number;
+  startIndex: number;
+  itemsPerPage: number;
+  query?: string;
+  searchCategoryId?: number;
+  searchCategoryName?: string;
+  item: T[];
 }
 
 // 알라딘 책 정보 (API 응답에서 그대로 오는 형태)
 export interface AladinBookItem {
-  title: string; // 상품명
-  link: string; // 상품 링크 URL
-  author: string; // 저자/아티스트
-  pubDate: string; // 출간일
-  description: string; // 상품 설명 (요약)
-  isbn: string; // 10자리 ISBN
-  isbn13: string; // 13자리 ISBN
-  itemId: number; // 알라딘 상품 ID
-  cover: string; // 표지 이미지 URL
-  publisher: string; // 출판사
-  adult: boolean; // 성인 등급 여부
-  bestDuration?: string; // 베스트셀러 기간 정보
-  bestRank?: number; // 베스트셀러 순위
-  categoryName: string; // 카테고리명
+  title: string;
+  link: string;
+  author: string;
+  pubDate: string;
+  description: string;
+  isbn: string;
+  isbn13: string;
+  itemId: number;
+  cover: string;
+  publisher: string;
+  adult: boolean;
+  bestDuration?: string;
+  bestRank?: number;
+  categoryName: string;
 
   // 시리즈 정보
   seriesInfo?: {
@@ -259,13 +261,13 @@ export interface AladinBookItem {
 
   // 부가 정보
   subInfo?: {
-    subTitle?: string; // 부제
-    originalTitle?: string; // 원제
-    itemPage?: number; // 페이지 수
-    fullDescription?: string; // 상세 설명
-    fullDescription2?: string; // 출판사 제공 설명
-    toc?: string; // 목차
-    story?: string; // 줄거리
+    subTitle?: string;
+    originalTitle?: string;
+    itemPage?: number;
+    fullDescription?: string;
+    fullDescription2?: string;
+    toc?: string;
+    story?: string;
   };
 }
 

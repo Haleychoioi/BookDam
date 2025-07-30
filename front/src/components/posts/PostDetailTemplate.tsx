@@ -38,6 +38,8 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
   onCancelEdit,
   isPostAuthor,
 }) => {
+  const DEFAULT_AVATAR_URL = "https://via.placeholder.com/40?text=User"; // 기본 아바타 URL
+
   return (
     <div className="min-h-full py-10 bg-white">
       <div className="container mx-auto px-4 lg:px-20 xl:px-32">
@@ -56,8 +58,15 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
         <h1 className="text-3xl font-bold text-gray-800 text-center my-16">
           {post.title}
         </h1>
-        <div className="text-right text-gray-500 text-sm border-b border-gray-200 pb-2 mb-3">
-          <span className="mr-4">작성자: {post.author}</span>
+        <div className="text-right text-gray-500 text-sm border-b border-gray-200 pb-2 mb-3 flex justify-between">
+          <span className="mr-4 flex items-center justify-end">
+            <img
+              src={post.authorProfileImage || DEFAULT_AVATAR_URL}
+              alt={post.author}
+              className="w-6 h-6 rounded-full mr-2 object-cover border border-gray-200"
+            />
+            작성자: {post.author}
+          </span>
           <span>게시일: {post.createdAt}</span>
         </div>
 
