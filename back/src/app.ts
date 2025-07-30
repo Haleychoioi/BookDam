@@ -21,6 +21,9 @@ import { CustomError } from "./middleware/error-handing-middleware";
 import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
 import bookRouter from "./routes/book.routes";
+import wishRouter from './routes/wishList.route';
+import myLibraryRouter from './routes/myLibrary.routes';
+
 // chatController 추가
 import chatController from "./chat/chat.controller";
 
@@ -66,9 +69,11 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 // 기존 라우터들 (도서/유저/인증)
-app.use("/auth", authRouter);
-app.use("/users", userRouter);
-app.use("/books", bookRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/users", userRouter);
+app.use("/api/books", bookRouter);
+app.use('/api/mypage/wishlist', wishRouter);
+app.use('/api/mypage/my-library', myLibraryRouter);
 
 // 새로운 커뮤니티 관련 라우터들
 app.use("/api", routes);

@@ -49,11 +49,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/static', express.static(path.join(__dirname, '../public')));
 
 // 라우터
-app.use("/auth", authRouter);
-app.use("/users", userRouter);
-app.use("/books", bookRouter);
-app.use('/mypage/wishlist', wishRouter);
-app.use('/mypage/my-library', myLibraryRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/users", userRouter);
+app.use("/api/books", bookRouter);
+app.use('/api/mypage/wishlist', wishRouter);
+app.use('/api/mypage/my-library', myLibraryRouter);
 
 
 
