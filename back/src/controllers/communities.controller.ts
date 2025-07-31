@@ -4,6 +4,7 @@ import { Request, Response, NextFunction } from "express";
 import { CommunityService } from "../services/communities.service";
 import { CommunityStatus } from "@prisma/client";
 import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
+import { bookService } from "../services/book.service";
 
 export class CommunityController {
   private communityService: CommunityService;
@@ -88,6 +89,8 @@ export class CommunityController {
       if (isNaN(maxMembers) || maxMembers <= 0) {
         throw new CustomError(400, "유효한 최대 인원(maxMembers)이 아닙니다.");
       }
+
+      await bookService.getBookDetail(isbn13);
 
       const newCommunity = await this.communityService.createCommunity({
         userId, // req.user에서 가져온 userId 사용
