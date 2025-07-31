@@ -1,23 +1,11 @@
+// src/pages/mypage/WishlistPage.tsx
 import { useState, useEffect, useMemo, useCallback } from "react";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import BookGridDisplay from "../../components/bookResults/BookGridDisplay";
 import Pagination from "../../components/common/Pagination";
-import { type Book } from "../../types";
-
-const dummyWishlistBooks: Book[] = Array.from({ length: 15 }, (_, i) => ({
-  id: `wishlist-book-${i + 1}`,
-  coverImage: `https://via.placeholder.com/160x256/E0E0E0/909090?text=Wish+Book+${
-    i + 1
-  }`,
-  title: `위시리스트 책 ${i + 1}`,
-  author: `위시 저자 ${i + 1}`,
-  publisher: `위시 출판사 ${i + 1}`,
-  pubDate: `2024-01-${(i % 28) + 1}`,
-  averageRating: parseFloat((Math.random() * 5).toFixed(1)),
-  description: `이것은 위시리스트 책 ${i + 1}의 더미 설명입니다.`,
-  genre: i % 2 === 0 ? "판타지" : "자기계발",
-  summary: `위시리스트 책 ${i + 1}의 짧은 더미 요약입니다.`,
-}));
+import type { Book } from "../../types";
+// API 함수 임포트
+import { fetchWishlist, removeWish } from "../../api/mypage";
 
 const WishlistPage: React.FC = () => {
   const [wishlistBooks, setWishlistBooks] = useState<Book[]>([]);
@@ -26,32 +14,52 @@ const WishlistPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
-  useEffect(() => {
-    const fetchWishlistBooks = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        setWishlistBooks(dummyWishlistBooks);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchWishlistBooks();
+  // 위시리스트 데이터 불러오기
+  const loadWishlist = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // 실제 API 호출로 대체
+      const data = await fetchWishlist(); //
+      // 백엔드 응답 형태에 따라 Book 타입으로 변환 필요
+      const transformedBooks: Book[] = data.map((item) => ({
+        isbn13: item.book.isbn13,
+        coverImage: item.book.cover,
+        title: item.book.title,
+        author: "", // 위시리스트 조회 응답에는 author, publisher, pubDate, description, genre 없음
+        publisher: "",
+        publicationDate: null,
+        description: null,
+        genre: null,
+      }));
+      setWishlistBooks(transformedBooks);
+    } catch (err) {
+      console.error("위시리스트 불러오기 실패:", err);
+      setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadWishlist();
+  }, [loadWishlist]);
+
   const handleRemoveFromWishlist = useCallback(
-    (bookId: string, bookTitle: string) => {
+    async (isbn13: string, bookTitle: string) => {
+      // bookId를 isbn13으로 변경
       if (confirm(`'${bookTitle}'을(를) 위시리스트에서 삭제하시겠습니까?`)) {
-        setWishlistBooks((prevBooks) =>
-          prevBooks.filter((book) => book.id !== bookId)
-        );
-        // TODO: 실제 API 호출 로직 (DELETE /books/:bookId/bookmark)
-        alert(`'${bookTitle}'이(가) 위시리스트에서 삭제되었습니다.`);
+        try {
+          await removeWish(isbn13); //
+          alert(`'${bookTitle}'이(가) 위시리스트에서 삭제되었습니다.`);
+          loadWishlist(); // 삭제 후 목록 새로고침
+        } catch (error) {
+          console.error("위시리스트 삭제 실패:", error);
+          alert("위시리스트 삭제 중 오류가 발생했습니다. 다시 시도해주세요.");
+        }
       }
     },
-    []
+    [loadWishlist]
   );
 
   const totalFilteredItems = wishlistBooks.length;
@@ -88,7 +96,7 @@ const WishlistPage: React.FC = () => {
             books={paginatedBooks}
             className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3"
             onRemoveFromWishlist={handleRemoveFromWishlist}
-            showWishlistButton={true}
+            showWishlistButton={true} // 찜 해제 버튼 표시
           />
         ) : (
           <p className="col-span-full text-center text-gray-500 py-10">

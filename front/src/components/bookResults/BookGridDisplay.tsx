@@ -1,16 +1,21 @@
+// src/components/bookResults/BookGridDisplay.tsx
 import { Link } from "react-router-dom";
 import HeartButton from "../common/HeartButton";
 import { type Book, type MyLibraryBook } from "../../types";
+import { FaTrash } from "react-icons/fa"; // 휴지통 아이콘 임포트
 
 interface BookGridDisplayProps {
   books: (Book | MyLibraryBook)[];
   className?: string;
-  onRemoveFromWishlist?: (bookId: string, bookTitle: string) => void;
+  onRemoveFromWishlist?: (isbn13: string, bookTitle: string) => void;
   showWishlistButton?: boolean;
+  showDeleteButton?: boolean; // 삭제 버튼 표시 여부 추가
+  onDeleteFromMyLibrary?: (isbn13: string, bookTitle: string) => void; // 내 서재 삭제 함수 추가
 }
 
 function isMyLibraryBook(book: Book | MyLibraryBook): book is MyLibraryBook {
-  return (book as MyLibraryBook).status !== undefined;
+  // `libraryId` 속성으로 MyLibraryBook을 구분합니다.
+  return (book as MyLibraryBook).libraryId !== undefined;
 }
 
 const BookGridDisplay: React.FC<BookGridDisplayProps> = ({
@@ -18,12 +23,28 @@ const BookGridDisplay: React.FC<BookGridDisplayProps> = ({
   className = "",
   onRemoveFromWishlist,
   showWishlistButton = false,
+  showDeleteButton = false, // 기본값 false
+  onDeleteFromMyLibrary,
 }) => {
-  const handleHeartButtonClick = (book: Book, isWishlisted: boolean) => {
-    // isWishlisted는 HeartButton 내부에서 현재 찜 상태를 토글한 결과이므로,
-    // 여기서는 `false` (즉, 찜 해제 상태)일 때만 onRemoveFromWishlist 호출
+  const handleHeartButtonClick = (
+    book: Book | MyLibraryBook,
+    isWishlisted: boolean
+  ) => {
     if (!isWishlisted && onRemoveFromWishlist) {
       onRemoveFromWishlist(book.isbn13, book.title);
+    }
+  };
+
+  const handleDeleteButtonClick = (
+    book: MyLibraryBook,
+    event: React.MouseEvent
+  ) => {
+    // 이벤트 버블링 방지: Link 컴포넌트 내부에서 버튼 클릭 시 Link 이동을 막기 위함
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (onDeleteFromMyLibrary) {
+      onDeleteFromMyLibrary(book.isbn13, book.title);
     }
   };
 
@@ -42,16 +63,29 @@ const BookGridDisplay: React.FC<BookGridDisplayProps> = ({
             className="w-full h-full object-cover rounded-md shadow-md"
           />
 
-          {/* 하트 버튼 */}
+          {/* 하트 버튼 (위시리스트 전용) */}
           {showWishlistButton && (
             <div className="absolute top-2 right-2 z-10">
               <HeartButton
-                initialIsWishlisted={true} // TODO: 실제 찜 상태 데이터와 연동
+                initialIsWishlisted={true}
                 onClick={(isWishlisted) =>
                   handleHeartButtonClick(book, isWishlisted)
                 }
                 className="p-2 rounded-full shadow-md"
               />
+            </div>
+          )}
+
+          {/* 삭제 버튼 (내 서재 전용) */}
+          {showDeleteButton && isMyLibraryBook(book) && (
+            <div className="absolute bottom-2 right-2 z-10">
+              <button
+                onClick={(event) => handleDeleteButtonClick(book, event)} // 이벤트 객체 전달
+                className="p-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors duration-200 shadow-md"
+                aria-label={`Delete ${book.title} from My Library`}
+              >
+                <FaTrash className="w-5 h-5" />
+              </button>
             </div>
           )}
 
@@ -63,12 +97,15 @@ const BookGridDisplay: React.FC<BookGridDisplayProps> = ({
           </p>
 
           {/* 읽은 책일 경우 별점 표시 */}
-          {isMyLibraryBook(book) && book.myRating !== undefined && (
-            <p className="text-sm text-gray-600 mt-1">
-              평가함 <span className="text-yellow-400">★</span> {book.myRating}
-              /5
-            </p>
-          )}
+          {isMyLibraryBook(book) &&
+            book.myRating !== undefined &&
+            book.myRating !== null && (
+              <p className="text-sm text-gray-600 mt-1">
+                평가함 <span className="text-yellow-400">★</span>{" "}
+                {book.myRating}
+                /5
+              </p>
+            )}
         </Link>
       ))}
       {books.length === 0 && (
