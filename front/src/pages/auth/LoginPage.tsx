@@ -1,39 +1,23 @@
 // src/pages/auth/LoginPage.tsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom"; // useNavigate 훅 제거
 import Button from "../../components/common/Button";
-import apiClient from "../../api/apiClient";
-import axios from "axios";
+import { useAuth } from "../../hooks/useAuth";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // navigate 선언 제거
+  const { login, loading } = useAuth(); // useAuth 훅에서 error 제거
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      const response = await apiClient.post("/auth/login", { email, password });
-
-      const { token, userId, message } = response.data;
-
-      localStorage.setItem("accessToken", token);
-      localStorage.setItem("userId", userId.toString());
-
-      alert(message);
-      // 로그인 상태 변경 이벤트를 발생시켜 Header와 같은 컴포넌트에 알림
-      window.dispatchEvent(new Event("loginStatusChange"));
-      navigate("/");
-    } catch (error: unknown) {
-      console.error("로그인 실패:", error);
-      let errorMessage = "로그인 중 오류가 발생했습니다.";
-      if (axios.isAxiosError(error) && error.response) {
-        errorMessage = error.response.data.message || error.message;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      alert(errorMessage);
+    const success = await login(email, password);
+    if (success) {
+      // 훅 내부에서 navigate 처리하므로 여기서는 추가 작업 없음
+    } else {
+      // 훅에서 에러 alert 처리하므로 여기서는 추가 작업 없음
     }
   };
 
@@ -70,7 +54,9 @@ const LoginPage: React.FC = () => {
               className="w-full border border-gray-300 rounded px-4 py-2"
             />
           </div>
-          <Button type="submit">로그인</Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? "로그인 중..." : "로그인"}
+          </Button>
         </form>
       </section>
       <section id="register" className="container mx-auto py-12 px-20">

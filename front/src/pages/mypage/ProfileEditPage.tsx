@@ -2,88 +2,52 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import MyPageHeader from "../../components/mypage/MyPageHeader";
+import MyPageHeader from "../../components/mypage/MyPageHeader"; // MyPageHeader로 수정 (대소문자 일치)
 import Button from "../../components/common/Button";
-import type { UserProfile } from "../../types";
+// import type { UserProfile } from "../../types"; // UserProfile 임포트 제거 (훅에서 타입 제공)
+import { useAuth } from "../../hooks/useAuth";
 
-// 기본 프로필 이미지 경로 (실제 프로젝트의 경로에 맞게 수정해주세요)
-// 만약 로컬에 기본 이미지 파일이 없다면, 웹상의 기본 이미지 URL을 사용하거나,
-// 회원가입 시 사용되는 Dicebear API URL을 여기에 넣어줄 수 있습니다.
-const defaultProfileImage = "https://via.placeholder.com/150?text=Default";
-
-const dummyUserProfile: UserProfile = {
-  userId: 1,
-  email: "dummy@example.com",
-  name: "더미사용자",
-  nickname: "기존닉네임123",
-  phone: "010-1234-5678",
-  agreement: true,
-  role: "USER",
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  profileImage: defaultProfileImage,
-  introduction:
-    "안녕하세요! 저는 독서를 좋아하고 웹 개발을 즐기는 사용자입니다. 함께 독서하고 소통해요!",
-};
+// 기본 프로필 이미지 경로 (useAuth 훅 내의 로직과 동일하게 유지)
+const defaultProfileImage = "https://api.dicebear.com/8.x/identicon/svg?seed=";
 
 const ProfileEditPage: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // useAuth 훅에서 사용자 프로필 관련 상태와 함수를 가져옵니다.
+  // fetchUserProfile은 훅 내부에서 자동으로 호출되므로 여기서는 가져오지 않습니다.
+  const { currentUserProfile, loading, error, updateProfile } = useAuth();
 
   const [currentNickname, setCurrentNickname] = useState<string>("");
   const [currentIntroduction, setCurrentIntroduction] = useState<string>("");
-  const [currentProfileImageUrl, setCurrentProfileImageUrl] = useState<
-    string | null
-  >(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [deleteExistingImage, setDeleteExistingImage] =
     useState<boolean>(false);
 
+  // currentUserProfile이 변경될 때마다 폼 상태 초기화
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // TODO: 실제 API 호출: GET /users/getProfile
-        // API 명세서에 따르면 '내 정보 조회' API는 /user/getProfile (GET)
-        // 이 API는 JWT 토큰 인증이 필요하며, 응답으로 user 객체를 반환합니다.
-        await new Promise((resolve) => setTimeout(resolve, 500)); // 로딩 시뮬레이션 (실제 API 호출로 대체)
-
-        // 더미 데이터 또는 실제 API 응답으로 상태 초기화
-        setCurrentNickname(dummyUserProfile.nickname || "");
-        setCurrentIntroduction(dummyUserProfile.introduction || "");
-
-        const initialImageUrl =
-          dummyUserProfile.profileImage || defaultProfileImage;
-        setCurrentProfileImageUrl(initialImageUrl);
-        setPreviewImageUrl(initialImageUrl);
-
-        // 만약 더미 프로필 이미지가 Dicebear URL이라면, deleteExistingImage를 true로 설정하지 않음
-        // 실제 프로필 이미지가 기본 랜덤 이미지인 경우, 사용자가 삭제하지 않은 것으로 간주
-        if (
-          dummyUserProfile.profileImage &&
-          dummyUserProfile.profileImage.includes("api.dicebear.com")
-        ) {
-          setDeleteExistingImage(false); // Dicebear 이미지는 삭제 대상으로 간주하지 않음 (선택 사항)
-        } else {
-          setDeleteExistingImage(false); // 기본적으로 이미지가 있으면 삭제 플래그는 false
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "회원 정보를 불러오는데 실패했습니다."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUserProfile();
-  }, []);
+    if (currentUserProfile) {
+      setCurrentNickname(currentUserProfile.nickname || "");
+      setCurrentIntroduction(currentUserProfile.introduction || "");
+      // 프로필 이미지가 null이거나 비어있으면 기본 Dicebear 아바타 사용
+      const initialProfileImage =
+        currentUserProfile.profileImage ||
+        `${defaultProfileImage}${encodeURIComponent(
+          currentUserProfile.nickname
+        )}`;
+      setPreviewImageUrl(initialProfileImage);
+      setSelectedFile(null);
+      setDeleteExistingImage(false);
+    } else {
+      // currentUserProfile이 null이면 (로그아웃 등), 폼도 초기 상태로
+      setCurrentNickname("");
+      setCurrentIntroduction("");
+      setPreviewImageUrl(defaultProfileImage + "Default");
+      setSelectedFile(null);
+      setDeleteExistingImage(false);
+    }
+  }, [currentUserProfile]);
 
   // 닉네임 변경 핸들러
   const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,12 +65,17 @@ const ProfileEditPage: React.FC = () => {
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file); // 선택된 파일 저장
-      setPreviewImageUrl(URL.createObjectURL(file)); // 미리보기 URL 생성
-      setDeleteExistingImage(false); // 새 이미지를 선택했으니 삭제 플래그 초기화
+      setSelectedFile(file);
+      setPreviewImageUrl(URL.createObjectURL(file));
+      setDeleteExistingImage(false);
     } else {
-      setSelectedFile(null); // 파일 선택 취소 시 파일 상태 초기화
-      setPreviewImageUrl(currentProfileImageUrl); // 미리보기 원래 이미지로 복원
+      setSelectedFile(null);
+      setPreviewImageUrl(
+        currentUserProfile?.profileImage ||
+          `${defaultProfileImage}${encodeURIComponent(
+            currentUserProfile?.nickname || "Default"
+          )}`
+      );
     }
   };
 
@@ -122,9 +91,13 @@ const ProfileEditPage: React.FC = () => {
         "현재 프로필 이미지를 삭제하고 기본 이미지로 변경하시겠습니까?"
       )
     ) {
-      setSelectedFile(null); // 새로 선택된 파일이 있다면 초기화
-      setPreviewImageUrl(defaultProfileImage); // 미리보기 이미지를 기본 이미지로 변경
-      setDeleteExistingImage(true); // 기존 이미지 삭제 플래그 설정
+      setSelectedFile(null);
+      const currentNicknameForAvatar =
+        currentUserProfile?.nickname || "Default";
+      setPreviewImageUrl(
+        `${defaultProfileImage}${encodeURIComponent(currentNicknameForAvatar)}`
+      );
+      setDeleteExistingImage(true);
     }
   };
 
@@ -145,18 +118,24 @@ const ProfileEditPage: React.FC = () => {
     }
 
     // 변경사항 확인
-    const isNicknameChanged = currentNickname !== dummyUserProfile.nickname;
+    const isNicknameChanged =
+      currentNickname !== (currentUserProfile?.nickname || "");
     const isIntroductionChanged =
-      currentIntroduction !== (dummyUserProfile.introduction || "");
+      currentIntroduction !== (currentUserProfile?.introduction || "");
     const isNewImageSelected = selectedFile !== null;
     const isImageDeletionRequested = deleteExistingImage;
-    const isImageActuallyChanged = currentProfileImageUrl !== previewImageUrl; // 실제로 보이는 이미지가 변경되었는지
+    // 실제 이미지 변경 여부를 정확히 판단
+    const isImageActuallyChanged =
+      isNewImageSelected ||
+      isImageDeletionRequested ||
+      (previewImageUrl !== currentUserProfile?.profileImage &&
+        !previewImageUrl?.startsWith(defaultProfileImage) && // 새 이미지가 기본 이미지가 아니고
+        (currentUserProfile?.profileImage === undefined ||
+          !currentUserProfile?.profileImage?.startsWith(defaultProfileImage))); // 기존 이미지도 기본 이미지가 아닐 때
 
     if (
       !isNicknameChanged &&
       !isIntroductionChanged &&
-      !isNewImageSelected &&
-      !isImageDeletionRequested &&
       !isImageActuallyChanged
     ) {
       alert("변경할 내용이 없습니다.");
@@ -167,44 +146,24 @@ const ProfileEditPage: React.FC = () => {
       return;
     }
 
-    try {
-      // FormData 객체 생성 (multipart/form-data 형식으로 데이터 전송)
-      const formData = new FormData();
-      formData.append("nickname", currentNickname);
-      formData.append("introduction", currentIntroduction);
+    // FormData 객체 생성 (multipart/form-data 형식으로 데이터 전송)
+    const formData = new FormData();
+    formData.append("nickname", currentNickname);
+    formData.append("introduction", currentIntroduction);
 
-      if (isNewImageSelected && selectedFile) {
-        formData.append("profileImage", selectedFile); // 새로운 파일 추가
-      } else if (isImageDeletionRequested) {
-        formData.append("deleteProfileImage", "true"); // 기존 이미지 삭제 요청
-      }
-
-      // TODO: 실제 API 호출: PUT /users/profile
-      // Content-Type: multipart/form-data 헤더는 FormData 사용 시 fetch가 자동으로 설정하므로 명시할 필요 없음.
-      // Authorization 토큰은 실제 구현 시 요청 헤더에 추가해야 합니다.
-      const response = await fetch("/users/profile", {
-        method: "PUT",
-        // headers: {
-        //   'Authorization': `Bearer ${YOUR_AUTH_TOKEN}`, // 실제 토큰으로 교체
-        // },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "프로필 수정 실패");
-      }
-
-      // API 호출 시뮬레이션
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      alert("회원 정보가 성공적으로 수정되었습니다!");
-      // TODO: 실제 앱에서는 전역 사용자 정보도 업데이트하고,
-      // navigate('/mypage'); // 마이페이지 메인으로 이동
-    } catch (err) {
-      console.error("회원 정보 수정 중 오류:", err);
-      alert("회원 정보 수정 중 오류가 발생했습니다. 다시 시도해주세요.");
+    if (isNewImageSelected && selectedFile) {
+      formData.append("profileImage", selectedFile);
+    } else if (isImageDeletionRequested) {
+      formData.append("deleteProfileImage", "true");
     }
+
+    // useAuth 훅의 updateProfile 함수 호출
+    const success = await updateProfile(formData);
+    if (success) {
+      // 훅 내부에서 alert 처리하므로 여기서는 추가 작업 없음
+      // navigate('/mypage'); // 마이페이지 메인으로 이동 (필요하다면 훅에서 처리)
+    }
+    // 훅에서 에러 처리하므로 여기서는 추가 작업 없음
   };
 
   // "취소" 버튼 클릭 핸들러
@@ -214,11 +173,16 @@ const ProfileEditPage: React.FC = () => {
     }
   };
 
+  // 로딩 및 에러 상태는 훅에서 관리하므로, 페이지에서는 이를 받아와 표시만 합니다.
   if (loading) {
     return <div className="text-center py-12">회원 정보를 불러오는 중...</div>;
   }
   if (error) {
     return <div className="text-center py-12 text-red-500">오류: {error}</div>;
+  }
+  // currentUserProfile이 아직 로드되지 않았다면 로딩 중으로 간주 (초기 상태)
+  if (!currentUserProfile) {
+    return <div className="text-center py-12">회원 정보를 불러오는 중...</div>;
   }
 
   return (
@@ -232,7 +196,7 @@ const ProfileEditPage: React.FC = () => {
         {/* 프로필 이미지 섹션 */}
         <div className="flex flex-col items-center space-y-4">
           <img
-            src={previewImageUrl || defaultProfileImage} // 미리보기 이미지 또는 기본 이미지
+            src={previewImageUrl || `${defaultProfileImage}Default`}
             alt="프로필 이미지"
             className="w-32 h-32 rounded-full object-cover border border-gray-300"
           />
@@ -240,8 +204,8 @@ const ProfileEditPage: React.FC = () => {
             type="file"
             ref={fileInputRef}
             onChange={handleProfileImageChange}
-            className="hidden" // 실제 input은 숨기고 버튼으로 트리거
-            accept="image/*" // 이미지 파일만 허용
+            className="hidden"
+            accept="image/*"
           />
           <div className="flex space-x-2">
             <Button
@@ -251,14 +215,17 @@ const ProfileEditPage: React.FC = () => {
               사진 변경
             </Button>
             {/* 현재 프로필 이미지가 기본 이미지가 아니거나, 업로드된 이미지가 있는 경우에만 삭제 버튼 표시 */}
-            {currentProfileImageUrl !== defaultProfileImage && (
-              <Button
-                onClick={handleDeleteProfileImage}
-                className="px-4 py-2 rounded-md text-sm font-normal"
-              >
-                사진 삭제
-              </Button>
-            )}
+            {currentUserProfile?.profileImage &&
+              !currentUserProfile.profileImage.startsWith(
+                defaultProfileImage
+              ) && (
+                <Button
+                  onClick={handleDeleteProfileImage}
+                  className="px-4 py-2 rounded-md text-sm font-normal"
+                >
+                  사진 삭제
+                </Button>
+              )}
           </div>
         </div>
 
@@ -317,8 +284,9 @@ const ProfileEditPage: React.FC = () => {
             textColor="text-white"
             hoverBgColor="hover:bg-apply"
             className="px-6 py-2 rounded-lg font-normal"
+            disabled={loading}
           >
-            저장하기
+            {loading ? "저장 중..." : "저장하기"}
           </Button>
         </div>
       </div>
