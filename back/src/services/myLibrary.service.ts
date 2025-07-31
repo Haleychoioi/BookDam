@@ -4,10 +4,14 @@ import { ReadingStatus } from "@prisma/client";
 
 class MyLibraryService {
 
-    // 에러 미들웨어에 추가해야됨
-    // 읽었음이면 별점 필수
-    upsertBookInLibrary = async (userId: number, data: UpsertMyLibraryRequest) => {
-      
+  // 에러 미들웨어에 추가해야됨
+  // 읽었음이면 별점 필수
+  upsertBookInLibrary = async (userId: number, data: UpsertMyLibraryRequest) => {
+
+    // COMPLETED 상태가 아니면 null
+    if (data.status !== 'COMPLETED') {
+      data.myRating = null;
+    }
     // 읽었음 상태로 변경 -> 별점은 필수
     if (data.status === 'COMPLETED' && (data.myRating === null || data.myRating === undefined)) {
       throw new Error('RatingRequiredForCompletion');
@@ -26,8 +30,8 @@ class MyLibraryService {
 
     const { books, totalCount } = await myLibraryRepository.findBooksByUserId(
       userId,
-      limit, 
-      offset, 
+      limit,
+      offset,
       status
     );
 
