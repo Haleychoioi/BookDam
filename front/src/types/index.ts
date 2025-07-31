@@ -62,6 +62,22 @@ export interface Comment {
   depth?: number;
 }
 
+export interface BookEntity {
+  // <-- 이 인터페이스를 추가합니다.
+  isbn13: string;
+  title: string;
+  author: string;
+  publisher: string;
+  pubDate: string | null;
+  description: string | null;
+  cover: string | null;
+  category: string | null;
+  pageCount: number | null;
+  toc: string | null;
+  story: string | null;
+  createdAt: string; // DateTime은 JS에서는 string으로 넘어옵니다.
+}
+
 // =========================================================
 // 2. 기본 엔티티의 상세/확장 타입 (Extended Entities)
 // =========================================================

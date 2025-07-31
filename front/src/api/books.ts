@@ -5,12 +5,61 @@ import type {
   BookDetail,
   AladinApiResponse,
   AladinBookItem,
+  BookEntity,
 } from "../types";
 
 interface BookSearchResponse {
   books: BookSummary[]; // 백엔드 응답의 실제 키에 맞춰야 함
   total: number; // 백엔드 응답의 실제 키에 맞춰야 함
 }
+
+// 백엔드에서 받은 AladinApiResponse<AladinBookItem>를 프론트엔드의 BookDetail 타입으로 변환하는 헬퍼 함수
+const mapAladinItemToBookDetail = (aladinItem: AladinBookItem): BookDetail => {
+  return {
+    isbn13: aladinItem.isbn13,
+    coverImage: aladinItem.cover,
+    title: aladinItem.title,
+    author: aladinItem.author,
+    publisher: aladinItem.publisher,
+    publicationDate: aladinItem.pubDate || null,
+    description: aladinItem.description || null,
+    genre: aladinItem.categoryName || null,
+    summary: aladinItem.description || null,
+    tableOfContents: aladinItem.subInfo?.toc
+      ? aladinItem.subInfo.toc.split("\n")
+      : null,
+    commentaryContent:
+      aladinItem.subInfo?.fullDescription ||
+      aladinItem.subInfo?.fullDescription2 ||
+      null,
+    averageRating: null,
+    communityCount: 0,
+    isWished: false,
+    recommendedBooks: [],
+    pageCount: aladinItem.subInfo?.itemPage || null,
+  };
+};
+
+const mapBackendBookToBookDetail = (backendBook: BookEntity): BookDetail => {
+  return {
+    isbn13: backendBook.isbn13,
+    coverImage: backendBook.cover,
+    title: backendBook.title,
+    author: backendBook.author,
+    publisher: backendBook.publisher,
+    publicationDate: backendBook.pubDate || null,
+    description: backendBook.description || null,
+    genre: backendBook.category || null,
+    summary: backendBook.description || null,
+    tableOfContents: backendBook.toc ? backendBook.toc.split("\n") : null,
+    commentaryContent: backendBook.story || null,
+    averageRating: null,
+    communityCount: 0,
+    isWished: false,
+    recommendedBooks: [],
+    pageCount: backendBook.pageCount || null,
+  };
+};
 
 // 1. 도서 검색 결과 조회 (BookSearchResultPage에서 사용)
 export const searchBooks = async (
@@ -26,47 +75,20 @@ export const searchBooks = async (
     url += `&category=${encodeURIComponent(category)}`;
   }
 
-  // ✨ Axios의 제네릭 타입을 백엔드 실제 응답 구조에 맞춰 지정 ✨
+  // Axios의 제네릭 타입을 백엔드 실제 응답 구조에 맞춰 지정
+  // 백엔드는 { status, message, data: AladinApiResponse } 형태로 응답합니다.
   const response = await apiClient.get<{
     status: string;
     message: string;
-    data: AladinApiResponse<AladinBookItem>; // 백엔드가 보내는 data 필드의 실제 타입
+    data: AladinApiResponse<AladinBookItem>; // 백엔드 data 필드에 AladinApiResponse가 담김
   }>(url);
 
-  // ✨ 백엔드 응답에서 필요한 데이터를 추출하여 프론트엔드 BookSearchResponse 형식으로 변환 ✨
-  const aladinResponse = response.data.data; // 실제 알라딘 API 응답 데이터 (item, totalResults 포함)
+  // 백엔드 응답에서 필요한 AladinApiResponse 데이터를 추출
+  const aladinResponse = response.data.data; // response.data 안에 또 data 필드가 있음
 
   return {
-    books: aladinResponse.item.map((item) => mapAladinItemToBookDetail(item)), // AladinBookItem을 BookSummary로 매핑
-    total: aladinResponse.totalResults, // totalResults를 total로 매핑
-  };
-};
-
-// 백엔드에서 받은 AladinApiResponse<AladinBookItem>를 프론트엔드의 BookDetail 타입으로 변환하는 헬퍼 함수
-const mapAladinItemToBookDetail = (aladinItem: AladinBookItem): BookDetail => {
-  return {
-    isbn13: aladinItem.isbn13,
-    coverImage: aladinItem.cover,
-    title: aladinItem.title,
-    author: aladinItem.author,
-    publisher: aladinItem.publisher,
-    publicationDate: aladinItem.pubDate || null,
-    description: aladinItem.description || null,
-    genre: aladinItem.categoryName || null,
-    // 아래 필드들은 Aladin API 응답에 직접 포함되지 않음 => 확인 필요
-    summary: aladinItem.description || null,
-    tableOfContents: aladinItem.subInfo?.toc
-      ? aladinItem.subInfo.toc.split("\n")
-      : null, // ✨ 수정 ✨
-    commentaryContent:
-      aladinItem.subInfo?.fullDescription ||
-      aladinItem.subInfo?.fullDescription2 ||
-      null, // ✨ 수정 ✨
-    averageRating: null,
-    communityCount: 0,
-    isWished: false,
-    recommendedBooks: [],
-    pageCount: aladinItem.subInfo?.itemPage || null,
+    books: aladinResponse.item.map((item) => mapAladinItemToBookDetail(item)),
+    total: aladinResponse.totalResults,
   };
 };
 
@@ -76,11 +98,16 @@ export const getBookDetail = async (itemId: string): Promise<BookDetail> => {
     const response = await apiClient.get<{
       status: string;
       message: string;
-      data: AladinApiResponse<AladinBookItem>;
-    }>(`/books/detail/${itemId}`);
+      data: BookEntity; // 백엔드가 'data' 필드에 BookEntity를 직접 담아 보냄
+    }>(`/books/${itemId}`);
 
-    if (response.data.data.item && response.data.data.item.length > 0) {
-      return mapAladinItemToBookDetail(response.data.data.item[0]);
+    // response.data가 바로 백엔드에서 보낸 응답 객체입니다.
+    // 그 안에 BookEntity를 담고 있는 'data' 필드가 있습니다.
+    const actualBackendResponseData = response.data.data; // response.data.data에서 BookEntity 추출
+
+    if (actualBackendResponseData) {
+      // 실제 책 데이터가 actualBackendResponseData에 담겨있음
+      return mapBackendBookToBookDetail(actualBackendResponseData); // BookEntity를 BookDetail로 매핑
     } else {
       throw new Error("도서 상세 정보를 찾을 수 없습니다.");
     }
@@ -100,17 +127,16 @@ export const fetchBestsellers = async (
     const response = await apiClient.get<{
       status: string;
       message: string;
-      data: AladinApiResponse<AladinBookItem>;
+      data: AladinApiResponse<AladinBookItem>; // 백엔드 data 필드에 AladinApiResponse가 담김
     }>(
       `/books/bestsellers?page=${page}&size=${size}${
         categoryId ? `&categoryId=${categoryId}` : ""
       }`
     );
-
-    // 백엔드는 AladinApiResponse를 data 필드에 담아 주므로, item 배열을 바로 반환
+    // 백엔드는 AladinApiResponse를 data 필드에 담아 주므로, response.data.data에서 추출
     return response.data.data.item.map((item) =>
       mapAladinItemToBookDetail(item)
-    ); // AladinBookItem을 BookDetail/BookSummary로 변환
+    );
   } catch (error) {
     console.error("Failed to fetch bestsellers:", error);
     throw error;
@@ -127,12 +153,13 @@ export const fetchNewBooks = async (
     const response = await apiClient.get<{
       status: string;
       message: string;
-      data: AladinApiResponse<AladinBookItem>;
+      data: AladinApiResponse<AladinBookItem>; // 백엔드 data 필드에 AladinApiResponse가 담김
     }>(
       `/books/newBooks?page=${page}&size=${size}${
         categoryId ? `&categoryId=${categoryId}` : ""
       }`
     );
+    // 백엔드는 AladinApiResponse를 data 필드에 담아 주므로, response.data.data에서 추출
     return response.data.data.item.map((item) =>
       mapAladinItemToBookDetail(item)
     );
@@ -152,12 +179,13 @@ export const fetchSpecialNewBooks = async (
     const response = await apiClient.get<{
       status: string;
       message: string;
-      data: AladinApiResponse<AladinBookItem>;
+      data: AladinApiResponse<AladinBookItem>; // 백엔드 data 필드에 AladinApiResponse가 담김
     }>(
       `/books/specialNewBooks?page=${page}&size=${size}${
         categoryId ? `&categoryId=${categoryId}` : ""
       }`
     );
+    // 백엔드는 AladinApiResponse를 data 필드에 담아 주므로, response.data.data에서 추출
     return response.data.data.item.map((item) =>
       mapAladinItemToBookDetail(item)
     );

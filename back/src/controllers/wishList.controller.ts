@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import wishListService from "../services/wishList.service";
+import { bookService } from "../services/book.service";
 
 class WishListController {
 
@@ -12,6 +13,9 @@ class WishListController {
             if (!isbn13) {
                 return res.status(400).json({ message: 'isbn13은 필수' });
             }
+
+            //도서관련된 모든곳에 추가
+            await bookService.getBookDetail(isbn13);
 
             const newWish = await wishListService.addWish(userId, { isbn13 });
 
