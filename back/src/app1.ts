@@ -40,7 +40,8 @@ const io = new Server(server, {
 // Express 앱에도 cors 미들웨어를 적용. 라우터보다 위에 있어야 됨
 // 배포할때 다시 변경
 app.use(cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5500"]
+    origin: ["http://localhost:5173", "http://127.0.0.1:5500"],
+    credentials: true
 }));
 
 app.use(express.json());

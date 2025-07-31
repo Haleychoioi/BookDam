@@ -4,10 +4,6 @@ import { useNavigate } from "react-router-dom";
 
 import axios from "axios";
 
-{/* 가상의 URL 설정 */}
-const DEFAULT_PROFILE =
-  "https://via.placeholder.com/120?text=Profile";
-
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   
@@ -40,7 +36,7 @@ const RegisterPage: React.FC = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:3000/auth/register", {
+      const response = await axios.post("http://localhost:3000/api/auth/register", {
         name: form.name,
         nickname: form.nickname,
         phone: form.phone,
