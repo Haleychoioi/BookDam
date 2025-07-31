@@ -169,6 +169,26 @@ export interface AppliedCommunity extends Community {
   myApplicationStatus: "pending" | "accepted" | "rejected"; // 사용자의 신청 상태 (Community의 status와 다름)
 }
 
+// 4.5 회원가입 요청
+export interface SignupRequest {
+  email: string;
+  password: string;
+  name: string;
+  nickname: string;
+  phone: string;
+  agreement: boolean;
+  profileImage?: string;
+  introduction?: string;
+}
+
+// 4.6 사용자 정보 수정 요청 (ProfileEditPage에서 FormData로 전달되지만, DTO의 구조를 명시)
+export interface UpdateUserData {
+  nickname: string;
+  introduction?: string;
+  profileImage?: string; // 파일 URL 또는 'true' (기본 이미지로 변경)
+  deleteProfileImage?: string; // 'true'일 경우 기본 이미지로 변경
+}
+
 // =========================================================
 // 알라딘 API 관련 Enum
 // =========================================================

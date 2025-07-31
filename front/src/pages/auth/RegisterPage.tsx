@@ -1,9 +1,8 @@
 // src/pages/auth/RegisterPage.tsx
 import React, { useState } from "react";
 import Button from "../../components/common/Button";
-import apiClient from "../../api/apiClient";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+// import { useNavigate } from "react-router-dom"; // useNavigate 훅 제거
+import { useAuth } from "../../hooks/useAuth";
 
 {
   /* 가상의 URL 설정 */
@@ -11,7 +10,9 @@ import axios from "axios";
 const DEFAULT_PROFILE = "https://via.placeholder.com/120?text=Profile";
 
 const RegisterPage: React.FC = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // navigate 선언 제거
+  const { register, loading } = useAuth(); // useAuth 훅에서 error 제거
+
   const [form, setForm] = useState({
     name: "",
     nickname: "",
@@ -53,30 +54,20 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
-    try {
-      const dataToSend = {
-        name: form.name,
-        nickname: form.nickname,
-        phone: form.phone,
-        email: form.email,
-        password: form.password,
-        introduction: form.introduction,
-        agreement: form.agreement,
-      };
-
-      const response = await apiClient.post("/auth/register", dataToSend);
-
-      alert(response.data.message);
-      navigate("/auth/login");
-    } catch (error: unknown) {
-      console.error("회원가입 실패:", error);
-      let errorMessage = "회원가입 중 오류가 발생했습니다.";
-      if (axios.isAxiosError(error) && error.response) {
-        errorMessage = error.response.data.message || error.message;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      alert(errorMessage);
+    const dataToSend = {
+      name: form.name,
+      nickname: form.nickname,
+      phone: form.phone,
+      email: form.email,
+      password: form.password,
+      introduction: form.introduction,
+      agreement: form.agreement,
+    };
+    const success = await register(dataToSend);
+    if (success) {
+      // 훅 내부에서 navigate 및 alert 처리하므로 여기서는 추가 작업 없음
+    } else {
+      // 훅에서 에러 alert 처리하므로 여기서는 추가 작업 없음
     }
   };
 
@@ -232,7 +223,9 @@ const RegisterPage: React.FC = () => {
             </label>
           </div>
           <div className="text-center pt-5">
-            <Button type="submit">가입하기</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "가입 중..." : "가입하기"}
+            </Button>
           </div>
         </form>
       </section>
