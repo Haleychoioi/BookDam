@@ -4,7 +4,15 @@ import {
   CategoryStats,
   AuthorStats,
   PublisherStats,
+  FullCategoryStats,
 } from '../types/tasteAnalysis';
+
+import { CATEGORY_MAPPING, CATEGORY_ID_MAP } from '../constants/categories';
+
+const ALL_CATEGORIES = [
+  ...Object.keys(CATEGORY_ID_MAP).filter(key => key !== '전체'),
+  '기타',
+];
 
 class MyLibraryAnalyzer {
   public analyze(books: BookForAnalysis[]): LibraryStats {
@@ -13,43 +21,60 @@ class MyLibraryAnalyzer {
         totalBooks: 0,
         overallAverageRating: 0,
         preferredCategories: [],
+        allCategoryStats: ALL_CATEGORIES.map(categoryName => ({
+          categoryName,
+          count: 0,
+          averageRating: 0,
+        })),
         preferredAuthors: [],
         preferredPublishers: [],
         ratingDistribution: [],
       };
     }
+
+    const categoryDataMap = this.getCategoryDataMap(books);
+
     return {
       totalBooks: books.length,
       overallAverageRating: this.getOverallAverage(books),
-      preferredCategories: this.getCategoryStats(books),
+      preferredCategories: this.getCategoryStats(books, categoryDataMap),
+      allCategoryStats: this.getFullCategoryStats(categoryDataMap),
       preferredAuthors: this.getAuthorStats(books),
       preferredPublishers: this.getPublisherStats(books),
       ratingDistribution: this.getRatingDistribution(books),
     };
   }
 
-  private getOverallAverage(books: BookForAnalysis[]): number {
-    const sum = books.reduce((acc, book) => acc + book.myRating, 0);
-    return Math.round((sum / books.length) * 100) / 100;
-  }
 
-  private getCategoryStats(books: BookForAnalysis[]): CategoryStats[] {
+  private getCategoryDataMap(books: BookForAnalysis[]): Map<string, number[]> {
     const statsMap = new Map<string, number[]>();
+
     books.forEach(book => {
-      const categoryName = book.categoryName || '기타';
-      if (!statsMap.has(categoryName)) {
-        statsMap.set(categoryName, []);
+      const sourceCategory = book.categoryName as keyof typeof CATEGORY_MAPPING;
+
+      const standardizedCategory = CATEGORY_MAPPING[sourceCategory] || '기타';
+
+      if (!statsMap.has(standardizedCategory)) {
+        statsMap.set(standardizedCategory, []);
       }
-      statsMap.get(categoryName)!.push(book.myRating);
+      statsMap.get(standardizedCategory)!.push(book.myRating);
     });
 
+    return statsMap;
+  }
+
+
+  private getCategoryStats(
+    books: BookForAnalysis[],
+    statsMap: Map<string, number[]>,
+  ): CategoryStats[] {
     const stats: CategoryStats[] = [];
     statsMap.forEach((ratings, categoryName) => {
       const averageRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
       stats.push({
         categoryName,
         count: ratings.length,
-        averageRating: Math.round(averageRating * 100) / 100,
+        averageRating: Math.round(averageRating * 10) / 10,
         percentage: Math.round((ratings.length / books.length) * 100),
       });
     });
@@ -61,6 +86,36 @@ class MyLibraryAnalyzer {
         return scoreB - scoreA;
       })
       .slice(0, 5);
+  }
+
+  private getFullCategoryStats(
+    statsMap: Map<string, number[]>,
+  ): FullCategoryStats[] {
+    const fullStats = ALL_CATEGORIES.map(categoryName => {
+      const ratings = statsMap.get(categoryName);
+
+      if (ratings && ratings.length > 0) {
+        const averageRating =
+          ratings.reduce((a, b) => a + b, 0) / ratings.length;
+        return {
+          categoryName,
+          count: ratings.length,
+          averageRating: Math.round(averageRating * 10) / 10,
+        };
+      } else {
+        return {
+          categoryName,
+          count: 0,
+          averageRating: 0,
+        };
+      }
+    });
+    return fullStats.sort((a, b) => b.count - a.count);
+  }
+
+  private getOverallAverage(books: BookForAnalysis[]): number {
+    const sum = books.reduce((acc, book) => acc + book.myRating, 0);
+    return Math.round((sum / books.length) * 10) / 10;
   }
 
   private getAuthorStats(books: BookForAnalysis[]): AuthorStats[] {
@@ -76,11 +131,12 @@ class MyLibraryAnalyzer {
 
     const stats: AuthorStats[] = [];
     statsMap.forEach((data, author) => {
-      const averageRating = data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length;
+      const averageRating =
+        data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length;
       stats.push({
         author,
         count: data.books.length,
-        averageRating: Math.round(averageRating * 100) / 100,
+        averageRating: Math.round(averageRating * 10) / 10,
       });
     });
 
@@ -106,11 +162,12 @@ class MyLibraryAnalyzer {
 
     const stats: PublisherStats[] = [];
     statsMap.forEach((data, publisher) => {
-      const averageRating = data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length;
+      const averageRating =
+        data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length;
       stats.push({
         publisher,
         count: data.books.length,
-        averageRating: Math.round(averageRating * 100) / 100,
+        averageRating: Math.round(averageRating * 10) / 10,
       });
     });
 

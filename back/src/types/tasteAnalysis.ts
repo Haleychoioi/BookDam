@@ -34,10 +34,17 @@ export interface PublisherStats {
   averageRating: number;
 }
 
+export interface FullCategoryStats {
+  categoryName: string;
+  count: number;
+  averageRating: number;
+}
+
 export interface LibraryStats {
   totalBooks: number;
   overallAverageRating: number;
   preferredCategories: CategoryStats[];
+  allCategoryStats: FullCategoryStats[];
   preferredAuthors: AuthorStats[];
   preferredPublishers: PublisherStats[];
   ratingDistribution: {
