@@ -1,32 +1,85 @@
+// src/pages/auth/RegisterPage.tsx
 import React, { useState } from "react";
 import Button from "../../components/common/Button";
-
+import apiClient from "../../api/apiClient";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-{/* 가상의 URL 설정 */}
-const DEFAULT_PROFILE =
-  "https://via.placeholder.com/120?text=Profile";
+{
+  /* 가상의 URL 설정 */
+}
+const DEFAULT_PROFILE = "https://via.placeholder.com/120?text=Profile";
 
 const RegisterPage: React.FC = () => {
-    const [form, setForm] = useState({
+  const navigate = useNavigate();
+  const [form, setForm] = useState({
     name: "",
     nickname: "",
     phone: "",
     email: "",
     password: "",
-    confirmPassword: "",
     introduction: "",
     agreement: false,
   });
 
-const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const { name, value, type, checked } = e.target;
-  setForm({
-    ...form,
-    [name]: type === "checkbox" ? checked : value,
-  });
-};
-  
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+
+    if (name === "confirmPassword") {
+      setConfirmPassword(value);
+    } else {
+      setForm({
+        ...form,
+        [name]: type === "checkbox" ? checked : value,
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (form.password !== confirmPassword) {
+      alert("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
+    if (!form.agreement) {
+      alert("이용약관에 동의해야 회원가입을 할 수 있습니다.");
+      return;
+    }
+
+    try {
+      const dataToSend = {
+        name: form.name,
+        nickname: form.nickname,
+        phone: form.phone,
+        email: form.email,
+        password: form.password,
+        introduction: form.introduction,
+        agreement: form.agreement,
+      };
+
+      const response = await apiClient.post("/auth/register", dataToSend);
+
+      alert(response.data.message);
+      navigate("/auth/login");
+    } catch (error: unknown) {
+      console.error("회원가입 실패:", error);
+      let errorMessage = "회원가입 중 오류가 발생했습니다.";
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.message || error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      alert(errorMessage);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-12">
       <section id="register" className="container mx-auto py-12 px-20">
@@ -37,14 +90,16 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             간단한 절차로 회원 가입을 통해 다양한 혜택을 누리실 수 있습니다.
           </h2>
         </div>
-        <form className="max-w-md mx-auto space-y-4">
+        <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-4">
           <div className="flex flex-col items-center mb-6">
             <img
               src={DEFAULT_PROFILE}
               alt="프로필 이미지"
               className="w-24 h-24 rounded-full border object-cover"
             />
-            <p className="text-sm text-gray-500 mt-2">랜덤 프로필 이미지입니다.</p>
+            <p className="text-sm text-gray-500 mt-2">
+              랜덤 프로필 이미지입니다.
+            </p>
           </div>
           <div>
             <label htmlFor="name" className="block text-sm font-semibold mb-1">
@@ -62,7 +117,10 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             />
           </div>
           <div>
-            <label htmlFor="nickname" className="block text-sm font-semibold mb-1">
+            <label
+              htmlFor="nickname"
+              className="block text-sm font-semibold mb-1"
+            >
               닉네임
             </label>
             <input
@@ -107,7 +165,10 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-semibold mb-1">
+            <label
+              htmlFor="password"
+              className="block text-sm font-semibold mb-1"
+            >
               비밀번호
             </label>
             <input
@@ -122,14 +183,17 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             />
           </div>
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-semibold mb-1">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-semibold mb-1"
+            >
               비밀번호 재입력
             </label>
             <input
               type="password"
               id="confirmPassword"
               name="confirmPassword"
-              value={form.confirmPassword}
+              value={confirmPassword}
               onChange={handleChange}
               required
               placeholder="비밀번호를 다시 입력하세요"
@@ -137,7 +201,10 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             />
           </div>
           <div>
-            <label htmlFor="introduction" className="block text-sm font-semibold mb-1">
+            <label
+              htmlFor="introduction"
+              className="block text-sm font-semibold mb-1"
+            >
               한 줄 소개
             </label>
             <input

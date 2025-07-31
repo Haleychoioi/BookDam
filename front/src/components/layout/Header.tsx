@@ -1,11 +1,15 @@
-import { useState } from "react";
+// src/components/layout/Header.tsx
+import { useState, useEffect } from "react"; // useEffect 추가
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Button from "../common/Button";
 import { FaBars, FaTimes } from "react-icons/fa";
 
 const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // TODO: 실제 로그인 상태 관리와 연동
+  // isLoggedIn 초기값을 localStorage의 accessToken 존재 여부로 설정
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    !!localStorage.getItem("accessToken")
+  );
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -16,9 +20,12 @@ const Header: React.FC = () => {
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
+    localStorage.removeItem("accessToken"); // 토큰 제거
+    localStorage.removeItem("userId"); // userId 제거 (저장했다면)
+    setIsLoggedIn(false); // 상태 업데이트
     alert("로그아웃 되었습니다.");
-    // TODO: 실제 로그아웃 로직 (예: 로컬 스토리지에서 토큰 제거, 서버에 로그아웃 요청 등) 추가
+    // localStorage 변경 이벤트를 발생시켜 다른 컴포넌트(예: Header)에 알림
+    window.dispatchEvent(new Event("loginStatusChange"));
     navigate("/");
   };
 
@@ -29,6 +36,20 @@ const Header: React.FC = () => {
       navigate("/auth/login");
     }
   };
+
+  // localStorage 변경 이벤트를 감지하여 isLoggedIn 상태 업데이트
+  useEffect(() => {
+    const handleLoginStatusChange = () => {
+      setIsLoggedIn(!!localStorage.getItem("accessToken"));
+    };
+
+    window.addEventListener("loginStatusChange", handleLoginStatusChange);
+
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    return () => {
+      window.removeEventListener("loginStatusChange", handleLoginStatusChange);
+    };
+  }, []); // 빈 배열: 컴포넌트 마운트 시 한 번만 실행
 
   return (
     <header className="bg-white py-4 fixed top-0 w-full z-50">
