@@ -1,3 +1,5 @@
+// src/types/index.ts
+
 // =========================================================
 // 1. 기본 엔티티 타입 (Core Entities)
 // =========================================================
@@ -17,16 +19,16 @@ export interface UserProfile {
   updatedAt: string;
 }
 
-// 1.2 도서 기본 타입
+// 1.2 도서 기본 타입 (일반적인 도서 정보, 알라딘 API 등에서 올 수 있는 전체 정보)
 export interface Book {
   isbn13: string;
-  coverImage: string | null;
+  coverImage: string | null; // map from 'cover'
   title: string;
   author: string;
   publisher: string;
-  publicationDate: string | null;
+  publicationDate: string | null; // map from 'pubDate'
   description: string | null;
-  genre: string | null;
+  genre: string | null; // map from 'categoryName' or 'category'
 }
 
 // 1.3 게시물 기본 타입 (상세 정보 포함)
@@ -63,7 +65,7 @@ export interface Comment {
 }
 
 export interface BookEntity {
-  // <-- 이 인터페이스를 추가합니다.
+  // 백엔드 DB에 저장되는 최소한의 책 정보 (isbn13으로 조회 시 반환)
   isbn13: string;
   title: string;
   author: string;
@@ -75,20 +77,20 @@ export interface BookEntity {
   pageCount: number | null;
   toc: string | null;
   story: string | null;
-  createdAt: string; // DateTime은 JS에서는 string으로 넘어옵니다.
+  createdAt: string;
 }
 
 // =========================================================
 // 2. 기본 엔티티의 상세/확장 타입 (Extended Entities)
 // =========================================================
 
-// 2.1 도서 상세 정보 타입 (Book을 확장)
+// 2.1 도서 상세 정보 타입 (Book을 확장) - 알라딘 상세 조회 후 프론트엔드에서 사용
 export interface BookDetail extends Book {
   communityCount: number;
   isWished: boolean;
-  summary: string | null;
-  tableOfContents: string[] | null;
-  commentaryContent: string | null;
+  summary: string | null; // Aladin description 또는 subInfo.story에서 파싱
+  tableOfContents: string[] | null; // Aladin subInfo.toc 파싱
+  commentaryContent: string | null; // Aladin subInfo.fullDescription 등
   averageRating: number | null;
   recommendedBooks?: Book[];
   pageCount: number | null;
@@ -121,16 +123,27 @@ export interface CommunityInfo {
 // 4. 사용자 활동 및 마이페이지 특정 타입 (User Activity & MyPage Specific)
 // =========================================================
 
-// 4.1 마이페이지 - 내 서재 도서 타입 (Book을 확장)
-export interface MyLibraryBook extends Book {
+// 4.1 마이페이지 - 내 서재 도서 타입 (백엔드 MyLibrary ResponseData.data.book + MyLibrary item)
+// MyLibrary API 응답에 맞춰 정확히 재정의. Book을 확장하지 않음.
+export interface MyLibraryBook {
+  isbn13: string;
+  title: string;
+  author: string;
   publisher: string;
-  pubDate: string;
-  averageRating: number;
-  description: string;
-  genre: string;
-  summary: string;
-  status: "reading" | "read" | "to-read";
-  myRating?: number;
+  coverImage: string | null; // 'book.cover'에서 매핑
+  genre: string | null; // 'book.category'에서 매핑
+
+  // MyLibrary 엔티티의 최상위 속성들
+  libraryId: number; // libraryId 필드 추가
+  status: "reading" | "read" | "to-read"; // 백엔드 Enum "WANT_TO_READ" | "READING" | "COMPLETED"에서 소문자로 매핑
+  myRating: number | null; // myRating은 null 가능성도 있으므로 null 포함
+  updatedAt: string; // updatedAt 필드 추가
+
+  // UI에서 필요할 수 있지만 MyLibrary API 응답에 직접 포함되지 않는 필드는 optional 처리
+  publicationDate?: string | null; // Book에서 오는 pubDate는 myLibrary 응답에 없음
+  description?: string | null; // Book에서 오는 description은 myLibrary 응답에 없음
+  summary?: string | null; // MyLibrary API 응답에 없음
+  averageRating?: number | null; // MyLibrary API 응답에 없음
 }
 
 // 4.2 마이페이지 - 커뮤니티 신청자 타입
