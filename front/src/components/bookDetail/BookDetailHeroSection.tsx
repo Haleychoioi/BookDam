@@ -1,9 +1,17 @@
-import { useState, useRef, useEffect } from "react";
+// src/components/bookDetail/BookDetailHeroSection.tsx
+import { useState, useRef, useEffect, useCallback } from "react";
 import Button from "../common/Button";
 import HeartButton from "../common/HeartButton";
 import { FaCaretDown, FaQuestionCircle } from "react-icons/fa";
-
+import { useQueryClient } from "@tanstack/react-query";
 import type { BookDetail } from "../../types";
+import {
+  addWish,
+  removeWish,
+  upsertBookToMyLibrary,
+  fetchMyLibrary,
+} from "../../api/mypage"; // fetchMyLibrary 임포트 추가
+import axios from "axios";
 
 interface BookDetailHeroSectionProps {
   book: BookDetail;
@@ -14,40 +22,105 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
   book,
   onCreateCommunityClick,
 }) => {
+  const queryClient = useQueryClient();
   const [isAddToListDropdownOpen, setIsAddToListDropdownOpen] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
   const [isHoveringQuestion, setIsHoveringQuestion] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const questionRef = useRef<HTMLDivElement>(null);
 
+  const [isBookWishlisted, setIsBookWishlisted] = useState(book.isWished);
+
+  // 컴포넌트 마운트 시 또는 book.isbn13 변경 시 해당 책의 내 서재 평점 불러오기
+  useEffect(() => {
+    const loadBookMyLibraryStatus = async () => {
+      // 모든 내 서재 책을 불러오는 것은 비효율적일 수 있으나, 현재는 특정 책만 조회하는 API가 없음
+      try {
+        const response = await fetchMyLibrary(1, 1000); // 충분히 큰 limit으로 모든 책을 가져옴 (임시 방편)
+        const myLibraryBook = response.data.find(
+          (item) => item.book.isbn13 === book.isbn13
+        );
+        if (
+          myLibraryBook &&
+          myLibraryBook.myRating !== null &&
+          myLibraryBook.myRating !== undefined
+        ) {
+          setSelectedRating(myLibraryBook.myRating);
+        } else {
+          setSelectedRating(0); // 해당 책이 서재에 없거나 평점이 없으면 0으로 초기화
+        }
+      } catch (error) {
+        console.error("Failed to load my library status for book:", error);
+        setSelectedRating(0); // 오류 발생 시 0으로 초기화
+      }
+    };
+
+    loadBookMyLibraryStatus();
+  }, [book.isbn13]); // book.isbn13이 변경될 때마다 다시 불러옴
+
   const toggleAddToListDropdown = () => {
     setIsAddToListDropdownOpen((prevState) => !prevState);
   };
 
-  const handleAddToList = (status: "읽고싶어요" | "읽는 중" | "읽었음") => {
-    // '읽었음'은 별점이 선택되었을 때만 가능하도록
-    if (status === "읽었음" && selectedRating === 0) {
-      alert("별점을 선택해야 '읽었음'으로 추가할 수 있습니다.");
-      return;
-    }
-    alert(`${book.title}을/를 [${status}]에 추가했습니다.`);
-    // TODO: 실제 API 호출 로직 추가 (내 서재 추가 POST /books/:id/my-library)
-    setIsAddToListDropdownOpen(false);
-  };
+  const handleAddToList = useCallback(
+    async (status: "WANT_TO_READ" | "READING" | "COMPLETED") => {
+      if (status === "COMPLETED" && selectedRating === 0) {
+        alert("별점을 선택해야 '읽었음'으로 추가할 수 있습니다.");
+        return;
+      }
+      try {
+        await upsertBookToMyLibrary(
+          book.isbn13,
+          status,
+          selectedRating || null
+        );
+
+        setIsAddToListDropdownOpen(false);
+        // setSelectedRating(0); // 이 라인을 제거하여 평점이 유지되도록 함
+
+        queryClient.invalidateQueries({ queryKey: ["myLibrary"] });
+      } catch (error: unknown) {
+        console.error("내 서재 추가/수정 실패:", error);
+        let errorMessage = "내 서재 추가/수정 중 오류가 발생했습니다.";
+        if (axios.isAxiosError(error) && error.response) {
+          errorMessage = error.response.data.message || error.message;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        alert(errorMessage);
+      }
+    },
+    [book.isbn13, selectedRating, queryClient]
+  );
 
   const handleStarClick = (rating: number) => {
     setSelectedRating(rating);
   };
 
-  const handleWishlistClick = (isWishlisted: boolean) => {
-    // TODO: 찜 목록 추가/삭제 API 호출 (POST /books/:bookId/wishlist)
-    if (isWishlisted) {
-      alert(`${book.title}을 찜 목록에 추가했습니다.`);
-    } else {
-      alert(`${book.title}을 찜 목록에서 제거했습니다.`);
-    }
-    console.log("찜 버튼 클릭됨. 현재 찜 상태:", isWishlisted);
-  };
+  const handleWishlistClick = useCallback(
+    async (isWishlisted: boolean) => {
+      try {
+        if (isWishlisted) {
+          await addWish(book.isbn13);
+        } else {
+          await removeWish(book.isbn13);
+        }
+        setIsBookWishlisted(isWishlisted);
+        queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+      } catch (error: unknown) {
+        console.error("찜 목록 추가/삭제 실패:", error);
+        let errorMessage = "찜 목록 처리 중 오류가 발생했습니다.";
+        if (axios.isAxiosError(error) && error.response) {
+          errorMessage = error.response.data.message || error.message;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        alert(errorMessage);
+        setIsBookWishlisted(!isWishlisted);
+      }
+    },
+    [book.isbn13, queryClient]
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -67,7 +140,6 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
   return (
     <div className="bg-white p-10 my-8">
       <div className="flex flex-col md:flex-row items-start gap-8">
-        {/* 도서 커버 이미지 */}
         <div className="flex-shrink-0 mr-10">
           <img
             src={
@@ -80,21 +152,17 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
         </div>
 
         <div className="flex-grow text-left">
-          {/* 도서 제목 */}
           <h1 className="text-3xl md:text-3xl font-bold text-gray-800 mb-7">
             {book.title}
           </h1>
-          {/* 카테고리/장르 태그 */}
           <span className="inline-block bg-category text-categoryText text-sm px-3 py-1 rounded-full mb-6">
             {book.genre}
           </span>
 
-          {/* 이미지에 보이는 요약 부분 */}
           <p className="text-gray-700 text-sm mb-10 leading-relaxed">
             {book.summary}
           </p>
 
-          {/* 별점 섹션 */}
           <div className="flex items-center justify-center mb-8">
             {Array.from({ length: 5 }).map((_, index) => (
               <span
@@ -107,7 +175,6 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
                 ★
               </span>
             ))}
-            {/* 물음표 아이콘 및 호버 설명 */}
             <div
               className="relative ml-2 cursor-pointer"
               onMouseEnter={() => setIsHoveringQuestion(true)}
@@ -125,7 +192,6 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
           </div>
 
           <div className="flex items-center mb-8">
-            {/* 커뮤니티 모집하기 버튼 - 너비 auto, 오른쪽 마진 추가 */}
             <Button
               bgColor="bg-main"
               textColor="text-white"
@@ -137,7 +203,6 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
             </Button>
 
             <div className="flex-1 relative" ref={dropdownRef}>
-              {/* 서재 추가 버튼 */}
               <Button
                 onClick={toggleAddToListDropdown}
                 bgColor="bg-main"
@@ -148,11 +213,10 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
                 <span>서재 추가</span>
                 <FaCaretDown className="h-4 w-4" />
               </Button>
-              {/* 드롭다운 메뉴 */}
               {isAddToListDropdownOpen && (
                 <div className="absolute top-full mt-2 w-full z-10 left-0 bg-white shadow-lg rounded-md border border-gray-200">
                   <Button
-                    onClick={() => handleAddToList("읽고싶어요")}
+                    onClick={() => handleAddToList("WANT_TO_READ")}
                     className="block w-full text-left px-4 py-2 mb-1"
                     bgColor="bg-transparent"
                     textColor="text-gray-700"
@@ -161,7 +225,7 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
                     읽고싶어요
                   </Button>
                   <Button
-                    onClick={() => handleAddToList("읽는 중")}
+                    onClick={() => handleAddToList("READING")}
                     className="block w-full text-left px-4 py-2 mb-1"
                     bgColor="bg-transparent"
                     textColor="text-gray-700"
@@ -170,7 +234,7 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
                     읽는 중
                   </Button>
                   <Button
-                    onClick={() => handleAddToList("읽었음")}
+                    onClick={() => handleAddToList("COMPLETED")}
                     className={`block w-full text-left px-4 py-2 ${
                       selectedRating === 0
                         ? "opacity-50 cursor-not-allowed"
@@ -187,10 +251,9 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
               )}
             </div>
 
-            {/* 찜 버튼  */}
             <HeartButton
               onClick={handleWishlistClick}
-              initialIsWishlisted={false} // 초기 찜 상태 (백엔드에서 가져와야 함)
+              initialIsWishlisted={isBookWishlisted}
               className="ml-2"
             />
           </div>

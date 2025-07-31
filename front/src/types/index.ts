@@ -1,3 +1,5 @@
+// src/types/index.ts
+
 // =========================================================
 // 1. 기본 엔티티 타입 (Core Entities)
 // =========================================================
@@ -17,16 +19,16 @@ export interface UserProfile {
   updatedAt: string;
 }
 
-// 1.2 도서 기본 타입
+// 1.2 도서 기본 타입 (일반적인 도서 정보, 알라딘 API 등에서 올 수 있는 전체 정보)
 export interface Book {
   isbn13: string;
-  coverImage: string | null;
+  coverImage: string | null; // map from 'cover'
   title: string;
   author: string;
   publisher: string;
-  publicationDate: string | null;
+  publicationDate: string | null; // map from 'pubDate'
   description: string | null;
-  genre: string | null;
+  genre: string | null; // map from 'categoryName' or 'category'
 }
 
 // 1.3 게시물 기본 타입 (상세 정보 포함)
@@ -36,10 +38,11 @@ export interface Post {
   commentCount: number;
   createdAt: string;
   updatedAt?: string;
-  type: "community" | "general"; // 'community' 또는 'general' 게시물 타입
-  author: string; // 게시물 작성자 이름
-  authorId: number; // 게시물 작성자 ID
-  content: string; // 게시물 본문 내용
+  type: "community" | "general";
+  author: string;
+  authorId: number;
+  authorProfileImage?: string;
+  content: string;
 }
 
 // 1.4 댓글 기본 타입
@@ -47,30 +50,47 @@ export interface Comment {
   id: string;
   author: string;
   authorId: number;
+  authorProfileImage?: string;
   createdAt: string;
   updatedAt?: string;
   content: string;
   isEdited?: boolean;
-  postId: string; // 댓글이 달린 게시물 ID
-  postTitle: string; // 댓글이 달린 게시물 제목
-  postType: "community" | "general"; // 게시물 타입 ('community' 또는 'general')
-  communityId?: string; // 커뮤니티 게시물인 경우 커뮤니티 ID (선택적)
-  parentId?: string; // 이 댓글이 대댓글인 경우 부모 댓글의 ID
-  replies?: Comment[]; // 자식 댓글 목록
-  depth?: number; // 댓글의 깊이
+  postId: string;
+  postTitle: string;
+  postType: "community" | "general";
+  communityId?: string;
+  parentId?: string;
+  replies?: Comment[];
+  depth?: number;
+}
+
+export interface BookEntity {
+  // 백엔드 DB에 저장되는 최소한의 책 정보 (isbn13으로 조회 시 반환)
+  isbn13: string;
+  title: string;
+  author: string;
+  publisher: string;
+  pubDate: string | null;
+  description: string | null;
+  cover: string | null;
+  category: string | null;
+  pageCount: number | null;
+  toc: string | null;
+  story: string | null;
+  createdAt: string;
 }
 
 // =========================================================
 // 2. 기본 엔티티의 상세/확장 타입 (Extended Entities)
 // =========================================================
 
-// 2.1 도서 상세 정보 타입 (Book을 확장)
+// 2.1 도서 상세 정보 타입 (Book을 확장) - 알라딘 상세 조회 후 프론트엔드에서 사용
 export interface BookDetail extends Book {
   communityCount: number;
   isWished: boolean;
-  summary: string | null;
-  tableOfContents: string[] | null;
-  commentaryContent: string | null;
+  summary: string | null; // Aladin description 또는 subInfo.story에서 파싱
+  tableOfContents: string[] | null; // Aladin subInfo.toc 파싱
+  commentaryContent: string | null; // Aladin subInfo.fullDescription 등
   averageRating: number | null;
   recommendedBooks?: Book[];
   pageCount: number | null;
@@ -88,8 +108,8 @@ export interface Community {
   hostName: string;
   currentMembers: number;
   maxMembers: number;
-  role: "host" | "member"; // 사용자의 커뮤니티 역할 (필수)
-  status: "모집중" | "모집종료"; // 커뮤니티 자체의 모집 상태 (필수)
+  role: "host" | "member";
+  status: "모집중" | "모집종료";
 }
 
 // 3.2 마이페이지 커뮤니티 정보 타입 (CommunityBoardPage에서 사용)
@@ -103,39 +123,70 @@ export interface CommunityInfo {
 // 4. 사용자 활동 및 마이페이지 특정 타입 (User Activity & MyPage Specific)
 // =========================================================
 
-// 4.1 마이페이지 - 내 서재 도서 타입 (Book을 확장)
-export interface MyLibraryBook extends Book {
-  publisher: string; // BookDetail에서 가져옴
-  pubDate: string; // MyLibraryBook에만 있는 필드 (BookDetail의 publicationDate와 별개로 존재할 수 있음)
-  averageRating: number;
-  description: string; // BookDetail에서 가져옴
-  genre: string; // BookDetail에서 가져옴
-  summary: string; // BookDetail에서 가져옴
-  status: "reading" | "read" | "to-read"; // 서재 내 도서 상태
-  myRating?: number; // 내가 매긴 별점
+// 4.1 마이페이지 - 내 서재 도서 타입 (백엔드 MyLibrary ResponseData.data.book + MyLibrary item)
+// MyLibrary API 응답에 맞춰 정확히 재정의. Book을 확장하지 않음.
+export interface MyLibraryBook {
+  isbn13: string;
+  title: string;
+  author: string;
+  publisher: string;
+  coverImage: string | null; // 'book.cover'에서 매핑
+  genre: string | null; // 'book.category'에서 매핑
+
+  // MyLibrary 엔티티의 최상위 속성들
+  libraryId: number; // libraryId 필드 추가
+  status: "reading" | "read" | "to-read"; // 백엔드 Enum "WANT_TO_READ" | "READING" | "COMPLETED"에서 소문자로 매핑
+  myRating: number | null; // myRating은 null 가능성도 있으므로 null 포함
+  updatedAt: string; // updatedAt 필드 추가
+
+  // UI에서 필요할 수 있지만 MyLibrary API 응답에 직접 포함되지 않는 필드는 optional 처리
+  publicationDate?: string | null; // Book에서 오는 pubDate는 myLibrary 응답에 없음
+  description?: string | null; // Book에서 오는 description은 myLibrary 응답에 없음
+  summary?: string | null; // MyLibrary API 응답에 없음
+  averageRating?: number | null; // MyLibrary API 응답에 없음
 }
 
 // 4.2 마이페이지 - 커뮤니티 신청자 타입
 export interface ApplicantWithStatus {
-  id: string; // 신청자 ID (userId)
+  id: string;
   nickname: string;
-  appliedAt: string; // 신청 일시 (ISO String)
-  applicationMessage: string; // 신청 메시지
-  status: "pending" | "accepted" | "rejected"; // 신청 상태
+  appliedAt: string;
+  applicationMessage: string;
+  status: "pending" | "accepted" | "rejected";
 }
 
 // 4.3 마이페이지 - 커뮤니티 참여 이력 타입
 export interface CommunityHistoryEntry {
-  communityName: string; // 참여 커뮤니티 이름
-  role: "host" | "member"; // 역할 (호스트/멤버)
-  startDate: string; // 활동 시작일 (예: "YYYY-MM-DD" 형식의 문자열)
-  endDate?: string; // 활동 종료일 (현재 활동 중이면 없을 수 있으므로 선택적)
-  status: "활동중" | "활동종료"; // 활동 상태
+  communityName: string;
+  role: "host" | "member";
+  startDate: string;
+  endDate?: string;
+  status: "활동중" | "활동종료";
 }
 
 // 4.4 마이페이지 - 내가 신청한 커뮤니티 타입 (Community를 확장)
 export interface AppliedCommunity extends Community {
   myApplicationStatus: "pending" | "accepted" | "rejected"; // 사용자의 신청 상태 (Community의 status와 다름)
+}
+
+// 4.5 회원가입 요청
+export interface SignupRequest {
+  email: string;
+  password: string;
+  name: string;
+  nickname: string;
+  phone: string;
+  agreement: boolean;
+  profileImage?: string;
+  introduction?: string;
+}
+
+// 4.6 사용자 정보 수정 요청 (ProfileEditPage에서 FormData로 전달되지만, DTO의 구조를 명시)
+export interface UpdateUserData {
+  nickname: string;
+  introduction?: string;
+  profileImage?: string; // 파일 URL 또는 'true' (기본 이미지로 변경)
+  deleteProfileImage?: string; // 'true'일 경우 기본 이미지로 변경
 }
 
 // =========================================================
@@ -220,35 +271,35 @@ export type AladinItemIdType =
 
 // 알라딘 API 공통 응답 구조
 export interface AladinApiResponse<T = AladinBookItem> {
-  version: string; // API 버전
-  title: string; // API 결과 제목
-  link: string; // 관련 알라딘 페이지 URL
-  pubDate: string; // API 출력일
-  totalResults: number; // 총 결과 수
-  startIndex: number; // 시작 인덱스
-  itemsPerPage: number; // 페이지당 항목 수
-  query?: string; // 검색 쿼리
-  searchCategoryId?: number; // 검색 카테고리 ID
-  searchCategoryName?: string; // 검색 카테고리명
-  item: T[]; // 상품 목록
+  version: string;
+  title: string;
+  link: string;
+  pubDate: string;
+  totalResults: number;
+  startIndex: number;
+  itemsPerPage: number;
+  query?: string;
+  searchCategoryId?: number;
+  searchCategoryName?: string;
+  item: T[];
 }
 
 // 알라딘 책 정보 (API 응답에서 그대로 오는 형태)
 export interface AladinBookItem {
-  title: string; // 상품명
-  link: string; // 상품 링크 URL
-  author: string; // 저자/아티스트
-  pubDate: string; // 출간일
-  description: string; // 상품 설명 (요약)
-  isbn: string; // 10자리 ISBN
-  isbn13: string; // 13자리 ISBN
-  itemId: number; // 알라딘 상품 ID
-  cover: string; // 표지 이미지 URL
-  publisher: string; // 출판사
-  adult: boolean; // 성인 등급 여부
-  bestDuration?: string; // 베스트셀러 기간 정보
-  bestRank?: number; // 베스트셀러 순위
-  categoryName: string; // 카테고리명
+  title: string;
+  link: string;
+  author: string;
+  pubDate: string;
+  description: string;
+  isbn: string;
+  isbn13: string;
+  itemId: number;
+  cover: string;
+  publisher: string;
+  adult: boolean;
+  bestDuration?: string;
+  bestRank?: number;
+  categoryName: string;
 
   // 시리즈 정보
   seriesInfo?: {
@@ -259,13 +310,13 @@ export interface AladinBookItem {
 
   // 부가 정보
   subInfo?: {
-    subTitle?: string; // 부제
-    originalTitle?: string; // 원제
-    itemPage?: number; // 페이지 수
-    fullDescription?: string; // 상세 설명
-    fullDescription2?: string; // 출판사 제공 설명
-    toc?: string; // 목차
-    story?: string; // 줄거리
+    subTitle?: string;
+    originalTitle?: string;
+    itemPage?: number;
+    fullDescription?: string;
+    fullDescription2?: string;
+    toc?: string;
+    story?: string;
   };
 }
 
