@@ -16,17 +16,14 @@ dotenv.config();
 import { CustomError } from "./middleware/error-handing-middleware";
 
 // 기존 미들웨어 및 라우터들
-// errorHandingMiddleware는 통합 에러 핸들러로 대체되므로, 여기서는 사용하지 않습니다.
-// import errorHandingMiddleware from "./middleware/error-handing-middleware";
 import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
 import bookRouter from "./routes/book.routes";
-// chatController 추가
 import chatController from "./chat/chat.controller";
 
 // 새로운 API 라우터들 추가
 import routes from "./routes"; // 커뮤니티 관련 라우트들
-import prisma from "./utils/prisma"; // Prisma 데이터베이스 연결
+import prisma from "./utils/prisma";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -46,7 +43,7 @@ const io = new Server(server, {
   },
 });
 
-// Express 앱에도 cors 미들웨어를 적용합니다. 라우터보다 위에 있어야 됨
+// Express 앱에도 cors 미들웨어 적용 라우터보다 위에 있어야 됨
 app.use(
   cors({
     origin: allowedOrigin, // 환경 변수에서 가져온 origin 사용
@@ -142,12 +139,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// 에러 미들웨어 (기존 것도 적용 - 필요하다면)
-// 위에서 통합 에러 핸들러를 정의했으므로, 이 미들웨어는 중복될 수 있습니다.
-// 만약 errorHandingMiddleware가 특별한 로직을 가지고 있지 않다면 제거하는 것이 좋습니다.
-// 현재는 주석 처리하여 중복을 방지합니다.
-// app.use(errorHandingMiddleware);
-
 // 데이터베이스 연결 테스트
 async function connectToDatabase() {
   try {
@@ -155,7 +146,7 @@ async function connectToDatabase() {
     console.log("데이터베이스 연결 성공!");
   } catch (error) {
     console.error("데이터베이스 연결 실패:", error);
-    process.exit(1); // 데이터베이스 연결 실패 시 프로세스 종료
+    process.exit(1);
   }
 }
 

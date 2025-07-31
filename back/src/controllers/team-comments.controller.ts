@@ -2,7 +2,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import { TeamCommentService } from "../services/team-comments.service";
-import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
+import { CustomError } from "../middleware/error-handing-middleware";
 
 export class TeamCommentController {
   private teamCommentService: TeamCommentService;
@@ -13,7 +13,6 @@ export class TeamCommentController {
 
   /**
    * GET /team-posts/:teamPostId/comments - 특정 팀 게시물의 댓글 목록 조회 (최상위 댓글 및 1단계 대댓글 포함)
-   * `requestingUserId`는 인증 미들웨어에서 `req.user`에 설정됩니다.
    */
   public getTeamCommentsByTeamPost = async (
     req: Request,
@@ -22,8 +21,8 @@ export class TeamCommentController {
   ) => {
     try {
       const { teamPostId: rawTeamPostId } = req.params;
-      const { communityId: rawCommunityId } = req.query; // communityId는 쿼리 파라미터에서 받음
-      const requestingUserId = req.user; // req.user에서 requestingUserId 가져오기
+      const { communityId: rawCommunityId } = req.query;
+      const requestingUserId = req.user;
 
       // 인증된 사용자 ID가 없는 경우
       if (requestingUserId === undefined) {
@@ -48,7 +47,6 @@ export class TeamCommentController {
         throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
-      // 서비스 계층의 findTeamComments는 communityId, teamPostId, requestingUserId를 받습니다.
       const teamComments = await this.teamCommentService.findTeamComments(
         communityId,
         teamPostId,
@@ -61,7 +59,6 @@ export class TeamCommentController {
         data: teamComments,
       });
     } catch (error) {
-      // 서비스 계층에서 발생한 에러는 CustomError로 변환하여 next로 전달
       if (error instanceof Error) {
         if (
           error.message ===
@@ -83,7 +80,6 @@ export class TeamCommentController {
 
   /**
    * POST /team-posts/:teamPostId/comments - 특정 팀 게시물에 댓글 또는 대댓글 작성
-   * `communityId`는 쿼리 파라미터에서, `content`, `parentId`는 요청 바디로 받습니다. `userId`는 `req.user`에서 가져옵니다.
    */
   public createTeamComment = async (
     req: Request,
@@ -92,10 +88,9 @@ export class TeamCommentController {
   ) => {
     try {
       const { teamPostId: rawTeamPostId } = req.params;
-      // ⭐ 변경: communityId를 req.body가 아닌 req.query에서 가져옵니다.
       const { communityId: rawCommunityId } = req.query;
       const { content, parentId: rawParentId } = req.body;
-      const userId = req.user; // req.user에서 userId 가져오기
+      const userId = req.user;
 
       // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
@@ -103,7 +98,6 @@ export class TeamCommentController {
       }
 
       // 필수 필드 및 타입 유효성 검사
-      // rawCommunityId가 이제 req.query에서 오므로, undefined 체크는 그대로 유지합니다.
       if (
         rawTeamPostId === undefined ||
         rawCommunityId === undefined ||
@@ -136,11 +130,10 @@ export class TeamCommentController {
         }
       }
 
-      // 서비스 계층의 createTeamComment는 communityId, teamPostId, userId, content, parentId를 받습니다.
       const newTeamComment = await this.teamCommentService.createTeamComment(
         communityId,
         teamPostId,
-        userId, // req.user에서 가져온 userId 전달
+        userId,
         content,
         parentId
       );
@@ -149,10 +142,9 @@ export class TeamCommentController {
         status: "success",
         message: "댓글이 성공적으로 작성되었습니다.",
         data: newTeamComment,
-        teamCommentId: newTeamComment.teamCommentId, // 추가
+        teamCommentId: newTeamComment.teamCommentId,
       });
     } catch (error) {
-      // 서비스 계층에서 발생한 에러는 CustomError로 변환하여 next로 전달
       if (error instanceof Error) {
         if (
           error.message ===
@@ -179,7 +171,6 @@ export class TeamCommentController {
 
   /**
    * PUT /team-comments/:id - 특정 팀 댓글 수정
-   * `communityId`와 `content`는 요청 바디로 받습니다. `userId`는 `req.user`에서 가져옵니다.
    */
   public updateTeamComment = async (
     req: Request,
@@ -188,10 +179,9 @@ export class TeamCommentController {
   ) => {
     try {
       const { id: rawTeamCommentId } = req.params;
-      // ⭐ 변경: communityId를 req.body가 아닌 req.query에서 가져옵니다.
       const { communityId: rawCommunityId } = req.query;
-      const { content } = req.body; // content는 body에서 받음
-      const userId = req.user; // req.user에서 userId 가져오기
+      const { content } = req.body;
+      const userId = req.user;
 
       // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
@@ -201,7 +191,7 @@ export class TeamCommentController {
       // 필수 필드 및 타입 유효성 검사
       if (
         rawTeamCommentId === undefined ||
-        rawCommunityId === undefined || // req.query에서 오므로 undefined 체크 유지
+        rawCommunityId === undefined ||
         content === undefined
       ) {
         throw new CustomError(
@@ -220,17 +210,15 @@ export class TeamCommentController {
         throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
-      // 서비스 계층의 updateTeamComment는 communityId, teamCommentId, userId, content를 받습니다.
       await this.teamCommentService.updateTeamComment(
         communityId,
         teamCommentId,
-        userId, // req.user에서 가져온 userId 전달
+        userId,
         content
       );
 
       res.status(200).json({ status: "success", message: "팀 댓글 수정 완료" });
     } catch (error) {
-      // 서비스 계층에서 발생한 에러는 CustomError로 변환하여 next로 전달
       if (error instanceof Error) {
         if (error.message === "Comment not found") {
           next(new CustomError(404, error.message));
@@ -255,7 +243,6 @@ export class TeamCommentController {
 
   /**
    * DELETE /team-comments/:id - 특정 팀 댓글 삭제
-   * `communityId`는 요청 바디로 받습니다. `userId`는 `req.user`에서 가져옵니다.
    */
   public deleteTeamComment = async (
     req: Request,
@@ -264,13 +251,11 @@ export class TeamCommentController {
   ) => {
     try {
       const { id: rawTeamCommentId } = req.params;
-      // ⭐ 변경: communityId를 req.body가 아닌 req.query에서 가져옵니다.
-      // ⭐ 변경: teamPostId도 req.body가 아닌 req.query에서 가져옵니다.
       const {
         communityId: rawCommunityId,
         teamPostId: rawTeamPostIdFromQuery,
       } = req.query;
-      const userId = req.user; // req.user에서 userId 가져오기
+      const userId = req.user;
 
       // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
@@ -304,17 +289,15 @@ export class TeamCommentController {
         throw new CustomError(400, "유효한 팀 게시물 ID가 아닙니다.");
       }
 
-      // 서비스 계층의 deleteTeamComment는 communityId, teamPostId, teamCommentId, userId를 받습니다.
       const deletedCount = await this.teamCommentService.deleteTeamComment(
         communityId,
-        teamPostIdFromQuery, // query에서 받은 teamPostId 전달
+        teamPostIdFromQuery,
         teamCommentId,
-        userId // req.user에서 가져온 userId 전달
+        userId
       );
 
       if (deletedCount === 0) {
-        // 서비스 계층에서 에러를 던지지 않고 0을 반환하는 경우에만 이 로직이 실행됩니다.
-        // 서비스 계층에서 CustomError를 던지도록 수정했으므로, 이 부분은 사실상 도달하지 않을 수 있습니다.
+        // 서비스 계층에서 에러를 던지지 않고 0을 반환하는 경우에만 실행
         throw new CustomError(
           404,
           "삭제할 댓글을 찾을 수 없거나 권한이 없습니다."
@@ -323,7 +306,6 @@ export class TeamCommentController {
 
       res.status(200).json({ status: "success", message: "팀 댓글 삭제 완료" });
     } catch (error) {
-      // 서비스 계층에서 발생한 에러는 CustomError로 변환하여 next로 전달
       if (error instanceof Error) {
         if (error.message === "Comment not found") {
           next(new CustomError(404, error.message));
