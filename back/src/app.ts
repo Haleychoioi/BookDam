@@ -17,6 +17,7 @@ import userRouter from "./routes/user.routes";
 import bookRouter from "./routes/book.routes";
 import wishRouter from './routes/wishList.route';
 import myLibraryRouter from './routes/myLibrary.routes';
+import tasteAnalysisRouter from './routes/tasteAnalysis.routes';
 
 // 새로운 API 라우터들 추가
 import routes from "./routes"; // 커뮤니티 관련 라우트들
@@ -54,6 +55,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/books", bookRouter);
 app.use('/api/mypage/wishlist', wishRouter);
+app.use('/api/mypage/taste-analysis', tasteAnalysisRouter);
 app.use('/api/mypage/my-library', myLibraryRouter);
 
 // 새로운 커뮤니티 관련 라우터들
