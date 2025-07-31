@@ -51,7 +51,6 @@ const WishlistPage: React.FC = () => {
       if (confirm(`'${bookTitle}'을(를) 위시리스트에서 삭제하시겠습니까?`)) {
         try {
           await removeWish(isbn13); //
-          alert(`'${bookTitle}'이(가) 위시리스트에서 삭제되었습니다.`);
           loadWishlist(); // 삭제 후 목록 새로고침
         } catch (error) {
           console.error("위시리스트 삭제 실패:", error);

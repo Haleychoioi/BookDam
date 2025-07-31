@@ -78,7 +78,6 @@ const MyLibraryPage: React.FC = () => {
       if (confirm(`'${bookTitle}'을(를) 내 서재에서 삭제하시겠습니까?`)) {
         try {
           await deleteBookFromMyLibrary(isbn13);
-          alert(`'${bookTitle}'이(가) 내 서재에서 삭제되었습니다.`);
           loadMyLibraryBooks();
         } catch (error) {
           console.error("내 서재 도서 삭제 실패:", error);

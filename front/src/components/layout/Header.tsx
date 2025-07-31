@@ -1,12 +1,10 @@
-// src/components/layout/Header.tsx
-import { useState, useEffect } from "react"; // useEffect 추가
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Button from "../common/Button";
 import { FaBars, FaTimes } from "react-icons/fa";
 
 const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  // isLoggedIn 초기값을 localStorage의 accessToken 존재 여부로 설정
   const [isLoggedIn, setIsLoggedIn] = useState(
     !!localStorage.getItem("accessToken")
   );
@@ -20,11 +18,10 @@ const Header: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("accessToken"); // 토큰 제거
-    localStorage.removeItem("userId"); // userId 제거 (저장했다면)
-    setIsLoggedIn(false); // 상태 업데이트
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userId");
+    setIsLoggedIn(false);
     alert("로그아웃 되었습니다.");
-    // localStorage 변경 이벤트를 발생시켜 다른 컴포넌트(예: Header)에 알림
     window.dispatchEvent(new Event("loginStatusChange"));
     navigate("/");
   };
@@ -37,7 +34,6 @@ const Header: React.FC = () => {
     }
   };
 
-  // localStorage 변경 이벤트를 감지하여 isLoggedIn 상태 업데이트
   useEffect(() => {
     const handleLoginStatusChange = () => {
       setIsLoggedIn(!!localStorage.getItem("accessToken"));
@@ -45,11 +41,10 @@ const Header: React.FC = () => {
 
     window.addEventListener("loginStatusChange", handleLoginStatusChange);
 
-    // 컴포넌트 언마운트 시 이벤트 리스너 제거
     return () => {
       window.removeEventListener("loginStatusChange", handleLoginStatusChange);
     };
-  }, []); // 빈 배열: 컴포넌트 마운트 시 한 번만 실행
+  }, []);
 
   return (
     <header className="bg-white py-4 fixed top-0 w-full z-50">
@@ -100,18 +95,19 @@ const Header: React.FC = () => {
                 마이페이지
               </Link>
 
+              {/* 데스크톱 로그아웃 버튼 스타일 수정 */}
               <Button
                 onClick={handleLogout}
                 bgColor="bg-transparent"
                 textColor="text-gray-600"
-                hoverBgColor="hover:text-main"
-                className="px-0 py-0 text-base"
+                hoverTextColor="hover:text-main"
+                hoverBgColor="hover:transparent"
+                className="text-base"
               >
                 로그아웃
               </Button>
             </>
           ) : (
-            // 로그인 전 상태: 마이페이지, 로그인
             <>
               <Link
                 to="/mypage"
@@ -192,12 +188,14 @@ const Header: React.FC = () => {
                     </Link>
                   </li>
                   <li className="border-t border-gray-200 mt-2 pt-2">
+                    {/* 모바일 로그아웃 버튼 스타일 수정 */}
                     <Button
                       onClick={handleLogout}
                       className="block w-full py-2 px-0 text-left"
                       bgColor="bg-transparent"
-                      textColor="text-red-600"
-                      hoverBgColor="hover:bg-red-50"
+                      textColor="text-gray-700"
+                      hoverTextColor="hover:text-main"
+                      hoverBgColor="hover:transparent"
                     >
                       로그아웃
                     </Button>
