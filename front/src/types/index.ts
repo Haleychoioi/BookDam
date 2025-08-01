@@ -334,3 +334,14 @@ export interface BookSummary {
   genre: string | null;
   description: string | null;
 }
+
+// =========================================================
+// 사용자 정의 에러 타입
+// =========================================================
+
+export class AuthRequiredError extends Error {
+  constructor(message: string = "로그인 후 이용 가능합니다.") {
+    super(message);
+    this.name = "AuthRequiredError";
+  }
+}

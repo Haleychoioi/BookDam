@@ -5,12 +5,13 @@ import HeartButton from "../common/HeartButton";
 import { FaCaretDown, FaQuestionCircle } from "react-icons/fa";
 import { useQueryClient } from "@tanstack/react-query";
 import type { BookDetail } from "../../types";
+import { AuthRequiredError } from "../../types";
 import {
   addWish,
   removeWish,
   upsertBookToMyLibrary,
   fetchMyLibrary,
-} from "../../api/mypage"; // fetchMyLibrary 임포트 추가
+} from "../../api/mypage";
 import axios from "axios";
 
 interface BookDetailHeroSectionProps {
@@ -24,19 +25,17 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const [isAddToListDropdownOpen, setIsAddToListDropdownOpen] = useState(false);
-  const [selectedRating, setSelectedRating] = useState(0);
+  const [selectedRating, setSelectedRating] = useState(0); // 이 상태가 평점을 관리합니다.
   const [isHoveringQuestion, setIsHoveringQuestion] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const questionRef = useRef<HTMLDivElement>(null);
 
   const [isBookWishlisted, setIsBookWishlisted] = useState(book.isWished);
 
-  // 컴포넌트 마운트 시 또는 book.isbn13 변경 시 해당 책의 내 서재 평점 불러오기
   useEffect(() => {
     const loadBookMyLibraryStatus = async () => {
-      // 모든 내 서재 책을 불러오는 것은 비효율적일 수 있으나, 현재는 특정 책만 조회하는 API가 없음
       try {
-        const response = await fetchMyLibrary(1, 1000); // 충분히 큰 limit으로 모든 책을 가져옴 (임시 방편)
+        const response = await fetchMyLibrary(1, 1000);
         const myLibraryBook = response.data.find(
           (item) => item.book.isbn13 === book.isbn13
         );
@@ -47,16 +46,16 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
         ) {
           setSelectedRating(myLibraryBook.myRating);
         } else {
-          setSelectedRating(0); // 해당 책이 서재에 없거나 평점이 없으면 0으로 초기화
+          setSelectedRating(0);
         }
       } catch (error) {
         console.error("Failed to load my library status for book:", error);
-        setSelectedRating(0); // 오류 발생 시 0으로 초기화
+        setSelectedRating(0);
       }
     };
 
     loadBookMyLibraryStatus();
-  }, [book.isbn13]); // book.isbn13이 변경될 때마다 다시 불러옴
+  }, [book.isbn13]);
 
   const toggleAddToListDropdown = () => {
     setIsAddToListDropdownOpen((prevState) => !prevState);
@@ -76,18 +75,23 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
         );
 
         setIsAddToListDropdownOpen(false);
-        // setSelectedRating(0); // 이 라인을 제거하여 평점이 유지되도록 함
-
         queryClient.invalidateQueries({ queryKey: ["myLibrary"] });
+        alert("내 서재에 성공적으로 추가되었습니다.");
       } catch (error: unknown) {
-        console.error("내 서재 추가/수정 실패:", error);
-        let errorMessage = "내 서재 추가/수정 중 오류가 발생했습니다.";
-        if (axios.isAxiosError(error) && error.response) {
-          errorMessage = error.response.data.message || error.message;
-        } else if (error instanceof Error) {
-          errorMessage = error.message;
+        if (error instanceof AuthRequiredError) {
+          alert(error.message);
+          // ✨ 인증 실패 시 평점 초기화 ✨
+          setSelectedRating(0);
+        } else {
+          console.error("내 서재 추가/수정 실패:", error);
+          let errorMessage = "내 서재 추가/수정 중 오류가 발생했습니다.";
+          if (axios.isAxiosError(error) && error.response) {
+            errorMessage = error.response.data.message || error.message;
+          } else if (error instanceof Error) {
+            errorMessage = error.message;
+          }
+          alert(errorMessage);
         }
-        alert(errorMessage);
       }
     },
     [book.isbn13, selectedRating, queryClient]
@@ -108,15 +112,21 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
         setIsBookWishlisted(isWishlisted);
         queryClient.invalidateQueries({ queryKey: ["wishlist"] });
       } catch (error: unknown) {
-        console.error("찜 목록 추가/삭제 실패:", error);
-        let errorMessage = "찜 목록 처리 중 오류가 발생했습니다.";
-        if (axios.isAxiosError(error) && error.response) {
-          errorMessage = error.response.data.message || error.message;
-        } else if (error instanceof Error) {
-          errorMessage = error.message;
+        if (error instanceof AuthRequiredError) {
+          alert(error.message);
+          // ✨ 찜하기/찜 취소에서도 인증 실패 시 평점 초기화 (선택 사항) ✨
+          // setSelectedRating(0);
+        } else {
+          console.error("찜 목록 추가/삭제 실패:", error);
+          let errorMessage = "찜 목록 처리 중 오류가 발생했습니다.";
+          if (axios.isAxiosError(error) && error.response) {
+            errorMessage = error.response.data.message || error.message;
+          } else if (error instanceof Error) {
+            errorMessage = error.message;
+          }
+          alert(errorMessage);
+          setIsBookWishlisted(!isWishlisted);
         }
-        alert(errorMessage);
-        setIsBookWishlisted(!isWishlisted);
       }
     },
     [book.isbn13, queryClient]
