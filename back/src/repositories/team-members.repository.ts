@@ -117,4 +117,18 @@ export class TeamMemberRepository {
     });
     return updatedMember;
   }
+
+
+  // 특정 사용자가 'LEADER' 역할을 맡고 있는 팀 멤버십이 있는지 확인
+  public async findLeaderMembershipByUserId(
+    userId: number
+  ): Promise<TeamMember | null> {
+    const leaderMembership = await prisma.teamMember.findFirst({
+      where: {
+        userId: userId,
+        role: "LEADER",
+      },
+    });
+    return leaderMembership;
+  }
 }

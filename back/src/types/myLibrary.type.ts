@@ -4,7 +4,7 @@ import { ReadingStatus } from "@prisma/client";
 export interface UpsertMyLibraryRequest {
     isbn13: string;
     status: ReadingStatus;
-    myRating?: number;
+    myRating?: number | null;
 }
 
 

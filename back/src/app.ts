@@ -67,7 +67,7 @@ async function connectToDatabase() {
     console.log("데이터베이스 연결");
   } catch (error) {
     console.error("데이터베이스 연결 실패:", error);
-    process.exit(1);
+    process.exit(1); // 데이터베이스 연결 실패 시 프로세스 종료
   }
 }
 

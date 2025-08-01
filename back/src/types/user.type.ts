@@ -37,11 +37,26 @@ export interface LoginResponse {
 }
 
 // ===== 사용자 정보 수정 =====
+
 export interface UpdateUserData {
     nickname: string;
     introduction?: string;
     profileImage?: string;
     deleteProfileImage?: string;
+}
+
+export interface UpdatePasswordData {
+    password: string;
+}
+
+export interface ChangePasswordRequest {
+    currentPassword: string;
+    newPassword: string;
+    confirmNewPassword: string;
+}
+
+export interface ChangePasswordResponse {
+    message: string;
 }
 
 // ===== JWT 관련 =====
