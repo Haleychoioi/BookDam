@@ -1,111 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
+// src/pages/mypage/MyCommunitiesRecruitingPage.tsx
+import { useState, useEffect, useMemo, useCallback } from "react";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import RecruitingCommunityCard from "../../components/mypage/RecruitingCommunityCard";
 import Pagination from "../../components/common/Pagination";
 import type { Community } from "../../types";
+import { fetchCommunities, cancelRecruitment } from "../../api/communities"; // API 함수 임포트
 
-const dummyRecruitingCommunities: Community[] = [
-  {
-    id: "rec-comm-1",
-    title: "혼모노 깊은 토론 모임",
-    description: "새로운 독서 여정, 지금 이 커뮤니티와 함께 시작해보세요.",
-    hostName: "내닉네임1",
-    currentMembers: 2,
-    maxMembers: 8,
-    status: "모집중",
-    role: "host",
-  },
-  {
-    id: "rec-comm-2",
-    title: "도서명 인문학 스터디",
-    description: "인문학 고전을 함께 읽고 토론하는 모임입니다.",
-    hostName: "내닉네임2",
-    currentMembers: 5,
-    maxMembers: 10,
-    status: "모집중",
-    role: "host",
-  },
-  {
-    id: "rec-comm-3",
-    title: "모집 종료된 SF 클럽",
-    description: "아쉽게도 모집이 종료된 SF 소설 독서 클럽입니다.",
-    hostName: "내닉네임3",
-    currentMembers: 7,
-    maxMembers: 7,
-    status: "모집종료",
-    role: "host",
-  },
-  {
-    id: "rec-comm-4",
-    title: "새로운 소설 함께 읽기",
-    description: "최신 인기 소설을 함께 읽고 감상을 나눕니다.",
-    hostName: "내닉네임4",
-    currentMembers: 1,
-    maxMembers: 5,
-    status: "모집중",
-    role: "host",
-  },
-  {
-    id: "rec-comm-5",
-    title: "판타지 세계관 연구",
-    description: "다양한 판타지 소설의 세계관을 분석합니다.",
-    hostName: "판타지왕",
-    currentMembers: 3,
-    maxMembers: 6,
-    status: "모집중",
-    role: "host",
-  },
-  {
-    id: "rec-comm-6",
-    title: "고전 재해석 모임",
-    description: "오래된 고전을 현대적인 시각으로 재해석합니다.",
-    hostName: "올드독",
-    currentMembers: 4,
-    maxMembers: 8,
-    status: "모집중",
-    role: "host",
-  },
-  {
-    id: "rec-comm-7",
-    title: "시집 읽기 클럽",
-    description: "매주 새로운 시집을 읽고 감상을 공유합니다.",
-    hostName: "시인",
-    currentMembers: 2,
-    maxMembers: 5,
-    status: "모집중",
-    role: "host",
-  },
-  {
-    id: "rec-comm-8",
-    title: "모집 종료된 추리 소설",
-    description: "숨겨진 진실을 파헤치는 추리 소설 토론 모임.",
-    hostName: "셜록",
-    currentMembers: 5,
-    maxMembers: 5,
-    status: "모집종료",
-    role: "host",
-  },
-  {
-    id: "rec-comm-9",
-    title: "만화/웹툰 분석",
-    description: "만화와 웹툰의 스토리텔링 기법을 분석합니다.",
-    hostName: "웹툰러",
-    currentMembers: 8,
-    maxMembers: 8,
-    status: "모집종료",
-    role: "host",
-  },
-  {
-    id: "rec-comm-10",
-    title: "개발 서적 스터디",
-    description: "프로그래밍 서적을 함께 읽고 코드 리뷰합니다.",
-    hostName: "코더",
-    currentMembers: 3,
-    maxMembers: 5,
-    status: "모집중",
-    role: "host",
-  },
-];
+// 더미 데이터 삭제
+// const dummyRecruitingCommunities: Community[] = [...]
 
 const MyCommunitiesRecruitingPage: React.FC = () => {
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -115,25 +17,38 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
     "전체"
   );
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 8; // 페이지당 게시물 수
 
-  useEffect(() => {
-    const fetchRecruitingCommunities = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        setCommunities(dummyRecruitingCommunities);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRecruitingCommunities();
+  const loadRecruitingCommunities = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // TODO: 백엔드에 'GET /mypage/communities/recruiting' API가 필요합니다.
+      // 현재는 모든 커뮤니티를 가져와서 프론트엔드에서 'host' 역할로 필터링합니다.
+      // fetchCommunities는 모든 커뮤니티를 가져오므로, 사용자 역할 정보를 백엔드에서 받아와야 정확합니다.
+      // 이 예시에서는 임시적으로 모든 커뮤니티를 가져와 필터링하는 로직을 사용합니다.
+      const response = await fetchCommunities(1, 100); // 충분한 수의 커뮤니티를 가져오기 위해 pageSize를 크게 설정
+
+      // 실제 API에서는 로그인한 사용자가 호스트로 모집한 커뮤니티만 반환해야 하지만,
+      // 현재 fetchCommunities는 모든 커뮤니티를 가져오므로, 임시로 필터링 로직을 가정합니다.
+      // 정확한 구현을 위해서는 백엔드 API 수정이 선행되어야 합니다.
+      const myRecruitingCommunities = response.communities.filter(
+        (comm) => comm.role === "host"
+      );
+      setCommunities(myRecruitingCommunities);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadRecruitingCommunities();
+  }, [loadRecruitingCommunities]);
+
   const filteredCommunities = useMemo(() => {
-    setCurrentPage(1);
+    setCurrentPage(1); // 탭 변경 시 페이지 1로 초기화
     if (activeTab === "전체") {
       return communities;
     }
@@ -152,13 +67,9 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
   const handleEndRecruitment = async (communityId: string) => {
     console.log("모집 종료 요청 (상위 컴포넌트에서 수신):", communityId);
     try {
-      // TODO: DELETE /mypage/communities/recruiting/:communityId API 호출 (모집 취소)
+      await cancelRecruitment(communityId); // 실제 API 호출
       alert("모집이 성공적으로 종료되었습니다.");
-      setCommunities((prev) =>
-        prev.map((c) =>
-          c.id === communityId ? { ...c, status: "모집종료" } : c
-        )
-      );
+      loadRecruitingCommunities(); // 모집 종료 후 목록 새로고침
     } catch (error) {
       console.error("모집 종료 중 오류 발생:", error);
       alert("모집 종료 중 오류가 발생했습니다. 다시 시도해주세요.");

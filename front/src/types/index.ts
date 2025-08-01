@@ -336,8 +336,10 @@ export interface CommunityHistoryEntry {
 }
 
 // 4.5 마이페이지 - 내가 신청한 커뮤니티 타입 (TeamCommunity를 확장)
-export interface AppliedCommunity extends TeamCommunity {
+export interface AppliedCommunity extends Community {
+  // TeamCommunity 대신 Community 확장
   myApplicationStatus: string; // "pending" | "accepted" | "rejected"
+  // id, title, description, hostName, currentMembers, maxMembers, role, status 등은 Community에서 상속받음
 }
 
 // 4.6 회원가입 요청 DTO
