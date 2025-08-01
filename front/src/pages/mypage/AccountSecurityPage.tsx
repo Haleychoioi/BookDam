@@ -2,6 +2,8 @@ import { useState } from "react";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import Button from "../../components/common/Button";
 import { useAuth } from "../../hooks/useAuth";
+import apiClient from "../../api/apiClient";
+
 
 const AccountSecurityPage: React.FC = () => {
 
@@ -11,22 +13,43 @@ const AccountSecurityPage: React.FC = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-    const handleChangePassword = () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      alert("모든 비밀번호 입력란을 채워주세요.");
-      return;
-    }
-    if (newPassword.length < 6) {
-      alert("새 비밀번호는 최소 6자 이상이어야 합니다.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      alert("새 비밀번호가 일치하지 않습니다.");
-      return;
-    }
+const handleChangePassword = async () => {
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    alert("모든 비밀번호 입력란을 채워주세요.");
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    alert("새 비밀번호는 최소 6자 이상이어야 합니다.");
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    alert("새 비밀번호가 일치하지 않습니다.");
+    return;
+  }
+
+  try {
+    const response = await apiClient.put(
+      "/users/change-password",
+      {
+        currentPassword,
+        newPassword,
+        confirmNewPassword: confirmPassword,
+      }
+    );
 
     alert("비밀번호가 변경되었습니다.");
-  };
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  } catch (error: any) {
+    alert(
+      "비밀번호 변경 실패: " +
+        (error.response?.data?.message || "알 수 없는 오류")
+    );
+  }
+};
 
   return (
   <div>
