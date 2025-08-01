@@ -87,19 +87,19 @@ class UserController {
 
 
     // 유저 삭제
-    // deleteUser = async (req: Request, res: Response, next: NextFunction) => {
-    //     try {
-    //         const userId = req.user!;
+    deleteUser = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user!;
 
-    //         await userService.deleteUser(userId);
+            await userService.deleteUser(userId);
 
-    //         res.status(200).json({
-    //             message: '계정이 성공적으로 삭제되었습니다.',
-    //         });
-    //     } catch (error) {
-    //         next(error);
-    //     }
-    // };
+            res.status(200).json({
+                message: '계정이 성공적으로 삭제되었습니다.',
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 
 }
 
