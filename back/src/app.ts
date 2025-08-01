@@ -5,6 +5,7 @@ import path from "path";
 // http 및 Socket.IO 모듈 추가
 import http from "http";
 import { Server } from "socket.io";
+
 // cors, jwt import
 import cors from "cors";
 import jwt from "jsonwebtoken";
@@ -16,14 +17,17 @@ dotenv.config();
 import { CustomError } from "./middleware/error-handing-middleware";
 
 // 기존 미들웨어 및 라우터들
+// errorHandingMiddleware는 통합 에러 핸들러로 대체되므로, 여기서는 사용하지 않습니다.
+// import errorHandingMiddleware from "./middleware/error-handing-middleware";
 import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
 import bookRouter from "./routes/book.routes";
+// chatController 추가
 import chatController from "./chat/chat.controller";
 
 // 새로운 API 라우터들 추가
 import routes from "./routes"; // 커뮤니티 관련 라우트들
-import prisma from "./utils/prisma";
+import prisma from "./utils/prisma"; // Prisma 데이터베이스 연결
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -43,21 +47,18 @@ const io = new Server(server, {
   },
 });
 
-// Express 앱에도 cors 미들웨어 적용 라우터보다 위에 있어야 됨
+// Express 앱에도 cors 미들웨어를 적용합니다. 라우터보다 위에 있어야 됨
 app.use(
   cors({
     origin: allowedOrigin, // 환경 변수에서 가져온 origin 사용
   })
 );
 
-// 미들웨어 설정
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// profileImage 링크 이동할때 에러 안나게 하려면
 app.use("/static", express.static(path.join(__dirname, "../public")));
 
-// 기본 라우트 (서버 상태 확인용)
 app.get("/", (req: Request, res: Response) => {
   res.status(200).send("커뮤니티 API 서버가 정상 작동 중입니다!");
 });
@@ -66,18 +67,59 @@ app.get("/", (req: Request, res: Response) => {
 app.use("/auth", authRouter);
 app.use("/users", userRouter);
 app.use("/books", bookRouter);
+app.use("/auth", authRouter);
+app.use("/users", userRouter);
+app.use("/books", bookRouter);
 
 // 새로운 커뮤니티 관련 라우터들
 app.use("/api", routes);
 
-// 404 에러 핸들링 (존재하지 않는 라우트)
-// CustomError를 사용하여 일관적인 에러 처리
 app.use((req: Request, res: Response, next: NextFunction) => {
   const error = new CustomError(
     404,
     `${req.method} ${req.url} 라우터가 없습니다.`
   );
   next(error);
+});
+
+// --- Socket.IO 인증 미들웨어 설정 ---
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+    if (!token) {
+      return next(new Error("인증 토큰이 없습니다."));
+    }
+
+    // JWT_SECRET 환경 변수 유효성 검사
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error("JWT_SECRET 환경 변수가 설정되지 않았습니다.");
+      return next(new Error("서버 설정 오류: JWT_SECRET이 없습니다."));
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as {
+      userId: number;
+    };
+    socket.data.user = { userId: decoded.userId };
+
+    next();
+  } catch (error) {
+    console.error("Socket.IO 인증 에러:", error);
+    next(new Error("인증에 실패했습니다."));
+  }
+});
+
+// Socket.IO 컨트롤러 연결 설정
+io.on("connection", (socket) => {
+  console.log(`클라이언트 연결 성공: ${socket.id}`);
+
+  // 컨트롤러와 io와 socket 객체를 넘겨 세부 이벤트 핸들러들을 등록
+  chatController.registerHandlers(io, socket);
+
+  // 클라이언트 연결이 끊어졌을 때
+  socket.on("disconnect", () => {
+    console.log(`클라이언트 연결 해제: ${socket.id}`);
+  });
 });
 
 // --- Socket.IO 인증 미들웨어 설정 ---
@@ -139,14 +181,20 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
+// 에러 미들웨어 (기존 것도 적용 - 필요하다면)
+// 위에서 통합 에러 핸들러를 정의했으므로, 이 미들웨어는 중복될 수 있습니다.
+// 만약 errorHandingMiddleware가 특별한 로직을 가지고 있지 않다면 제거하는 것이 좋습니다.
+// 현재는 주석 처리하여 중복을 방지합니다.
+// app.use(errorHandingMiddleware);
+
 // 데이터베이스 연결 테스트
 async function connectToDatabase() {
   try {
     await prisma.$connect();
-    console.log("데이터베이스 연결 성공!");
+    console.log("데이터베이스 연결");
   } catch (error) {
     console.error("데이터베이스 연결 실패:", error);
-    process.exit(1);
+    process.exit(1); // 데이터베이스 연결 실패 시 프로세스 종료
   }
 }
 
@@ -162,7 +210,6 @@ server.listen(PORT, async () => {
   await connectToDatabase();
 });
 
-// 앱 종료 시 데이터베이스 연결 해제
 process.on("beforeExit", async () => {
   await prisma.$disconnect();
   console.log("데이터베이스 연결 해제.");
