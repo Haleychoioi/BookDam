@@ -3,10 +3,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import BoardTemplate from "../../components/posts/BoardTemplate";
-// TeamCommunity, TeamPost는 형식(interface)이므로 'import type' 사용
 import type { TeamCommunity, TeamPost } from "../../types";
 
-// fetchCommunityByIdResponse 임포트를 제거합니다.
 import { fetchCommunityById } from "../../api/communities";
 import { fetchTeamPosts } from "../../api/teamPosts";
 import { useAuth } from "../../hooks/useAuth";
@@ -16,12 +14,12 @@ const CommunityBoardPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUserProfile, loading: authLoading } = useAuth();
 
-  const [communityInfo, setCommunityInfo] = useState<TeamCommunity | null>(
-    null
-  );
+  const [, setCommunityInfo] = useState<TeamCommunity | null>(null);
   const [communityPosts, setCommunityPosts] = useState<TeamPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const parsedCommunityId = Number(communityId);
 
@@ -40,20 +38,19 @@ const CommunityBoardPage: React.FC = () => {
       }
 
       try {
-        // fetchCommunityById는 communityId를 string으로 받고 Promise<TeamCommunity>를 반환합니다.
         const communityResponse = await fetchCommunityById(
           String(parsedCommunityId)
-        ); // 인자를 string으로 변환
-        setCommunityInfo(communityResponse); // .data 접근 없이 바로 사용
+        );
+        setCommunityInfo(communityResponse);
 
-        // fetchTeamPosts는 communityId를 string으로 받고, Promise<{ posts: TeamPost[]; totalResults: number }>를 반환하도록 아래에서 수정합니다.
         const postsResponse = await fetchTeamPosts(
           String(parsedCommunityId),
-          1,
+          currentPage,
           10,
           "latest"
         );
-        setCommunityPosts(postsResponse.posts); // postsResponse.posts에 게시물 배열이 있습니다.
+        setCommunityPosts(postsResponse.posts);
+        setTotalPages(Math.ceil(postsResponse.totalResults / 10));
       } catch (err: unknown) {
         if (err instanceof Error) {
           console.error("Failed to load community data:", err);
@@ -69,24 +66,32 @@ const CommunityBoardPage: React.FC = () => {
     if (!authLoading) {
       loadCommunityData();
     }
-  }, [parsedCommunityId, currentUserProfile, authLoading]);
+  }, [parsedCommunityId, currentUserProfile, authLoading, currentPage]);
 
-  const handleWriteClick = () => {
+  const handleWritePostClick = () => {
     navigate(`/communities/${communityId}/posts/write`);
   };
 
   const handlePostClick = (postId: number) => {
+    // BoardTemplate에서 전달받을 onPostClick
     navigate(`/communities/${communityId}/posts/${postId}`);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   if (loading) {
     return (
       <BoardTemplate
-        title="게시판 로딩 중..."
+        boardTitle="게시물" // 이미지의 "게시물" 제목
         posts={[]}
-        onWriteClick={handleWriteClick}
-        onPostClick={handlePostClick}
+        onWritePostClick={handleWritePostClick}
+        onPostClick={handlePostClick} // onPostClick 전달
         isLoading={true}
+        currentPage={1}
+        totalPages={1}
+        onPageChange={handlePageChange}
       />
     );
   }
@@ -97,11 +102,15 @@ const CommunityBoardPage: React.FC = () => {
 
   return (
     <BoardTemplate
-      title={`${communityInfo?.postTitle || "커뮤니티"} 게시판`}
+      // bookTitle, communityTopic, headerContent 프롭들은 BoardTemplate에서 제거되었으므로 여기서도 전달하지 않습니다.
+      boardTitle="게시물" // 이미지의 "게시물" 제목
       posts={communityPosts}
-      onWriteClick={handleWriteClick}
-      onPostClick={handlePostClick}
+      onWritePostClick={handleWritePostClick}
+      onPostClick={handlePostClick} // onPostClick 전달
       isLoading={false}
+      currentPage={currentPage}
+      totalPages={totalPages}
+      onPageChange={handlePageChange}
     />
   );
 };

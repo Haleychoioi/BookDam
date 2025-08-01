@@ -122,18 +122,22 @@ export interface Post {
 
 // 1.8 Comment 인터페이스 (일반 게시물 댓글 모델)
 export interface Comment {
-  commentId: number; // id -> commentId (백엔드와 일치)
-  postId: number; // postId는 number
+  commentId: number;
+  postId: number;
   userId: number;
   content: string;
   createdAt: string;
-  updatedAt: string; // 통일된 string 타입
-  parentId: number | null; // parentId는 number | null
+  updatedAt: string;
+  parentId: number | null;
   user: {
     nickname: string;
     profileImage: string | null;
   };
-  replies?: Comment[];
+  replies?: (Comment | TeamComment)[]; // ✨ 수정: replies 타입 유연화 ✨
+  depth?: number;
+  postTitle?: string;
+  postType?: string;
+  communityId?: string;
 }
 
 // 1.9 TeamComment 인터페이스 (팀 게시물 댓글 모델)
@@ -147,11 +151,14 @@ export interface TeamComment {
   parentId: number | null;
   user: {
     nickname: string;
-    profileImage?: string | null; // 백엔드 include에 따라 없을 수도 있음
+    profileImage?: string | null;
   };
-  replies?: TeamComment[];
+  replies?: (Comment | TeamComment)[]; // ✨ 수정: replies 타입 유연화 ✨
+  depth?: number;
+  postTitle?: string;
+  postType?: string;
+  communityId?: string;
 }
-
 // 1.10 JWT Payload 타입
 export interface JWTPayload {
   userId: number;

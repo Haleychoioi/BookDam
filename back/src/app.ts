@@ -4,13 +4,15 @@ import path from "path";
 import cors from "cors";
 dotenv.config();
 
-import errorHandlingMiddleware, { CustomError } from "./middleware/error-handing-middleware";
+import errorHandlingMiddleware, {
+  CustomError,
+} from "./middleware/error-handing-middleware";
 import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
 import bookRouter from "./routes/book.routes";
-import wishRouter from './routes/wishList.route';
-import myLibraryRouter from './routes/myLibrary.routes';
-import tasteAnalysisRouter from './routes/tasteAnalysis.routes';
+import wishRouter from "./routes/wishList.route";
+import myLibraryRouter from "./routes/myLibrary.routes";
+import tasteAnalysisRouter from "./routes/tasteAnalysis.routes";
 
 import routes from "./routes";
 import prisma from "./utils/prisma";
@@ -18,7 +20,8 @@ import prisma from "./utils/prisma";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const rawOrigins = process.env.CORS_ORIGIN || "http://localhost:5173,http://127.0.0.1:5500";
+const rawOrigins =
+  process.env.CORS_ORIGIN || "http://localhost:5173,http://127.0.0.1:5500";
 const allowedOrigins = rawOrigins.split(",").map((origin) => origin.trim());
 
 app.use(
@@ -41,9 +44,9 @@ app.get("/", (req: Request, res: Response) => {
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/books", bookRouter);
-app.use('/api/mypage/wishlist', wishRouter);
-app.use('/api/mypage/taste-analysis', tasteAnalysisRouter);
-app.use('/api/mypage/my-library', myLibraryRouter);
+app.use("/api/mypage/wishlist", wishRouter);
+app.use("/api/mypage/taste-analysis", tasteAnalysisRouter);
+app.use("/api/mypage/my-library", myLibraryRouter);
 
 // 새로운 커뮤니티 관련 라우터들
 app.use("/api", routes);
@@ -64,7 +67,7 @@ async function connectToDatabase() {
     console.log("데이터베이스 연결");
   } catch (error) {
     console.error("데이터베이스 연결 실패:", error);
-    process.exit(1);
+    process.exit(1); // 데이터베이스 연결 실패 시 프로세스 종료
   }
 }
 
