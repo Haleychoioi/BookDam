@@ -1,36 +1,29 @@
 import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import path from "path";
-
-// cors import
 import cors from "cors";
-
-// 환경변수를 맨 먼저 로드
 dotenv.config();
 
-// CustomError 임포트 (통합 에러 핸들링을 위해 필요)
-import { CustomError } from "./middleware/error-handing-middleware";
-
-// 기존 미들웨어 및 라우터들
+import errorHandlingMiddleware, {
+  CustomError,
+} from "./middleware/error-handing-middleware";
 import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
 import bookRouter from "./routes/book.routes";
-import wishRouter from './routes/wishList.route';
-import myLibraryRouter from './routes/myLibrary.routes';
-import tasteAnalysisRouter from './routes/tasteAnalysis.routes';
+import wishRouter from "./routes/wishList.route";
+import myLibraryRouter from "./routes/myLibrary.routes";
+import tasteAnalysisRouter from "./routes/tasteAnalysis.routes";
 
-// 새로운 API 라우터들 추가
-import routes from "./routes"; // 커뮤니티 관련 라우트들
-import prisma from "./utils/prisma"; // Prisma 데이터베이스 연결
+import routes from "./routes";
+import prisma from "./utils/prisma";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 허용할 CORS Origin 설정 (환경 변수 사용, 기본값 제공)
-const rawOrigins = process.env.CORS_ORIGIN || "http://localhost:5173,http://127.0.0.1:5500";
+const rawOrigins =
+  process.env.CORS_ORIGIN || "http://localhost:5173,http://127.0.0.1:5500";
 const allowedOrigins = rawOrigins.split(",").map((origin) => origin.trim());
 
-// Express 앱에 cors 미들웨어를 적용
 app.use(
   cors({
     origin: allowedOrigins,
@@ -38,31 +31,26 @@ app.use(
   })
 );
 
-// 미들웨어 설정
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// profileImage 링크 이동할때 에러 안나게 하려면
 app.use("/static", express.static(path.join(__dirname, "../public")));
 
-// 기본 라우트 (서버 상태 확인용)
 app.get("/", (req: Request, res: Response) => {
   res.status(200).send("커뮤니티 API 서버가 정상 작동 중입니다!");
 });
 
-// 기존 라우터들 (도서/유저/인증)
+// 기존 라우터들 (유저/도서/마이페이지)
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/books", bookRouter);
-app.use('/api/mypage/wishlist', wishRouter);
-app.use('/api/mypage/taste-analysis', tasteAnalysisRouter);
-app.use('/api/mypage/my-library', myLibraryRouter);
+app.use("/api/mypage/wishlist", wishRouter);
+app.use("/api/mypage/taste-analysis", tasteAnalysisRouter);
+app.use("/api/mypage/my-library", myLibraryRouter);
 
 // 새로운 커뮤니티 관련 라우터들
 app.use("/api", routes);
 
-// 404 에러 핸들링 (존재하지 않는 라우트)
-// CustomError를 사용하여 일관적인 에러 처리
 app.use((req: Request, res: Response, next: NextFunction) => {
   const error = new CustomError(
     404,
@@ -71,49 +59,25 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next(error);
 });
 
-// 통합 에러 핸들링 미들웨어 (모든 에러를 여기서 처리)
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error(err); // 서버 콘솔에 에러 로그 출력
+app.use(errorHandlingMiddleware);
 
-  // CustomError 인스턴스인 경우 해당 상태 코드와 메시지를 사용
-  if (err instanceof CustomError) {
-    return res.status(err.statusCode).json({
-      status: "error",
-      message: err.message,
-    });
-  }
-
-  // 그 외의 예상치 못한 에러는 500 Internal Server Error로 처리
-  res.status(500).json({
-    status: "error",
-    message: err.message || "서버 오류가 발생했습니다.",
-  });
-});
-
-// 데이터베이스 연결 테스트
 async function connectToDatabase() {
   try {
     await prisma.$connect();
-    console.log("데이터베이스 연결 성공!");
+    console.log("데이터베이스 연결");
   } catch (error) {
     console.error("데이터베이스 연결 실패:", error);
     process.exit(1); // 데이터베이스 연결 실패 시 프로세스 종료
   }
 }
 
-// 서버 시작
 app.listen(PORT, async () => {
-  console.log(`🛡️ Server listening on port: ${PORT} 🛡️`);
-  console.log(
-    `ALADIN_API_KEY: ${process.env.ALADIN_API_KEY ? "설정됨" : "설정 안됨"}`
-  );
-  console.log(`CORS_ORIGIN: ${rawOrigins}`); // 설정된 CORS Origin 로그 출력
+  console.log(`Server listening on port: ${PORT}`);
+  console.log(`CORS_ORIGIN: ${rawOrigins}`);
 
-  // 데이터베이스 연결
   await connectToDatabase();
 });
 
-// 앱 종료 시 데이터베이스 연결 해제
 process.on("beforeExit", async () => {
   await prisma.$disconnect();
   console.log("데이터베이스 연결 해제.");

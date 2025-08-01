@@ -160,11 +160,6 @@ getBookDetail = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { itemId } = req.params;
 
-    // 🔍 로그 추가
-    console.log(`🔍 도서 상세 API 호출: ${itemId}`);
-    console.log(`⏰ 호출 시간: ${new Date().toISOString()}`);
-    console.log(`📍 User-Agent: ${req.headers['user-agent']?.substring(0, 50)}`);
-
     if (!itemId) {
       return res.status(400).json({
         status: 'error',
@@ -172,9 +167,7 @@ getBookDetail = async (req: Request, res: Response, next: NextFunction) => {
       });
     }
 
-    console.log(`📚 bookService.getBookDetail 호출 시작: ${itemId}`);
     const result = await bookService.getBookDetail(itemId);
-    console.log(`✅ bookService.getBookDetail 완료: ${itemId}`);
 
     res.status(200).json({
       status: 'success',
@@ -183,35 +176,10 @@ getBookDetail = async (req: Request, res: Response, next: NextFunction) => {
     });
 
   } catch (error) {
-    console.error(`❌ 도서 상세 조회 에러: ${req.params.itemId}`, error);
     next(error);
   }
 }
 
-  // 상품 상세 조회
-//   getBookDetail = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const { itemId } = req.params;
-
-//     if (!itemId) {
-//       return res.status(400).json({
-//         status: 'error',
-//         message: '도서 ISBN을 입력해주세요'
-//       });
-//     }
-
-//     const result = await bookService.getBookDetail(itemId);
-
-//     res.status(200).json({
-//       status: 'success',
-//       message: '도서 상세 조회 성공',
-//       data: result
-//     });
-
-//   } catch (error) {
-//     next(error);
-//   }
-// }
   
   // enum 변환 헬퍼 메서드들
   private mapQueryType(type?: string): AladinQueryType {
