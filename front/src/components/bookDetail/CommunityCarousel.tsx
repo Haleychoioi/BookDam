@@ -4,13 +4,11 @@ import { FaChevronLeft, FaChevronRight, FaUserFriends } from "react-icons/fa";
 
 import type { Community } from "../../types";
 interface CommunityCarouselProps {
-  title: string;
   communities: Community[]; //
   onApplyClick: (communityId: string) => void;
 }
 
 const CommunityCarousel: React.FC<CommunityCarouselProps> = ({
-  title,
   communities,
   onApplyClick,
 }) => {
@@ -40,35 +38,35 @@ const CommunityCarousel: React.FC<CommunityCarouselProps> = ({
   const canGoNext = currentIndex + itemsPerPage < communities.length;
 
   return (
-    <div className="py-10 mt-6">
-      <h2 className="text-2xl text-gray-800 text-center mb-8">{title}</h2>
-      <div className="flex items-center justify-center space-x-4 mt-20">
+    <div>
+      <div className="flex items-center justify-center space-x-4">
         <button
           onClick={handlePrev}
           disabled={!canGoPrev}
-          className={`p-3 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors duration-200 flex items-center justify-center ${
+          className={`p-3 rounded-full bg-gray-200 hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center ${
             !canGoPrev ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
           <FaChevronLeft className="w-5 h-5 text-gray-500" />
         </button>
-        {/* 커뮤니티 목록 뷰포트 */}
-        <div className="flex flex-grow justify-center">
+
+        {/* 책 목록 */}
+        <div className="flex flex-grow justify-center space-x-8 ">
           <div className="flex space-x-12 overflow-hidden">
-            {visibleCommunities.map((community) => (
+            {visibleCommunities.map((community, idx) => (
               <div
-                key={community.id}
-                className="w-64 h-80 rounded-xl shadow-lg flex-shrink-0 bg-white border border-gray-200 p-6 mb-10 flex flex-col justify-between"
+                key={`${community.id}-${currentIndex + idx}`}
+                className="w-64 h-72 rounded-xl shadow-lg flex-shrink-0 bg-white border border-gray-200 p-6 mb-10 flex flex-col justify-between"
               >
                 {/* 상단 정보 */}
                 <div>
-                  <h3 className="font-semibold text-lg text-gray-800 mb-1 leading-tight">
+                  <h3 className="font-semibold text-2xl text-gray-800 mb-1 leading-tight">
                     {community.title}
                   </h3>
-                  <p className="text-gray-500 text-sm mb-4">
+                  <p className="text-gray-500 text-lg mb-4">
                     {community.hostName}
                   </p>
-                  <p className="text-gray-700 text-sm leading-relaxed line-clamp-3">
+                  <p className="text-gray-700 text-base leading-relaxed line-clamp-3">
                     {community.description}
                   </p>
                 </div>

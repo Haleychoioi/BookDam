@@ -1,4 +1,6 @@
-import { useState } from "react";
+// src/components/modals/CreateCommunityModal.tsx
+
+import { useState, useEffect } from "react";
 import Button from "../common/Button";
 
 interface CreateCommunityModalProps {
@@ -6,40 +8,53 @@ interface CreateCommunityModalProps {
   onClose: () => void;
   bookId: string;
   onCommunityCreate: (
-    bookId: string,
+    bookId: string, // ✨ 이 줄을 추가합니다 ✨
     communityName: string,
     maxMembers: number,
-    description: string
+    description: string // content로 사용될 필드
   ) => void;
 }
 
 const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
   isOpen,
   onClose,
-  bookId,
+  bookId, // bookId는 prop으로 받아서 사용
   onCommunityCreate,
 }) => {
   const [communityName, setCommunityName] = useState("");
   const [maxMembers, setMaxMembers] = useState<string>("");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(""); // content로 사용될 필드
 
+  // ✨ useEffect를 최상단으로 이동하여 조건부 렌더링보다 먼저 호출되도록 합니다. ✨
+  useEffect(() => {
+    if (!isOpen) {
+      // 모달이 닫힐 때만 폼 내용을 초기화
+      setCommunityName("");
+      setMaxMembers("");
+      setDescription("");
+    }
+  }, [isOpen]); // isOpen이 변경될 때마다 이펙트 실행
+
+  // 모달이 닫혀있으면 여기서 렌더링을 중단합니다.
   if (!isOpen) return null;
 
   const handleSubmit = () => {
-    // ✨ 커뮤니티 이름 유효성 검사 ✨
     const trimmedCommunityName = communityName.trim();
-    if (trimmedCommunityName.length < 3 || trimmedCommunityName.length > 20) {
+    if (trimmedCommunityName.length < 3 || trimmedCommunityName.length > 15) {
       alert("커뮤니티 이름을 3자 이상 15자 이내로 입력해주세요.");
       return;
     }
 
     const parsedMaxMembers = parseInt(maxMembers, 10);
-    if (isNaN(parsedMaxMembers) || parsedMaxMembers < 2) {
-      alert("모집 인원을 최소 2명 이상으로 입력해주세요.");
+    if (
+      isNaN(parsedMaxMembers) ||
+      parsedMaxMembers < 2 ||
+      parsedMaxMembers > 10
+    ) {
+      alert("모집 인원을 최소 2명, 최대 10명 이내로 입력해주세요.");
       return;
     }
 
-    // ✨ 커뮤니티 간단 소개 글 유효성 검사 수정 ✨
     const trimmedDescription = description.trim();
     if (trimmedDescription.length < 3 || trimmedDescription.length > 30) {
       alert("커뮤니티 소개를 3자 이상 30자 이내로 입력해주세요.");
@@ -52,9 +67,6 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
       parsedMaxMembers,
       trimmedDescription
     );
-    setCommunityName("");
-    setMaxMembers("");
-    setDescription("");
   };
 
   return (
@@ -96,8 +108,9 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
             id="maxMembers"
             type="number"
             className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 font-light"
-            placeholder="모집할 인원수를 입력해주세요 (최소 2명)"
+            placeholder="모집할 인원수를 입력해주세요 (최소 2명, 최대 10명)"
             min="2"
+            max="10"
             value={maxMembers}
             onChange={(e) => setMaxMembers(e.target.value)}
           />
