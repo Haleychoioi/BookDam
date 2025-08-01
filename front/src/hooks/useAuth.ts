@@ -1,9 +1,9 @@
 // src/hooks/useAuth.ts
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // useNavigate 훅 임포트 확인
 import apiClient from "../api/apiClient";
 import axios from "axios";
-import type { UserProfile, SignupRequest } from "../types"; // UpdateUserData 임포트 제거
+import type { UserProfile, SignupRequest } from "../types";
 
 interface AuthResult {
   isLoggedIn: boolean;
@@ -20,7 +20,7 @@ interface AuthResult {
 }
 
 export const useAuth = (): AuthResult => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // useNavigate 훅 인스턴스 생성
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
   const [currentUserProfile, setCurrentUserProfile] =
@@ -31,7 +31,11 @@ export const useAuth = (): AuthResult => {
   const handleAxiosError = useCallback(
     (err: unknown, defaultMsg: string): string => {
       if (axios.isAxiosError(err) && err.response) {
-        return err.response.data.message || err.message;
+        return (
+          err.response.data.errorMessage ||
+          err.response.data.message ||
+          err.message
+        );
       } else if (err instanceof Error) {
         return err.message;
       }
@@ -115,6 +119,7 @@ export const useAuth = (): AuthResult => {
         localStorage.setItem("userId", userId.toString());
         window.dispatchEvent(new Event("loginStatusChange"));
         alert(message);
+        navigate("/"); // 로그인 성공 후 홈페이지로 리다이렉트 [cite: 32]
         return true;
       } catch (err) {
         const errMsg = handleAxiosError(err, "로그인 중 오류가 발생했습니다.");
@@ -125,7 +130,7 @@ export const useAuth = (): AuthResult => {
         setLoading(false);
       }
     },
-    [handleAxiosError]
+    [handleAxiosError, navigate] // navigate를 의존성 배열에 추가
   );
 
   const register = useCallback(
