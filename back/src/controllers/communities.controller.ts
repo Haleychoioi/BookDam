@@ -12,10 +12,10 @@ export class CommunityController {
   constructor() {
     this.communityService = new CommunityService();
   }
-
   /**
    * GET /communities - 커뮤니티 목록 조회
    */
+
   public getCommunities = async (
     req: Request,
     res: Response,
@@ -43,10 +43,10 @@ export class CommunityController {
       }
     }
   };
-
   /**
    * POST /communities - 도서 기반 커뮤니티 생성
    */
+
   public createCommunity = async (
     req: Request,
     res: Response,
@@ -54,9 +54,8 @@ export class CommunityController {
   ) => {
     try {
       const userId = req.user;
-      const { isbn13, title, content, maxMembers: rawMaxMembers } = req.body;
+      const { isbn13, title, content, maxMembers: rawMaxMembers } = req.body; // 인증된 사용자 ID가 없는 경우
 
-      // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
         throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
       }
@@ -110,10 +109,10 @@ export class CommunityController {
       }
     }
   };
-
   /**
    * GET /books/:itemId/communities - 특정 도서 관련 커뮤니티 목록 조회
    */
+
   public getCommunitiesByBook = async (
     req: Request,
     res: Response,
@@ -154,10 +153,10 @@ export class CommunityController {
       }
     }
   };
-
   /**
    * GET /communities/:communityId - 특정 커뮤니티 상세 조회
    */
+
   public getCommunityById = async (
     req: Request,
     res: Response,
@@ -193,10 +192,10 @@ export class CommunityController {
       }
     }
   };
-
   /**
    * PUT /communities/:communityId - 특정 커뮤니티 상세 정보 업데이트
    */
+
   public updateCommunityDetails = async (
     req: Request,
     res: Response,
@@ -205,14 +204,12 @@ export class CommunityController {
     try {
       const { communityId: rawCommunityId } = req.params;
       const userId = req.user;
-      const updateData = req.body;
+      const updateData = req.body; // 인증된 사용자 ID가 없는 경우
 
-      // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
         throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
-      }
+      } // 필수 필드 및 타입 유효성 검사
 
-      // 필수 필드 및 타입 유효성 검사
       if (rawCommunityId === undefined) {
         throw new CustomError(400, "필수 정보(communityId)가 누락되었습니다.");
       }
@@ -220,9 +217,8 @@ export class CommunityController {
       const communityId = Number(rawCommunityId);
       if (isNaN(communityId)) {
         throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
-      }
+      } // updateData에 유효한 필드가 있는지 확인
 
-      // updateData에 유효한 필드가 있는지 확인
       const validUpdateKeys = ["recruiting", "title", "content", "maxMembers"];
       const hasValidUpdateData = Object.keys(updateData).some((key) =>
         validUpdateKeys.includes(key)
@@ -233,9 +229,8 @@ export class CommunityController {
           400,
           "업데이트할 유효한 필드가 제공되지 않았습니다."
         );
-      }
+      } // recruiting 필드가 있다면 boolean 타입인지 확인
 
-      // recruiting 필드가 있다면 boolean 타입인지 확인
       if (
         updateData.recruiting !== undefined &&
         typeof updateData.recruiting !== "boolean"
@@ -244,9 +239,8 @@ export class CommunityController {
           400,
           "recruiting 필드는 boolean 타입이어야 합니다."
         );
-      }
+      } // maxMembers 필드가 있다면 숫자 타입인지 확인
 
-      // maxMembers 필드가 있다면 숫자 타입인지 확인
       if (updateData.maxMembers !== undefined) {
         updateData.maxMembers = Number(updateData.maxMembers);
         if (isNaN(updateData.maxMembers) || updateData.maxMembers <= 0) {
@@ -286,10 +280,10 @@ export class CommunityController {
       }
     }
   };
-
   /**
    * PUT /communities/:communityId/status - 커뮤니티 상태 업데이트
    */
+
   public updateCommunityStatus = async (
     req: Request,
     res: Response,
@@ -298,9 +292,8 @@ export class CommunityController {
     try {
       const { communityId: rawCommunityId } = req.params;
       const userId = req.user;
-      const { newStatus } = req.body;
+      const { newStatus } = req.body; // 인증된 사용자 ID가 없는 경우
 
-      // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
         throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
       }
@@ -355,10 +348,10 @@ export class CommunityController {
       }
     }
   };
-
   /**
    * DELETE /communities/:communityId - 커뮤니티 삭제
    */
+
   public deleteCommunity = async (
     req: Request,
     res: Response,
@@ -366,9 +359,8 @@ export class CommunityController {
   ) => {
     try {
       const { communityId: rawCommunityId } = req.params;
-      const userId = req.user;
+      const userId = req.user; // 인증된 사용자 ID가 없는 경우
 
-      // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
         throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
       }

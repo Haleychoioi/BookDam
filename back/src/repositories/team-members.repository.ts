@@ -3,6 +3,7 @@
 import prisma from "../utils/prisma";
 import { TeamMember, TeamRole } from "@prisma/client";
 
+// 여기에 'export' 키워드를 추가해야 합니다.
 export class TeamMemberRepository {
   /**
    * 새로운 팀 멤버 생성
