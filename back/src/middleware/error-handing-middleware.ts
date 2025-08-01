@@ -48,6 +48,31 @@ export default function (
         errorMessage: "사용중인 닉네임",
       });
 
+    case "CurrentPasswordMismatch":
+      return res.status(400).json({
+        errorMessage: "현재 비밀번호가 올바르지 않습니다",
+      });
+
+    case "PasswordFieldRequired":
+      return res.status(400).json({
+        errorMessage: "모든 비밀번호 필드를 입력해주세요",
+      });
+
+    case "PasswordMismatch":
+      return res.status(400).json({
+        errorMessage: "새 비밀번호와 비밀번호 확인이 일치하지 않습니다",
+      });
+
+    case "PasswordTooShort":
+      return res.status(400).json({
+        errorMessage: "새 비밀번호는 최소 8자 이상이어야 합니다",
+      });
+
+    case "PasswordSame":
+      return res.status(400).json({
+        errorMessage: "현재 비밀번호와 새 비밀번호가 동일합니다",
+      });
+
     case "Forbidden":
       return res.status(403).json({
         errorMessage: "접근 권한이 없습니다",

@@ -12,16 +12,16 @@ datasource db {
 
 // 사용자 역할 (일반 사용자 / 관리자)
 enum UserRole {
-  USER    // 일반 사용자
-  ADMIN   // 관리자
+  USER  // 일반 사용자
+  ADMIN // 관리자
 }
 
-// 독서팀 상태 (활동중 → 완료)
+// 독서팀 상태 (모집중 / 활동중 / 완료 / 닫힘)
 enum CommunityStatus {
-  RECRUITING  // 모집중 (새로 추가)
-  ACTIVE      // 활동중
-  COMPLETED   // 완료
-  CLOSED      // 닫힘 (새로 추가)
+  RECRUITING // 모집중
+  ACTIVE     // 활동중
+  COMPLETED  // 완료
+  CLOSED     // 닫힘
 }
 
 // 퍼블릭 게시글 타입 (일반글 / 모집글)
@@ -32,22 +32,22 @@ enum PostType {
 
 // 모집글 상태
 enum RecruitmentStatus {
-  RECRUITING  // 모집중
-  CLOSED      // 모집완료
+  RECRUITING // 모집중
+  CLOSED     // 모집완료
 }
 
 // 팀 내부 게시글 타입 (공지 / 질문 / 토론)
 enum TeamPostType {
-  NOTICE       // 공지 (팀장만 작성 가능)
-  QUESTION     // 질문 (팀장+팀원)
-  DISCUSSION   // 토론 (팀장+팀원, 기본값)
+  NOTICE     // 공지 (팀장만 작성 가능)
+  QUESTION   // 질문 (팀장+팀원)
+  DISCUSSION // 토론 (팀장+팀원, 기본값)
 }
 
 // 팀 지원 상태 (대기 / 승인 / 거절)
 enum ApplicationStatus {
-  PENDING   // 대기중
-  ACCEPTED  // 승인됨
-  REJECTED  // 거절됨
+  PENDING  // 대기중
+  ACCEPTED // 승인됨
+  REJECTED // 거절됨
 }
 
 // 개인 독서 상태 (읽고싶어요 / 읽는중 / 완료)
@@ -63,39 +63,32 @@ enum TeamRole {
   MEMBER // 팀원
 }
 
-// 채팅 메시지 타입
-enum ChatMessageType {
-  MESSAGE   // 일반 메시지
-  SYSTEM    // 시스템 메시지 (입장/퇴장/공지)
-}
-
 // ============ 사용자 관련 모델 ============
 
 // 사용자 정보
 model User {
-  userId           Int             @id @default(autoincrement()) @map("user_id")
-  email            String          @unique @map("email") // 이메일 (로그인 ID)
-  password         String          @map("password") // 비밀번호
-  name             String          @map("name") // 실명
-  nickname         String          @unique @map("nickname") // 닉네임 (중복 불가)
-  phone            String          @map("phone") // 전화번호
-  profileImage        String?      @map("profile_image")                    // 프로필 이미지 URL
-  introduction     String?         @map("introduction") // 자기소개 (선택사항)
-  agreement        Boolean         @map("agreement") // 약관 동의 여부
-  role             UserRole        @default(USER) @map("role") // 사용자 역할 (기본: 일반사용자)
-  createdAt        DateTime        @default(now()) @map("created_at") // 가입일시
-  updatedAt        DateTime        @updatedAt @map("updated_at") // 수정일시
+  userId       Int      @id @default(autoincrement()) @map("user_id")
+  email        String   @unique @map("email")
+  password     String   @map("password")
+  name         String   @map("name")
+  nickname     String   @unique @map("nickname")
+  phone        String   @map("phone")
+  profileImage String?  @map("profile_image")
+  introduction String?  @map("introduction")
+  agreement    Boolean  @map("agreement")
+  role         UserRole @default(USER) @map("role")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // 관계 설정
-  teamMembers      TeamMember[]                                   // 내가 참여한 팀 멤버십들
-  teamApplications TeamApplication[]                              // 내가 지원한 팀 지원서들
-  posts            Post[]                                         // 내가 작성한 퍼블릭 게시글들
-  teamPosts        TeamPost[]                                     // 내가 작성한 팀 게시글들
-  teamChatMessages   TeamChatMessage[]                            // 보낸 팀 채팅 메시지들
-  comments         Comment[]                                      // 내가 작성한 퍼블릭 댓글들
-  teamComments     TeamComment[]                                  // 내가 작성한 팀 댓글들
-  myBooks          MyLibrary[]                                    // 내 개인 도서관
-  bookmarks        WishList[]      @relation("UserWishLists")     // 내 위시리스트
+  teamMembers      TeamMember[]
+  teamApplications TeamApplication[]
+  posts            Post[]
+  teamPosts        TeamPost[]
+  comments         Comment[]
+  teamComments     TeamComment[]
+  myBooks          MyLibrary[]
+  bookmarks        WishList[] @relation("UserWishLists")
 
   @@map("users")
 }
@@ -104,25 +97,25 @@ model User {
 
 // 책 정보 (ISBN13 기반)
 model Book {
-  isbn13        String   @id @map("isbn13")                    // ISBN13 (Primary Key)
-  title         String   @map("title")                         // 책 제목
-  author        String   @map("author")                        // 저자
-  publisher     String   @map("publisher")                     // 출판사
-  pubDate       String?  @map("pub_date")                      // 출간일
-  description   String?  @db.Text @map("description")          // 책 설명
-  cover         String?  @map("cover")                         // 표지 이미지 URL
-  category      String?  @map("category")                      // 카테고리 ("소설", "에세이", "자기계발" 등)
-  pageCount     Int?     @map("page_count")                    // 페이지 수
-  toc           String?  @db.Text @map("toc")                  // 목차 (추가 요청시 가능)
-  story         String?  @db.Text @map("story")                // 줄거리 (추가 요청시 가능, 소설 위주)
-  createdAt     DateTime @default(now()) @map("created_at")    // 등록일시
+  isbn13      String    @id @map("isbn13")
+  title       String    @map("title")
+  author      String    @map("author")
+  publisher   String    @map("publisher")
+  pubDate     String?   @map("pub_date")
+  description String?   @db.Text @map("description")
+  cover       String?   @map("cover")
+  category    String    @map("category")
+  pageCount   Int?      @map("page_count")
+  toc         String?   @db.Text @map("toc")
+  story       String?   @db.Text @map("story")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   // 관계 설정
-  posts             Post[]
-  teams             TeamCommunity[]                              // 이 책을 읽는 독서팀들
-  myBooks           MyLibrary[]                                // 이 책을 개인 라이브러리에 추가한 사용자들
-  wishLists         WishList[]           @relation("BookWishLists") // 이 책을 위시리스트에 추가한 사용자들
-  
+  posts     Post[]
+  teams     TeamCommunity[]
+  myBooks   MyLibrary[]
+  wishLists WishList[] @relation("BookWishLists")
+
   @@map("books")
 }
 
@@ -130,26 +123,26 @@ model Book {
 
 // 퍼블릭 커뮤니티 게시글 (일반글 + 모집글)
 model Post {
-  postId       Int               @id @default(autoincrement()) @map("post_id")
-  userId       Int               @map("user_id") // 작성자 ID
-  type         PostType          @default(GENERAL) @map("type") // 게시글 타입 (기본: 일반글)
-  title        String            @map("title") // 제목
-  content      String            @db.Text @map("content") // 내용
-  recruitmentStatus RecruitmentStatus? @map("recruitment_status") // 일반글이면 recruitmentStatus이 값이 필요없는/ 모집글이면 필요한 로직을 새로 추가해야될것같아요
-  maxMembers   Int?              @map("max_members") // 모집 인원 (RECRUITMENT 타입일 때만 사용)
-  isbn13      String?            @map("isbn13")
-  createdAt    DateTime          @default(now()) @map("created_at") // 작성일시
-  updatedAt    DateTime          @updatedAt @map("updated_at") // 수정일시
+  postId            Int                @id @default(autoincrement()) @map("post_id")
+  userId            Int                @map("user_id")
+  type              PostType           @default(GENERAL) @map("type")
+  title             String             @map("title")
+  content           String             @db.Text @map("content")
+  recruitmentStatus RecruitmentStatus? @map("recruitment_status")
+  maxMembers        Int?               @map("max_members")
+  isbn13            String?            @map("isbn13")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
 
   // 관계 설정
-  user         User              @relation(fields: [userId], references: [userId], onDelete: Cascade) // 사용자 삭제 시 게시글도 삭제
-  book        Book?             @relation(fields: [isbn13], references: [isbn13], onDelete: SetNull) 
-  comments     Comment[]                                      // 댓글들 (게시글 삭제 시 댓글도 삭제)
-  applications TeamApplication[]                              // 모집글에 대한 지원서들 (게시글 삭제 시 지원서도 삭제)
-  team         TeamCommunity?    @relation("RecruitmentPost") // 이 모집글로 만들어진 팀
+  user         User              @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  book         Book?             @relation(fields: [isbn13], references: [isbn13], onDelete: SetNull)
+  comments     Comment[]
+  applications TeamApplication[]
+  team         TeamCommunity?    @relation("RecruitmentPost")
 
-  @@index([userId])   // 사용자별 게시글 조회 최적화
-  @@index([type])     // 게시글 타입별 조회 최적화
+  @@index([userId])
+  @@index([type])
   @@index([recruitmentStatus])
   @@index([isbn13])
   @@map("posts")
@@ -159,100 +152,78 @@ model Post {
 
 // 독서팀 (Private Community)
 model TeamCommunity {
-  teamId          Int             @id @default(autoincrement()) @map("team_id")
-  postId          Int             @unique @map("post_id")                 // 모집글 ID (필수 - 모집글을 통해서만 팀 생성)
-  isbn13      String?         @map("book_isbn13")                         // 팀에서 읽을 책 (팀 구성 후 선택)
-  status          CommunityStatus @default(ACTIVE) @map("status")         // 팀 상태 (기본: 활동중)
- 
-  // Post 정보 복사 (Post 삭제되어도 히스토리 유지)
-  postTitle       String          @map("post_title")                      // 모집글 제목 복사
-  postContent     String          @db.Text @map("post_content")           // 모집글 내용 복사
-  postAuthor      String          @map("post_author")
- 
-  createdAt       DateTime        @default(now()) @map("created_at")      // 생성일시
-  updatedAt       DateTime        @updatedAt @map("updated_at")           // 수정일시
+  teamId      Int             @id @default(autoincrement()) @map("team_id")
+  postId      Int             @unique @map("post_id")
+  isbn13      String?         @map("book_isbn13")
+  status      CommunityStatus @default(ACTIVE) @map("status")
+  postTitle   String          @map("post_title")
+  postContent String          @db.Text @map("post_content")
+  postAuthor  String          @map("post_author")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
 
-  // 관계 설정      
-  recruitmentPost Post            @relation("RecruitmentPost", fields: [postId], references: [postId], onDelete: Cascade) // 모집글 삭제 시 팀도 삭제
-  book            Book?           @relation(fields: [isbn13], references: [isbn13], onDelete: SetNull) // 책 삭제 시 NULL로 설정
-  chatMessages   TeamChatMessage[]         // 팀 채팅 메시지들
-  members         TeamMember[]             // 팀 멤버들 (팀 삭제 시 멤버십도 삭제)
-  teamPosts       TeamPost[]               // 팀 내 게시글들 (팀 삭제 시 게시글도 삭제)
+  // 관계 설정
+  recruitmentPost Post         @relation("RecruitmentPost", fields: [postId], references: [postId], onDelete: Cascade)
+  book            Book?        @relation(fields: [isbn13], references: [isbn13], onDelete: SetNull)
+  members         TeamMember[]
+  teamPosts       TeamPost[]
 
   @@map("team_communities")
 }
 
-// 팀 채팅 메시지
-model TeamChatMessage {
-  messageId     Int             @id @default(autoincrement()) @map("message_id")
-  teamId        Int             @map("team_id")               // 팀 ID
-  userId        Int?            @map("user_id")               // 발신자 ID (시스템 메시지는 NULL)
-  messageType   ChatMessageType @default(MESSAGE) @map("message_type") // 메시지 타입
-  content       String          @db.Text @map("content")     // 메시지 내용
-  createdAt     DateTime        @default(now()) @map("created_at") // 생성일시
-
-  // 관계 설정
-  team          TeamCommunity   @relation(fields: [teamId], references: [teamId], onDelete: Cascade)
-  user          User?           @relation(fields: [userId], references: [userId], onDelete: SetNull)
-
-  @@index([teamId, createdAt])  // 팀별 시간순 조회
-  @@index([userId])
-  @@map("team_chat_messages")
-}
-
 // 팀 멤버십 (사용자-팀 다대다 관계)
 model TeamMember {
-  userId   Int      @map("user_id") // 사용자 ID
-  teamId   Int      @map("team_id") // 팀 ID
-  role     TeamRole @default(MEMBER) @map("role") // 팀 내 역할 (기본: 팀원)
+  userId Int      @map("user_id")
+  teamId Int      @map("team_id")
+  role   TeamRole @default(MEMBER) @map("role")
 
   // 관계 설정
-  user     User         @relation(fields: [userId], references: [userId], onDelete: Cascade) // 사용자 삭제 시 멤버십도 삭제
-  team     TeamCommunity @relation(fields: [teamId], references: [teamId], onDelete: Cascade) // 팀 삭제 시 멤버십도 삭제
+  user User          @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  team TeamCommunity @relation(fields: [teamId], references: [teamId], onDelete: Cascade)
 
-  @@id([userId, teamId]) // 복합 Primary Key (한 사용자는 한 팀에 한 번만 가입)
-  @@index([teamId])    // 팀별 멤버 조회 최적화
+  @@id([userId, teamId])
+  @@index([teamId])
   @@map("team_members")
 }
 
 // 모집 게시글 지원서
 model TeamApplication {
-  applicationId      Int             @id @default(autoincrement()) @map("application_id")
-  userId             Int             @map("user_id") // 지원자 ID
-  postId             Int             @map("post_id") // 모집 게시글 ID
-  applicationMessage String          @map("application_message") // 지원 메시지 (필수)
-  status             ApplicationStatus @default(PENDING) @map("status") // 지원 상태 (기본: 대기중)
-  appliedAt          DateTime        @default(now()) @map("applied_at") // 지원일시
-  processedAt        DateTime?       @map("processed_at") // 처리일시 (승인/거절 시점)
+  applicationId      Int               @id @default(autoincrement()) @map("application_id")
+  userId             Int               @map("user_id")
+  postId             Int               @map("post_id")
+  applicationMessage String            @map("application_message")
+  status             ApplicationStatus @default(PENDING) @map("status")
+  appliedAt          DateTime          @default(now()) @map("applied_at")
+  processedAt        DateTime?         @map("processed_at")
 
   // 관계 설정
-  user               User            @relation(fields: [userId], references: [userId], onDelete: Cascade) // 사용자 삭제 시 지원서도 삭제
-  post               Post            @relation(fields: [postId], references: [postId], onDelete: Cascade) // 모집글 삭제 시 지원서도 삭제
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [postId], onDelete: Cascade)
 
-  @@unique([userId, postId]) // 한 사용자는 한 모집글에 한 번만 지원 가능
-  @@index([postId, status])  // 모집글별 지원서 상태별 조회 최적화
+  @@unique([userId, postId])
+  @@index([postId, status])
   @@map("team_applications")
 }
 
 // 팀 내부 게시글 (공지, 질문, 토론)
 model TeamPost {
   teamPostId Int          @id @default(autoincrement()) @map("team_post_id")
-  userId     Int          @map("user_id") // 작성자 ID
-  teamId     Int          @map("team_id") // 팀 ID
-  type       TeamPostType @default(DISCUSSION) @map("type") // 게시글 타입 (기본: 토론)
-  title      String       @map("title") // 제목
-  content    String       @db.Text @map("content") // 내용
-  createdAt  DateTime     @default(now()) @map("created_at") // 작성일시
-  updatedAt  DateTime     @updatedAt @map("updated_at") // 수정일시
+  userId     Int          @map("user_id")
+  teamId     Int          @map("team_id")
+  type       TeamPostType @default(DISCUSSION) @map("type")
+  title      String       @map("title")
+  content    String       @db.Text @map("content")
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
 
   // 관계 설정
-  user       User         @relation(fields: [userId], references: [userId], onDelete: Cascade) // 사용자 삭제 시 팀 게시글도 삭제
-  team       TeamCommunity @relation(fields: [teamId], references: [teamId], onDelete: Cascade) // 팀 삭제 시 게시글도 삭제
-  comments   TeamComment[]                                // 댓글들 (팀 게시글 삭제 시 댓글도 삭제)
+  user     User          @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  team     TeamCommunity @relation(fields: [teamId], references: [teamId], onDelete: Cascade)
+  comments TeamComment[]
 
-  @@index([teamId])   // 팀별 게시글 조회 최적화
-  @@index([userId])   // 사용자별 게시글 조회 최적화
-  @@index([type])     // 게시글 타입별 조회 최적화
+  @@index([teamId])
+  @@index([userId])
+  @@index([type])
   @@map("team_posts")
 }
 
@@ -261,50 +232,44 @@ model TeamPost {
 // 퍼블릭 게시글 댓글
 model Comment {
   commentId Int      @id @default(autoincrement()) @map("comment_id")
-  postId    Int      @map("post_id") // 게시글 ID
-  userId    Int      @map("user_id") // 작성자 ID
-  content   String   @map("content") // 댓글 내용
-  createdAt DateTime @default(now()) @map("created_at") // 작성일시
-  updatedAt DateTime @updatedAt @map("updated_at") // 수정일시
-
-  // 대댓글을 위한 필드 추가
-  parentId  Int?     @map("parent_id") // 부모 댓글 ID (대댓글인 경우)
+  postId    Int      @map("post_id")
+  userId    Int      @map("user_id")
+  content   String   @map("content")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  parentId  Int?     @map("parent_id")
 
   // 관계 설정
-  post      Post     @relation(fields: [postId], references: [postId], onDelete: Cascade) // 게시글 삭제 시 댓글도 삭제
-  user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade) // 사용자 삭제 시 댓글도 삭제
-  // 누락된 대댓글 관계 추가
-  parent    Comment? @relation("ReplyToComment", fields: [parentId], references: [commentId], onDelete: SetNull) // 부모 댓글과의 관계
-  replies   Comment[] @relation("ReplyToComment") // 자식 댓글들 (대댓글)
+  post    Post     @relation(fields: [postId], references: [postId], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  parent  Comment? @relation("ReplyToComment", fields: [parentId], references: [commentId], onDelete: SetNull)
+  replies Comment[] @relation("ReplyToComment")
 
-  @@index([postId])   // 게시글별 댓글 조회 최적화
-  @@index([userId])   // 사용자별 댓글 조회 최적화
-  @@index([parentId]) // 대댓글 조회 최적화 (새로 추가)
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
   @@map("comments")
 }
 
 // 팀 게시글 댓글
 model TeamComment {
-  teamCommentId Int      @id @default(autoincrement()) @map("team_comment_id")
-  teamPostId    Int      @map("team_post_id") // 팀 게시글 ID
-  userId        Int      @map("user_id") // 작성자 ID
-  content       String   @map("content") // 댓글 내용
-  createdAt     DateTime @default(now()) @map("created_at") // 작성일시
-  updatedAt     DateTime @updatedAt @map("updated_at") // 수정일시
-
-  // 대댓글을 위한 필드 추가
-  parentId      Int?     @map("parent_id") // 부모 댓글 ID (대댓글인 경우)
+  teamCommentId Int         @id @default(autoincrement()) @map("team_comment_id")
+  teamPostId    Int         @map("team_post_id")
+  userId        Int         @map("user_id")
+  content       String      @map("content")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  parentId      Int?        @map("parent_id")
 
   // 관계 설정
-  teamPost      TeamPost @relation(fields: [teamPostId], references: [teamPostId], onDelete: Cascade) // 팀 게시글 삭제 시 댓글도 삭제
-  user          User     @relation(fields: [userId], references: [userId], onDelete: Cascade) // 사용자 삭제 시 댓글도 삭제
-  // 누락된 대댓글 관계 추가
-  parent        TeamComment? @relation("ReplyToTeamComment", fields: [parentId], references: [teamCommentId], onDelete: SetNull) // 부모 댓글과의 관계
-  replies       TeamComment[] @relation("ReplyToTeamComment") // 자식 댓글들 (대댓글)
+  teamPost TeamPost    @relation(fields: [teamPostId], references: [teamPostId], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  parent   TeamComment? @relation("ReplyToTeamComment", fields: [parentId], references: [teamCommentId], onDelete: SetNull)
+  replies  TeamComment[] @relation("ReplyToTeamComment")
 
-  @@index([teamPostId]) // 팀 게시글별 댓글 조회 최적화
-  @@index([userId])     // 사용자별 댓글 조회 최적화
-  @@index([parentId])   // 대댓글 조회 최적화 (새로 추가)
+  @@index([teamPostId])
+  @@index([userId])
+  @@index([parentId])
   @@map("team_comments")
 }
 
@@ -312,66 +277,36 @@ model TeamComment {
 
 // 개인 도서관 (읽고싶어요, 읽는중, 완료한 책들)
 model MyLibrary {
-  libraryId  Int         @id @default(autoincrement()) @map("library_id")
-  userId     Int         @map("user_id") // 사용자 ID
-  isbn13 String      @map("book_isbn13") // 책 ISBN13
-  myRating   Int?        @map("my_rating") // 개인 평점 (1~5, 선택사항)
-  status     ReadingStatus @map("status") // 독서 상태 (읽고싶어요/읽는중/완료)
-  addedAt    DateTime    @default(now()) @map("added_at") // 추가일시
-  updatedAt  DateTime    @updatedAt @map("updated_at") // 수정일시
+  libraryId Int           @id @default(autoincrement()) @map("library_id")
+  userId    Int           @map("user_id")
+  isbn13    String        @map("book_isbn13")
+  myRating  Int?          @map("my_rating")
+  status    ReadingStatus @map("status")
+  addedAt   DateTime      @default(now()) @map("added_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
 
   // 관계 설정
-  user       User        @relation(fields: [userId], references: [userId], onDelete: Cascade) // 사용자 삭제 시 라이브러리도 삭제
-  book       Book        @relation(fields: [isbn13], references: [isbn13], onDelete: Cascade) // 책 삭제 시 라이브러리 항목도 삭제
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  book Book @relation(fields: [isbn13], references: [isbn13], onDelete: Cascade)
 
-  @@unique([userId, isbn13]) // 한 사용자는 한 책을 한 번만 라이브러리에 추가
-  @@index([userId])           // 사용자별 라이브러리 조회 최적화
-  @@index([status])           // 독서 상태별 조회 최적화
+  @@unique([userId, isbn13])
+  @@index([userId])
+  @@index([status])
   @@map("my_libraries")
 }
 
 // 위시리스트 (나중에 읽고 싶은 책들)
 model WishList {
   wishListId Int      @id @default(autoincrement()) @map("wish_list_id")
-  userId     Int      @map("user_id") // 사용자 ID
-  isbn13 String   @map("book_isbn13") // 책 ISBN13
-  addedAt    DateTime @default(now()) @map("added_at") // 추가일시
+  userId     Int      @map("user_id")
+  isbn13     String   @map("book_isbn13")
+  addedAt    DateTime @default(now()) @map("added_at")
 
   // 관계 설정
-  user       User     @relation("UserWishLists", fields: [userId], references: [userId], onDelete: Cascade) // 사용자 삭제 시 위시리스트도 삭제
-  book       Book     @relation("BookWishLists", fields: [isbn13], references: [isbn13], onDelete: Cascade) // 책 삭제 시 위시리스트 항목도 삭제
+  user User @relation("UserWishLists", fields: [userId], references: [userId], onDelete: Cascade)
+  book Book @relation("BookWishLists", fields: [isbn13], references: [isbn13], onDelete: Cascade)
 
-  @@unique([userId, isbn13]) // 한 사용자는 한 책을 한 번만 위시리스트에 추가
-  @@index([userId])           // 사용자별 위시리스트 조회 최적화
+  @@unique([userId, isbn13])
+  @@index([userId])
   @@map("wish_lists")
-}
-
-// ============ 관리 컨텐츠 모델 ============
-
-// FAQ 아이템
-model FAQItem {
-  faqId        Int      @id @default(autoincrement()) @map("faq_id")
-  question     String   @map("question") // 질문
-  answer       String   @db.Text @map("answer") // 답변
-  isActive     Boolean  @default(true) @map("is_active") // 활성화 여부
-  displayOrder Int?     @map("display_order") // 표시 순서
-  createdAt    DateTime @default(now()) @map("created_at") // 생성일시
-  updatedAt    DateTime @updatedAt @map("updated_at") // 수정일시
-
-  @@index([isActive, displayOrder]) // 활성화된 FAQ 순서별 조회 최적화
-  @@map("faq_items")
-}
-
-// 서비스 소개 컨텐츠
-model AboutContent {
-  aboutId      Int      @id @default(autoincrement()) @map("about_id")
-  title        String   @map("title") // 제목
-  content      String   @db.Text @map("content") // 내용
-  isActive     Boolean  @default(true) @map("is_active") // 활성화 여부
-  displayOrder Int?     @map("display_order") // 표시 순서
-  createdAt    DateTime @default(now()) @map("created_at") // 생성일시
-  updatedAt    DateTime @updatedAt @map("updated_at") // 수정일시
-
-  @@index([isActive, displayOrder]) // 활성화된 컨텐츠 순서별 조회 최적화
-  @@map("about_contents")
 }

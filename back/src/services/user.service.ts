@@ -2,9 +2,16 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { UserRole } from '@prisma/client';
 import userRepository from '../repositories/user.repository';
-import { SignupRequest, SignupResponse, LoginRequest, LoginResponse, JWTPayload, UpdateUserData } from '../types/user.type';
+import { TeamMemberRepository } from '../repositories/team-members.repository';
+import { SignupRequest, SignupResponse, LoginRequest, LoginResponse, JWTPayload, UpdateUserData, ChangePasswordRequest, ChangePasswordResponse } from '../types/user.type';
 
 class UserService {
+
+    private teamMemberRepository: TeamMemberRepository;
+
+    constructor() {
+        this.teamMemberRepository = new TeamMemberRepository();
+    }
 
     // 회원가입
     async signUp(signupData: SignupRequest): Promise<SignupResponse> {
@@ -149,76 +156,85 @@ class UserService {
     }
 
 
-    // 유저 삭제
-    async deleteUser(userId: number) {
-        const existingUser = await userRepository.findById(userId);
+    // 비밀번호 변경
+    async changePassword(userId: number, passwordData: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+        const { currentPassword, newPassword, confirmNewPassword } = passwordData;
+        // 1. 기본 입력값 검증
+        if (!currentPassword || !newPassword || !confirmNewPassword) {
+            throw new Error('PasswordFieldRequired');
+        }
 
-        if (!existingUser) {
+        if (newPassword !== confirmNewPassword) {
+            throw new Error('PasswordMismatch');
+        }
+
+        if (newPassword.length < 8) {
+            throw new Error('PasswordTooShort');
+        }
+
+        if (currentPassword === newPassword) {
+            throw new Error('PasswordSame');
+        }
+
+        const user = await userRepository.findById(userId);
+        if (!user) {
             throw new Error('UserNotFound');
         }
 
-        await userRepository.deleteUser(userId);
+        // 6. 현재 비밀번호 검증
+        const isValidCurrentPassword = await bcrypt.compare(currentPassword, user.password);
+        if (!isValidCurrentPassword) {
+            throw new Error('CurrentPasswordMismatch');
+        }
+
+        // 7. 비밀번호 변경
+        const saltRounds = parseInt(process.env.SALT_ROUNDS || '10');
+        const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+        await userRepository.updateUserPassword(userId, { password: hashedNewPassword });
 
         return {
-            message: "유저 삭제"
-        }
+            message: '비밀번호가 성공적으로 변경되었습니다.'
+        };
     }
 
 
+    // 유저 삭제
+    // async deleteUser(userId: number) {
+    //     const existingUser = await userRepository.findById(userId);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // 비밀번호 변경
-    // async changePassword(userId: number, oldPassword: string, newPassword: string) {
-    //     // 1. 현재 사용자 정보 조회
-    //     const user = await userRepository.findById(userId);
-    //     if (!user) {
-    //         throw new Error('사용자를 찾을 수 없습니다.');
+    //     if (!existingUser) {
+    //         throw new Error('UserNotFound');
     //     }
 
-    //     // 2. 기존 비밀번호 확인
-    //     const isValidPassword = await bcrypt.compare(oldPassword, user.password);
-    //     if (!isValidPassword) {
-    //         throw new Error('현재 비밀번호가 올바르지 않습니다.');
+    //     const leaderMembership = await this.teamMemberRepository.findLeaderMembershipByUserId(userId);
+
+    //     if (leaderMembership) {
+    //         throw new Error('LeaderCannotWithdraw: 팀을 위임하거나 해산한 후 탈퇴할 수 있습니다.');
     //     }
 
-    //     // 3. 새 비밀번호 해싱
-    //     const saltRounds = parseInt(process.env.SALT_ROUNDS || '10');
-    //     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
-
-    //     // 4. 비밀번호 업데이트
-    //     await userRepository.updateUser(userId, { password: hashedNewPassword });
+    //     await userRepository.deleteUser(userId);
 
     //     return {
-    //         message: '비밀번호가 성공적으로 변경되었습니다.'
+    //         message: "유저 삭제가 완료되었습니다."
     //     };
     // }
 
-    // 사용자 통계 (관리자용)
-    async getUserStats() {
-        const totalUsers = await userRepository.countUsers();
-        const allUsers = await userRepository.findAllUsers();
+    //     team-member.respository에서 추가해야됨
+    //    * 탈퇴하려는 사용자가 LEADER 역할을 맡고 있는 팀 멤버십이 있는지 확인
+    //   public async findLeaderMembershipByUserId(
+    //     userId: number
+    //   ): Promise<TeamMember | null> {
+    //     const leaderMembership = await prisma.teamMember.findFirst({
+    //       where: {
+    //         userId: userId,
+    //         role: "LEADER",
+    //       },
+    //     });
+    //     return leaderMembership;
+    //   }
 
-        return {
-            totalUsers,
-            recentUsers: allUsers.slice(0, 10) // 최근 10명
-        };
-    }
+
+
 
 }
 
