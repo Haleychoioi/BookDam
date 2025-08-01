@@ -1,25 +1,27 @@
 // src/pages/auth/LoginPage.tsx
 import React, { useState } from "react";
-// import { useNavigate } from "react-router-dom"; // useNavigate 훅 제거
 import Button from "../../components/common/Button";
 import { useAuth } from "../../hooks/useAuth";
+import { useNavigate } from "react-router-dom"; // useNavigate 훅 제거
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // const navigate = useNavigate(); // navigate 선언 제거
   const { login, loading } = useAuth(); // useAuth 훅에서 error 제거
+  const navigate = useNavigate(); // navigate 선언 제거
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const success = await login(email, password);
     if (success) {
+      navigate("/"); //로그안 성공 시 홈으로 이동
       // 훅 내부에서 navigate 처리하므로 여기서는 추가 작업 없음
     } else {
       // 훅에서 에러 alert 처리하므로 여기서는 추가 작업 없음
     }
   };
+
 
   return (
     <div>

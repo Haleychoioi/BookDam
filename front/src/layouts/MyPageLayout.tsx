@@ -151,6 +151,15 @@ const MyPageLayout: React.FC = () => {
                   회원 정보 수정
                 </Link>
                 <Link
+                  to="/mypage/account-security"
+                  className={`${getNavLinkClass(
+                    "/mypage/account-security"
+                  )} text-sm`}
+                  onClick={toggleMobileMenu}
+                >
+                  계정 관리
+                </Link>
+                <Link
                   to="/mypage/user-leave"
                   className={`${getNavLinkClass(
                     "/mypage/user-leave"

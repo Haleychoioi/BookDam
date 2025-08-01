@@ -1,6 +1,9 @@
+// src/pages/books/BookDetailPage.tsx
+
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 
 import SearchBar from "../../components/common/SearchBar";
 import BookDetailHeroSection from "../../components/bookDetail/BookDetailHeroSection";
@@ -16,19 +19,20 @@ import {
   fetchBestsellers,
   fetchNewBooks,
   fetchSpecialNewBooks,
-  // fetchBookCommunities, // 백엔드 구현 시 주석 해제
 } from "../../api/books";
+import { createCommunity, fetchCommunitiesByBook } from "../../api/communities";
 
 interface BookDetailPageData {
   book: BookDetail;
   bestsellers: BookSummary[];
   newBooks: BookSummary[];
   specialNewBooks: BookSummary[];
-  communities: Community[];
+  communities: Community[]; // 커뮤니티 데이터 추가
 }
 
 const BookDetailPage: React.FC = () => {
   const { itemId } = useParams<{ itemId: string }>();
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isError, error } = useQuery<
     BookDetailPageData,
@@ -41,20 +45,36 @@ const BookDetailPage: React.FC = () => {
         throw new Error("도서 ID가 제공되지 않았습니다.");
       }
 
-      const [
-        fetchedBookDetail,
-        fetchedBestsellers,
-        fetchedNewBooks,
-        fetchedSpecialNewBooks,
-      ] = await Promise.all([
-        getBookDetail(itemId),
-        fetchBestsellers(1, 10),
-        fetchNewBooks(1, 10),
-        fetchSpecialNewBooks(1, 10),
-        // fetchBookCommunities(itemId), // 커뮤니티 API 구현 시 주석 해제
-      ]);
+      const fetchedBookDetail = await getBookDetail(itemId);
 
-      const fetchedCommunities: Community[] = [];
+      const [fetchedBestsellers, fetchedNewBooks, fetchedSpecialNewBooks] =
+        await Promise.all([
+          fetchBestsellers(1, 10),
+          fetchNewBooks(1, 10),
+          fetchSpecialNewBooks(1, 10),
+        ]);
+
+      let fetchedCommunities: Community[] = [];
+      try {
+        fetchedCommunities = await fetchCommunitiesByBook(itemId);
+      } catch (communityError: unknown) {
+        // ✨ 여기를 'unknown'으로 수정합니다. ✨
+        // axios.isAxiosError는 'unknown' 타입의 에러가 AxiosError 인지 확인하는 타입 가드 역할을 합니다.
+        if (
+          axios.isAxiosError(communityError) &&
+          communityError.response &&
+          communityError.response.status === 404 &&
+          communityError.response.data?.message ===
+            "No communities found for this book."
+        ) {
+          console.warn(
+            "해당 도서에 대한 커뮤니티가 없습니다. 빈 목록으로 진행합니다."
+          );
+          fetchedCommunities = [];
+        } else {
+          throw communityError; // 그 외의 에러는 다시 던집니다.
+        }
+      }
 
       return {
         book: fetchedBookDetail,
@@ -66,13 +86,15 @@ const BookDetailPage: React.FC = () => {
     },
 
     enabled: !!itemId,
+    staleTime: 1000 * 60 * 5,
+    retry: 1, // 재시도 횟수를 줄입니다.
   });
 
   const book = data?.book || null;
   const bestsellers = data?.bestsellers || [];
   const newBooks = data?.newBooks || [];
   const specialNewBooks = data?.specialNewBooks || [];
-  const communities = data?.communities || []; // 이 부분은 커뮤니티 API 구현 후 data?.communities 로 변경
+  const communities = data?.communities || [];
 
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(
@@ -119,10 +141,17 @@ const BookDetailPage: React.FC = () => {
     console.log(` 소개: ${description}`);
 
     try {
-      // TODO: 커뮤니티 생성 API (POST /communities) 호출 로직 구현
-      alert("커뮤니티가 성공적으로 생성되었습니다!");
+      await createCommunity({
+        bookIsbn13: bookIdentifier,
+        title: communityName,
+        content: description,
+        maxMembers: maxMembers,
+      });
+
       handleCreateModalClose();
-      // queryClient.invalidateQueries(['bookDetailPageData', bookIdentifier]); // 커뮤니티 생성 후 데이터 무효화 (useQueryClient 필요)
+      queryClient.invalidateQueries({
+        queryKey: ["bookDetailPageData", bookIdentifier],
+      });
     } catch (error) {
       console.error("커뮤니티 생성 중 오류 발생:", error);
       alert("커뮤니티 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
@@ -137,18 +166,10 @@ const BookDetailPage: React.FC = () => {
     );
   }
 
-  if (isError) {
+  if (isError || !book) {
     return (
       <div className="text-center py-12 text-xl text-red-700">
-        오류: {error?.message || "페이지 데이터를 불러오는 데 실패했습니다."}
-      </div>
-    );
-  }
-
-  if (!book) {
-    return (
-      <div className="text-center py-12 text-xl text-gray-700">
-        도서 정보를 찾을 수 없습니다.
+        오류: {error?.message || "도서 상세 정보를 불러오는 데 실패했습니다."}
       </div>
     );
   }
@@ -167,13 +188,21 @@ const BookDetailPage: React.FC = () => {
 
         <BookDetailDescription book={book} />
 
+        <h2 className="text-2xl text-gray-800 text-center mb-4 mt-20">
+          모집 중인 커뮤니티
+        </h2>
         {communities.length > 0 && (
-          <div className="p-6 mt-8">
+          <div className="p-6">
             <CommunityCarousel
-              title={`모집 중인 [${book.title}] 커뮤니티`}
               communities={communities}
               onApplyClick={handleApplyCommunityClick}
             />
+          </div>
+        )}
+        {communities.length === 0 && !isLoading && (
+          <div className="p-6 mt-8 text-center text-gray-600">
+            아직 이 책에 대한 모집 중인 커뮤니티가 없습니다. 새로운 커뮤니티를
+            만들어보세요!
           </div>
         )}
 

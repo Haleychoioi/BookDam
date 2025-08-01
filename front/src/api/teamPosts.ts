@@ -1,0 +1,128 @@
+// src/api/teamPosts.ts
+
+import apiClient from "./apiClient";
+import type { Post } from "../types"; // Post 타입 임포트
+
+// =========================================================
+// 팀 게시물 관련 API
+// =========================================================
+
+/**
+ * 특정 커뮤니티의 팀 게시물 목록을 조회합니다.
+ * GET /api/communities/:communityId/posts
+ * @param communityId - 팀 커뮤니티 ID
+ * @param page - 페이지 번호
+ * @param pageSize - 페이지당 항목 수
+ * @param sort - 정렬 기준 (예: 'latest')
+ * @returns 팀 게시물 목록 배열
+ */
+export const fetchTeamPosts = async (
+  communityId: string,
+  page: number = 1,
+  pageSize: number = 10,
+  sort: string = "latest"
+): Promise<{ posts: Post[]; totalResults: number }> => {
+  try {
+    const response = await apiClient.get<{
+      message: string;
+      data: Post[];
+    }>(
+      `/communities/${communityId}/posts?page=${page}&size=${pageSize}&sort=${sort}`
+    );
+
+    return {
+      posts: response.data.data,
+      totalResults: response.data.data.length, // 백엔드에서 totalResults를 받지 않으므로 임시
+    };
+  } catch (error) {
+    console.error("Failed to fetch team posts:", error);
+    throw error;
+  }
+};
+
+/**
+ * 새로운 팀 게시물을 생성합니다.
+ * POST /api/communities/:communityId/posts/write
+ * @param communityId - 팀 커뮤니티 ID
+ * @param postData - 생성할 게시물 데이터 { title, content, type? }
+ * @returns 생성된 게시물 ID
+ */
+export const createTeamPost = async (
+  communityId: string,
+  postData: { title: string; content: string; type?: string } // type은 백엔드 Enum TeamPostType과 맞춤
+): Promise<string> => {
+  try {
+    const response = await apiClient.post<{
+      status: string;
+      message: string;
+      postId: number; // 백엔드는 postId를 number로 반환
+    }>(`/communities/${communityId}/posts/write`, postData);
+    return response.data.postId.toString(); // ID를 string으로 변환
+  } catch (error) {
+    console.error("Failed to create team post:", error);
+    throw error;
+  }
+};
+
+/**
+ * 특정 팀 게시물 상세 정보를 조회합니다.
+ * GET /api/communities/:communityId/posts/:teamPostId
+ * @param communityId - 팀 커뮤니티 ID
+ * @param teamPostId - 팀 게시물 ID
+ * @returns Post 객체
+ */
+export const fetchTeamPostById = async (
+  communityId: string,
+  teamPostId: string
+): Promise<Post> => {
+  try {
+    const response = await apiClient.get<{ message: string; data: Post }>(
+      `/communities/${communityId}/posts/${teamPostId}`
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error("Failed to fetch team post by ID:", error);
+    throw error;
+  }
+};
+
+/**
+ * 특정 팀 게시물을 수정합니다.
+ * PUT /api/communities/:communityId/posts/:teamPostId
+ * @param communityId - 팀 커뮤니티 ID
+ * @param teamPostId - 수정할 팀 게시물 ID
+ * @param updateData - 업데이트할 데이터 { title?, content? }
+ */
+export const updateTeamPost = async (
+  communityId: string,
+  teamPostId: string,
+  updateData: { title?: string; content?: string }
+): Promise<void> => {
+  try {
+    await apiClient.put(
+      `/communities/${communityId}/posts/${teamPostId}`,
+      updateData
+    );
+  } catch (error) {
+    console.error("Failed to update team post:", error);
+    throw error;
+  }
+};
+
+/**
+ * 특정 팀 게시물을 삭제합니다.
+ * DELETE /api/communities/:communityId/posts/:teamPostId
+ * @param communityId - 팀 커뮤니티 ID
+ * @param teamPostId - 삭제할 팀 게시물 ID
+ */
+export const deleteTeamPost = async (
+  communityId: string,
+  teamPostId: string
+): Promise<void> => {
+  try {
+    await apiClient.delete(`/communities/${communityId}/posts/${teamPostId}`);
+  } catch (error) {
+    console.error("Failed to delete team post:", error);
+    throw error;
+  }
+};

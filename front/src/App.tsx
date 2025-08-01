@@ -24,6 +24,7 @@ import PostWritePage from "./pages/posts/PostWritePage";
 import GeneralBoardPage from "./pages/communities/GeneralBoardPage";
 import MyActivitiesPage from "./pages/mypage/MyActivitiesPage";
 import UserLeavePage from "./pages/mypage/UserLeavePage";
+import AccountSecurityPage from "./pages/mypage/AccountSecurityPage";
 
 function App() {
   return (
@@ -82,9 +83,14 @@ function App() {
               path="communities/applied"
               element={<MyCommunitiesAppliedPage />}
             />
+            {/* 계정관리 페이지 */}
+            <Route
+              path="account-security"
+              element={<AccountSecurityPage />}
+            />
             {/* 회원탈퇴 페이지 */}
             <Route 
-              path="/mypage/user-leave"
+              path="user-leave"
               element={<UserLeavePage />}
             />
           </Route>
