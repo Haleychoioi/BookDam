@@ -294,7 +294,7 @@ export class CommunityService {
   }
 
   /**
-   * 헬퍼 함수: 커뮤니티 목록에 maxMembers 및 currentMembers 정보 추가
+   * 커뮤니티 목록에 maxMembers 및 currentMembers 정보 추가
    * @param communities
    * @returns
    */
