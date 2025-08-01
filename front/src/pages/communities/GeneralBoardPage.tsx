@@ -1,76 +1,87 @@
-import { useState, useEffect, useMemo } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+// src/pages/communities/GeneralBoardPage.tsx
+
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import BoardTemplate from "../../components/posts/BoardTemplate";
 import type { Post } from "../../types";
-
-const allGeneralPostsMockData: Post[] = Array.from({ length: 100 }, (_, i) => ({
-  id: `general-post-${i + 1}`,
-  title: `[전체] ${i + 1}번째 흥미로운 이야기`,
-  commentCount: Math.floor(Math.random() * 20) + 1,
-  createdAt: new Date().toISOString(), // 현재 날짜를 ISO 형식 문자열로
-  updatedAt: undefined, // 선택적 필드이므로 일단 undefined
-  type: "general",
-  author: `작성자 ${i + 1}`,
-  authorId: i + 1, // ★★★ FIX: string -> number (고유한 숫자 ID 할당) ★★★
-  content: `이것은 [전체] ${i + 1}번째 게시물의 내용입니다.`,
-}));
+import { fetchAllPosts } from "../../api/posts";
 
 const GeneralBoardPage: React.FC = () => {
-  const location = useLocation();
   const navigate = useNavigate();
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8; // 페이지당 게시물 수
 
-  const allPostsForGeneralBoard = useMemo(() => {
-    return allGeneralPostsMockData;
-  }, []);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // error 상태는 유지하고 사용합니다.
 
-  const totalPosts = allPostsForGeneralBoard.length;
-  const totalPages = Math.ceil(totalPosts / itemsPerPage);
+  const totalPages = useMemo(() => {
+    return Math.ceil(totalPosts / itemsPerPage);
+  }, [totalPosts, itemsPerPage]);
 
-  const displayedPosts = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return allPostsForGeneralBoard.slice(startIndex, endIndex);
-  }, [currentPage, itemsPerPage, allPostsForGeneralBoard]);
+  const loadPosts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetchAllPosts(currentPage, itemsPerPage, "latest");
+      setPosts(response.posts);
+      setTotalPosts(response.totalResults);
+    } catch (err: unknown) {
+      console.error("일반 게시물 불러오기 실패:", err);
+      setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
+      setPosts([]);
+      setTotalPosts(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    loadPosts();
+    window.scrollTo(0, 0);
+  }, [loadPosts]); // location.pathname 의존성 제거됨
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // TODO: 실제 API 호출 로직: fetchAllPosts(page); (API 명세: GET /posts)
   };
 
   const handleWritePostClick = () => {
-    navigate("/posts/new");
+    navigate("/posts/write");
   };
 
-  useEffect(() => {
-    setCurrentPage(1);
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
-
-  const generalHeaderContent = (
-    <>
-      <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
-        책담
-      </h1>
-      <p className="text-lg">
-        어떤 책이든, 어떤 이야기든 좋아요. '책담'에서 당신의 목소리를
-        들려주세요.
-      </p>
-    </>
-  );
-
   return (
-    <BoardTemplate
-      headerContent={generalHeaderContent}
-      posts={displayedPosts}
-      currentPage={currentPage}
-      totalPages={totalPages}
-      onPageChange={handlePageChange}
-      onWritePostClick={handleWritePostClick}
-      boardTitle="게시물"
-    />
+    <div className="min-h-screen py-10">
+      <div className="container mx-auto px-4 lg:px-20 xl:px-32">
+        {/* '책담' 섹션 (이미지와 동일하게 BoardTemplate 외부에서 렌더링) */}
+        <h1 className="text-4xl md:text-5xl  mb-6 mt-10">책담</h1>
+        <p className="text-lg text-gray-600 mb-8">
+          어떤 책이든, 어떤 이야기든 좋아요. '책담'에서 당신의 목소리를
+          들려주세요.
+        </p>
+
+        {/* 로딩 및 에러 메시지 표시 */}
+        {loading ? (
+          <div className="text-center text-gray-600 py-10">
+            게시물을 불러오는 중...
+          </div>
+        ) : error ? (
+          <div className="text-center text-red-600 py-10">오류: {error}</div>
+        ) : (
+          <BoardTemplate
+            boardTitle="게시글"
+            posts={posts}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            onWritePostClick={handleWritePostClick}
+            onPostClick={(postId) => navigate(`/posts/${postId}`)}
+            isLoading={loading} // 로딩 상태 전달
+          />
+        )}
+      </div>
+    </div>
   );
 };
 

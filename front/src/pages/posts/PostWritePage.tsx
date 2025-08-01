@@ -1,92 +1,100 @@
-// front/src/pages/posts/PostWritePage.tsx
+// src/pages/posts/PostWritePage.tsx
 
-import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import PostForm from "../../components/posts/PostForm"; // ✨ PostWriteTemplate 임포트 ✨
+import React, { useState, useCallback } from "react";
+// useLocation은 더 이상 사용하지 않으므로 제거합니다.
+import { useParams, useNavigate /*, useLocation */ } from "react-router-dom";
+import PostForm from "../../components/posts/PostForm";
+
+import { useAuth } from "../../hooks/useAuth";
+import { createPost } from "../../api/posts";
+import { createTeamPost } from "../../api/teamPosts";
+import type { PostType, TeamPostType } from "../../types";
 
 const PostWritePage: React.FC = () => {
   const { communityId } = useParams<{ communityId?: string }>();
   const navigate = useNavigate();
+  const { currentUserProfile, loading: authLoading } = useAuth();
 
   const isCommunityPost = !!communityId;
 
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  // title, content 상태는 PostForm 내부에서 관리하므로 여기서 제거합니다.
+  // const [title, setTitle] = useState("");
+  // const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentUserId = "user123"; // Mock user ID
+  const handlePostSubmit = useCallback(
+    async (formData: {
+      title: string;
+      content: string;
+      type?: PostType | TeamPostType;
+    }) => {
+      if (!currentUserProfile || authLoading) {
+        alert("로그인이 필요합니다.");
+        navigate("/auth/login");
+        return;
+      }
 
-  const handleSubmit = async () => {
-    if (!title.trim() || !content.trim()) {
-      alert("제목과 내용을 모두 입력해주세요.");
-      return;
-    }
+      setLoading(true);
+      setError(null);
 
-    setLoading(true);
-    setError(null);
+      try {
+        let postId: string;
+        if (communityId) {
+          postId = await createTeamPost(communityId, {
+            title: formData.title, // formData에서 제목 가져오기
+            content: formData.content, // formData에서 내용 가져오기
+            type: formData.type as TeamPostType,
+          });
+          alert("팀 게시물이 성공적으로 작성되었습니다.");
+          navigate(`/communities/${communityId}/posts/${postId}`);
+        } else {
+          postId = await createPost({
+            title: formData.title, // formData에서 제목 가져오기
+            content: formData.content, // formData에서 내용 가져오기
+          });
+          alert("게시물이 성공적으로 작성되었습니다.");
+          navigate(`/posts/${postId}`);
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error("게시물 작성 실패:", err);
+          setError(err.message || "알 수 없는 오류가 발생했습니다.");
+          alert(
+            `게시물 작성 중 오류가 발생했습니다: ${
+              err.message || "알 수 없는 오류"
+            }`
+          );
+        } else {
+          setError("알 수 없는 오류가 발생했습니다.");
+          alert("게시물 작성 중 알 수 없는 오류가 발생했습니다.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [communityId, navigate, currentUserProfile, authLoading]
+  );
 
-    try {
-      console.log(
-        `새 게시물 생성: 커뮤니티ID=${
-          communityId || "없음"
-        }, 제목=${title}, 내용=${content}, 작성자=${currentUserId}`
-      );
-      // 실제 API 호출 로직 (POST /posts 또는 POST /communities/:id/posts)
-      // const response = await createPost({ title, content, userId: currentUserId, communityId });
-      // const newPostId = response.postId;
-
-      // Mock 데이터로 postId 생성
-      const newPostId = `mock-new-post-${Date.now()}`;
-
-      alert("게시물이 작성되었습니다.");
-      navigate(`/posts/${newPostId}`);
-    } catch (err) {
-      console.error("게시물 작성 실패:", err);
-      setError("게시물 작성 실패");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (isCommunityPost) {
       navigate(`/communities/${communityId}/posts`);
     } else {
       navigate("/posts");
     }
-  };
-
-  // 템플릿에 전달할 프롭스들
-  const pageTitle = "새 글 쓰기";
-  const submitButtonText = "작성 완료";
-
-  // 에러 또는 로딩 상태 표시 (Template 내부에서 처리하지 않고 여기에서 처리)
-  if (loading) {
-    return (
-      <div className="text-center py-12 text-xl text-gray-700">
-        게시물 작성 중...
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div className="text-center py-12 text-xl text-red-700">{error}</div>
-    );
-  }
+  }, [isCommunityPost, navigate, communityId]);
 
   return (
     <PostForm
-      title={title}
-      onTitleChange={(e) => setTitle(e.target.value)}
-      content={content}
-      onContentChange={(newValue) => setContent(newValue || "")}
-      onSubmit={handleSubmit}
+      // title, onTitleChange, content, onContentChange 프롭은 PostForm 내부에서 관리하므로 제거합니다.
+      onSubmit={handlePostSubmit}
       onCancel={handleCancel}
       loading={loading}
-      error={error} // 템플릿에서 에러 메시지를 표시하지 않으므로, 이 프롭스는 제거 가능
-      pageTitle={pageTitle}
-      submitButtonText={submitButtonText}
+      error={error}
+      pageTitle={communityId ? "팀 게시물 작성" : "새 게시물 작성"}
+      submitButtonText={communityId ? "팀 게시물 등록" : "게시물 등록"}
+      isCommunityPost={!!communityId}
+      initialData={{ title: "", content: "" }}
     />
   );
 };

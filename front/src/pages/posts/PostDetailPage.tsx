@@ -1,544 +1,516 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+// src/pages/posts/PostDetailPage.tsx
+
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import PostDetailTemplate from "../../components/posts/PostDetailTemplate";
-import type { Post, Comment } from "../../types";
+import type { Post, Comment, TeamPost, TeamComment } from "../../types";
 
 import CommentInput from "../../components/comments/CommentInput";
 import CommentList from "../../components/comments/CommentList";
+import { useAuth } from "../../hooks/useAuth";
 
-const POST_AUTHOR_PROFILE_IMAGE_BASE_URL =
-  "https://via.placeholder.com/40?text=";
-const COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL =
-  "https://via.placeholder.com/30?text=";
+// API 임포트
+import { fetchPostById, updatePost, deletePost } from "../../api/posts";
+import {
+  fetchTeamPostById,
+  updateTeamPost,
+  deleteTeamPost,
+} from "../../api/teamPosts";
+import {
+  createComment,
+  fetchCommentsByPost,
+  updateComment,
+  deleteComment,
+} from "../../api/comments";
+import {
+  createTeamComment,
+  fetchTeamComments,
+  updateTeamComment,
+  deleteTeamComment,
+} from "../../api/teamComments";
 
-const mockPostsDetailData: { [key: string]: Post } = {
-  "post-1": {
-    id: "post-1",
-    title: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
-    commentCount: 5,
-    author: "홍길동",
-    authorId: 456,
-    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "Hong",
-    createdAt: "2025년 07월 21일",
-    content: `# 마크다운 테스트 제목
-**볼드 텍스트**와 *이탤릭 텍스트*를 포함합니다.
-
-- 목록 1
-- 목록 2
-
-\`\`\`javascript
-console.log("코드 블록");
-\`\`\`
-
-> 인용 블록`,
-    type: "general",
-  },
-  "post-2": {
-    id: "post-2",
-    title: "독서 모임 다음 주제 추천 받아요!",
-    commentCount: 12,
-    author: "김철수",
-    authorId: 123,
-    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "Kim",
-    createdAt: "2025년 07월 20일",
-    content: `안녕하세요, 다음 독서 모임 주제를 선정하려고 합니다.
-혹시 추천해주실 만한 책이나 특정 주제가 있다면 자유롭게 의견 주세요!
-이번에는 추리 소설이나 SF 장르도 고려하고 있습니다 :)`,
-    type: "general",
-  },
-  "comm1-post-1": {
-    id: "comm1-post-1",
-    title: "[해리포터] 1번째 독서 스터디 논의점",
-    commentCount: Math.floor(Math.random() * 10) + 1,
-    author: "그리핀도르",
-    authorId: 123,
-    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "Gry",
-    createdAt: "2025년 07월 17일",
-    content: `해리포터 독서 모임 논의점
-이것은 '해리포터' 커뮤니티의 1번째 게시물 상세 내용입니다.
-
-이번 논의에서는 **마법사의 돌** 챕터 3에 대해 이야기해볼까요?
-
-* 등장인물 분석: 해리, 론, 헤르미온느
-* 흥미로웠던 마법 주문
-* 다음 모임에서 다룰 내용
-`,
-    type: "community",
-  },
-  "comm1-post-2": {
-    id: "comm1-post-2",
-    title: "[해리포터] 2번째 독서 스터디 논의점",
-    commentCount: Math.floor(Math.random() * 10) + 1,
-    author: "슬리데린",
-    authorId: 456,
-    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "Sly",
-    createdAt: "2025년 07월 16일",
-    content: `이것은 '해리포터' 커뮤니티의 2번째 게시물 상세 내용입니다. 논의 내용을 확인하세요.`,
-    type: "community",
-  },
-  "comm2-post-1": {
-    id: "comm2-post-1",
-    title: "[노인과바다] 깊은 바다 이야기 1",
-    commentCount: Math.floor(Math.random() * 15) + 1,
-    author: "바다사나이",
-    authorId: 123,
-    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "Sea",
-    createdAt: "2025년 07월 15일",
-    content: `노인과 바다의 첫 번째 깊은 이야기.`,
-    type: "community",
-  },
-  "general-post-1": {
-    id: "general-post-1",
-    title: "[전체] 1번째 흥미로운 이야기",
-    commentCount: 5,
-    author: "전체 게시판 유저1",
-    authorId: 456,
-    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "User1",
-    createdAt: "2025년 07월 21일",
-    content: `이것은 전체 게시판의 1번째 게시물 상세 내용입니다.`,
-    type: "general",
-  },
-  "general-post-2": {
-    id: "general-post-2",
-    title: "[전체] 2번째 흥미로운 이야기",
-    commentCount: 10,
-    author: "전체 게시판 유저2",
-    authorId: 123,
-    authorProfileImage: POST_AUTHOR_PROFILE_IMAGE_BASE_URL + "User2",
-    createdAt: "2025년 07월 20일",
-    content: `이것은 전체 게시판의 2번째 게시물 상세 내용입니다.`,
-    type: "general",
-  },
-};
-
-const rawMockCommentsData: { [key: string]: Comment[] } = {
-  "comm1-post-1": [
-    {
-      id: "c1",
-      author: "책돌이",
-      authorId: 123,
-      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "BookD",
-      createdAt: "2025.07.20 12:00",
-      content: "정말 흥미로운 논의네요! (Depth 0)",
-      postId: "comm1-post-1",
-      postTitle: "[해리포터] 1번째 독서 스터디 논의점",
-      postType: "community",
-      communityId: "comm1",
-      isEdited: false,
-      parentId: undefined,
-      depth: 0,
-      replies: [],
-    },
-    {
-      id: "c1-r1",
-      author: "해리팬",
-      authorId: 456,
-      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "HPF",
-      createdAt: "2025.07.20 12:15",
-      content: "맞아요, 그 부분 저도 궁금했어요! (Depth 1, c1의 답글)",
-      postId: "comm1-post-1",
-      postTitle: "[해리포터] 1번째 독서 스터디 논의점",
-      postType: "community",
-      communityId: "comm1",
-      isEdited: false,
-      parentId: "c1",
-      depth: 1,
-      replies: [],
-    },
-    {
-      id: "c2",
-      author: "책순이",
-      authorId: 456,
-      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "BookS",
-      createdAt: "2025.07.20 12:35",
-      content: "저는 다른 관점에서 보고 있었어요! (Depth 0)",
-      isEdited: true,
-      postId: "comm1-post-1",
-      postTitle: "[해리포터] 1번째 독서 스터디 논의점",
-      postType: "community",
-      communityId: "comm1",
-      parentId: undefined,
-      depth: 0,
-      replies: [],
-    },
-    {
-      id: "c3",
-      author: "독서왕",
-      authorId: 123,
-      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "BookK",
-      createdAt: "2025.07.20 13:10",
-      content: "이런 질문은 정말 좋아요! (Depth 0)",
-      postId: "comm1-post-1",
-      postTitle: "[해리포터] 1번째 독서 스터디 논의점",
-      postType: "community",
-      communityId: "comm1",
-      isEdited: false,
-      parentId: undefined,
-      depth: 0,
-      replies: [],
-    },
-    {
-      id: "c3-r1",
-      author: "새로운 독자",
-      authorId: 789,
-      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "NewR",
-      createdAt: "2025.07.20 13:30",
-      content: "저도 그렇게 생각해요! (Depth 1, c3의 답글)",
-      postId: "comm1-post-1",
-      postTitle: "[해리포터] 1번째 독서 스터디 논의점",
-      postType: "community",
-      communityId: "comm1",
-      isEdited: false,
-      parentId: "c3",
-      depth: 1,
-      replies: [],
-    },
-  ],
-  "post-1": [
-    {
-      id: "gc1",
-      author: "김독자",
-      authorId: 789,
-      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "KimD",
-      createdAt: "2025.07.21 10:00",
-      content: "안녕하세요, 첫 댓글입니다! (Depth 0)",
-      postId: "post-1",
-      postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
-      postType: "general",
-      isEdited: false,
-      parentId: undefined,
-      depth: 0,
-      replies: [],
-    },
-    {
-      id: "gc1-r1",
-      author: "답글러1",
-      authorId: 456,
-      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "Rep1",
-      createdAt: "2025.07.21 10:30",
-      content:
-        "네, 저도 그 문단에 대해 궁금한 점이 많습니다. (Depth 1, gc1의 답글)",
-      postId: "post-1",
-      postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
-      postType: "general",
-      isEdited: false,
-      parentId: "gc1",
-      depth: 1,
-      replies: [],
-    },
-    {
-      id: "gc1-r2",
-      author: "답글러2",
-      authorId: 123,
-      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "Rep2",
-      createdAt: "2025.07.21 10:45",
-      content:
-        "저는 다른 해석을 해봤어요. 혹시 이 부분에 대해 어떻게 생각하시나요? (Depth 1, gc1의 답글)",
-      postId: "post-1",
-      postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
-      postType: "general",
-      isEdited: false,
-      parentId: "gc1",
-      depth: 1,
-      replies: [],
-    },
-    {
-      id: "gc3",
-      author: "책읽는고양이",
-      authorId: 777,
-      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "Cat",
-      createdAt: "2025.07.21 11:00",
-      content: "이 게시물 내용 정말 유익하네요! (Depth 0)",
-      postId: "post-1",
-      postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
-      postType: "general",
-      isEdited: false,
-      parentId: undefined,
-      depth: 0,
-      replies: [],
-    },
-    {
-      id: "gc3-r1",
-      author: "게시판지기",
-      authorId: 100,
-      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "Admin",
-      createdAt: "2025.07.21 11:15",
-      content:
-        "칭찬 감사합니다! 더 좋은 게시물을 올리도록 노력하겠습니다. (Depth 1, gc3의 답글)",
-      postId: "post-1",
-      postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
-      postType: "general",
-      isEdited: false,
-      parentId: "gc3",
-      depth: 1,
-      replies: [],
-    },
-    {
-      id: "gc4",
-      author: "새로운시작",
-      authorId: 888,
-      authorProfileImage: COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "NewS",
-      createdAt: "2025.07.21 11:30",
-      content: "저도 참여해도 될까요? (Depth 0)",
-      postId: "post-1",
-      postTitle: "139페이지 3번째 문단에 대해 토론 ㄲㄲ",
-      postType: "general",
-      isEdited: false,
-      parentId: undefined,
-      depth: 0,
-      replies: [],
-    },
-  ],
-};
-
+// CommentTree 빌드 함수 (API에서 이미 중첩된 형태로 받으므로, 이 함수는 이제 필요 없습니다.
+// 하지만 이전의 논의와 코드 의존성을 고려하여 주석 처리로 남겨둡니다.
+// 실제 사용 시에는 이 함수를 제거하고 API 응답을 직접 comments 상태에 할당해야 합니다.)
+/*
 const buildCommentTree = (
-  flatComments: Comment[],
-  parentId: string | undefined = undefined,
+  flatComments: (Comment | TeamComment)[],
+  parentId: number | null = null,
   currentDepth: number = 0
-): Comment[] => {
-  const nestedComments: Comment[] = [];
+): (Comment | TeamComment)[] => {
+  const nestedComments: (Comment | TeamComment)[] = [];
 
   flatComments
-    .filter((comment) => (comment.parentId || undefined) === parentId)
+    .filter((comment) => (comment.parentId || null) === parentId)
     .sort(
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     )
     .forEach((comment) => {
+      const commentId = 'commentId' in comment ? comment.commentId : comment.teamCommentId;
       const newComment = { ...comment, depth: currentDepth };
 
       newComment.replies = buildCommentTree(
         flatComments,
-        newComment.id,
+        commentId,
         currentDepth + 1
-      );
+      ) as (Comment | TeamComment)[];
+
       nestedComments.push(newComment);
     });
   return nestedComments;
 };
+*/
 
 const PostDetailPage: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { currentUserProfile, loading: authLoading } = useAuth();
 
-  const currentUserId = 123;
-  const currentUserProfileImage = COMMENT_AUTHOR_PROFILE_IMAGE_BASE_URL + "Me";
-
-  const [post, setPost] = useState<Post | undefined>(undefined);
+  const [post, setPost] = useState<Post | TeamPost | undefined>(undefined);
   const [loadingPost, setLoadingPost] = useState(true);
   const [errorPost, setErrorPost] = useState<string | null>(null);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
 
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<(Comment | TeamComment)[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [errorComments, setErrorComments] = useState<string | null>(null);
 
-  const handleAddReply = (parentId: string, content: string) => {
-    console.log(`댓글 ${parentId}에 대한 답글 추가:`, content);
+  // 게시물 ID 파싱 (number 타입)
+  const parsedPostId = postId ? Number(postId) : NaN;
 
-    const newComment: Comment = {
-      id: `c-${Date.now()}`,
-      author: "현재 사용자",
-      authorId: currentUserId,
-      authorProfileImage: currentUserProfileImage, // ✨ 추가 ✨
-      createdAt: new Date().toLocaleString("ko-KR", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }),
-      content: content,
-      postId: postId || `mock-post-${Date.now()}`,
-      postTitle: post?.title || "알 수 없는 게시물",
-      postType: post?.type || "general",
-      communityId:
-        post?.type === "community" && postId?.startsWith("comm")
-          ? postId.split("-")[0]
-          : undefined,
-      isEdited: false,
-      parentId: parentId,
-      depth: 1,
-      replies: [],
-    };
+  // 게시물 타입 (일반 게시물인지 팀 게시물인지)을 URL 경로를 통해 추정
+  const isTeamPostPageCalculated = useMemo(() => {
+    return location.pathname.startsWith("/communities/");
+  }, [location.pathname]);
 
-    setComments((prevComments) => {
-      const addReplyToTree = (
-        commentsArray: Comment[],
-        targetParentId: string,
-        replyToAdd: Comment,
-        currentLevel: number
-      ): Comment[] => {
-        return commentsArray.map((comment) => {
-          if (comment.id === targetParentId) {
-            const newReplyDepth = (comment.depth || 0) + 1;
-            return {
-              ...comment,
-              replies: [
-                ...(comment.replies || []),
-                { ...replyToAdd, depth: newReplyDepth },
-              ],
-            };
-          } else if (comment.replies && comment.replies.length > 0) {
-            return {
-              ...comment,
-              replies: addReplyToTree(
-                comment.replies,
-                targetParentId,
-                replyToAdd,
-                currentLevel + 1
-              ),
-            };
-          }
-          return comment;
-        });
-      };
+  // 게시판 경로 설정 (useMemo로 최적화)
+  const backToBoardPath = useMemo(() => {
+    if (isTeamPostPageCalculated) {
+      const communityId = location.pathname.split("/")[2];
+      return communityId ? `/communities/${communityId}/posts` : "/posts";
+    }
+    return "/posts";
+  }, [isTeamPostPageCalculated, location.pathname]);
 
-      return addReplyToTree(prevComments, parentId, newComment, 0);
-    });
-    // TODO: 실제 API 호출 (POST /posts/:id/comments with parentId)
-  };
+  const backToBoardText = useMemo(() => {
+    return isTeamPostPageCalculated ? "커뮤니티 게시판으로" : "전체 게시판으로";
+  }, [isTeamPostPageCalculated]);
 
-  useEffect(() => {
-    const fetchPostData = () => {
-      setLoadingPost(true);
-      setErrorPost(null);
+  // 🚨 모든 useCallback 함수들을 여기, useState/useMemo 다음에 정의합니다. 🚨
 
-      if (!postId) {
-        setErrorPost("게시물 ID가 제공되지 않았습니다.");
+  // 댓글 목록을 새로 불러오는 헬퍼 함수
+  const refetchComments = useCallback(async () => {
+    setLoadingComments(true);
+    setErrorComments(null);
+    try {
+      let fetchedComments: (Comment | TeamComment)[];
+      if (isTeamPostPageCalculated) {
+        const communityId = location.pathname.split("/")[2];
+        if (!communityId) throw new Error("커뮤니티 ID가 유효하지 않습니다.");
+        fetchedComments = await fetchTeamComments(communityId, parsedPostId);
+      } else {
+        fetchedComments = await fetchCommentsByPost(parsedPostId);
+      }
+      // ✨ 수정: buildCommentTree 함수 제거, API 응답 데이터를 직접 할당 ✨
+      // API 응답은 이미 { data: [...nested_comments...] } 형태이므로, data 안의 배열만 필요.
+      setComments(fetchedComments);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("댓글 목록 새로고침 실패:", err);
+        setErrorComments(err.message || "댓글을 불러오는데 실패했습니다.");
+      } else {
+        setErrorComments("알 수 없는 오류가 발생했습니다.");
+      }
+    } finally {
+      setLoadingComments(false);
+    }
+  }, [parsedPostId, isTeamPostPageCalculated, location.pathname]);
+
+  // 1. 게시물 상세 정보 불러오기 (useCallback으로 감싸기)
+  const fetchPostData = useCallback(async () => {
+    setLoadingPost(true);
+    setErrorPost(null);
+
+    // currentUserProfile이 null일 가능성 체크를 여기서 다시 수행하여 TypeScript 경고 해결
+    if (!currentUserProfile) {
+      if (!authLoading) {
+        // 로딩 중이 아니라면 로그인 필요
+        setErrorPost("로그인이 필요합니다.");
         setLoadingPost(false);
-        return;
+      }
+      return;
+    }
+
+    if (isNaN(parsedPostId)) {
+      setErrorPost("유효하지 않은 게시물 ID입니다.");
+      setLoadingPost(false);
+      return;
+    }
+
+    let fetchedPost: Post | TeamPost | null = null;
+
+    try {
+      if (isTeamPostPageCalculated) {
+        const communityId = location.pathname.split("/")[2];
+        if (!communityId) {
+          setErrorPost("커뮤니티 ID가 유효하지 않습니다.");
+          setLoadingPost(false);
+          return;
+        }
+        fetchedPost = await fetchTeamPostById(communityId, parsedPostId);
+      } else {
+        fetchedPost = await fetchPostById(parsedPostId);
       }
 
-      const fetchedPost = mockPostsDetailData[postId];
       if (fetchedPost) {
         setPost(fetchedPost);
         setEditedContent(fetchedPost.content);
-
-        const initialFlatComments = rawMockCommentsData[postId] || [];
-
-        const nestedComments = buildCommentTree(initialFlatComments);
-
-        setComments(nestedComments);
       } else {
         setErrorPost("게시물을 찾을 수 없습니다.");
       }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("게시물 불러오기 실패:", err);
+        setErrorPost(err.message || "게시물을 불러오는데 실패했습니다.");
+      } else {
+        setErrorPost("알 수 없는 오류가 발생했습니다.");
+      }
+    } finally {
       setLoadingPost(false);
-    };
+    }
+  }, [
+    parsedPostId,
+    currentUserProfile,
+    authLoading,
+    isTeamPostPageCalculated,
+    location.pathname,
+  ]);
 
-    fetchPostData();
+  // useEffect: 컴포넌트 마운트 및 주요 의존성 변경 시 데이터 로드
+  useEffect(() => {
+    if (!authLoading && currentUserProfile) {
+      // authLoading 완료 & currentUserProfile 존재 시
+      fetchPostData();
+      refetchComments();
+    } else if (!authLoading && !currentUserProfile) {
+      // authLoading 완료 & currentUserProfile 없음 = 로그인 필요
+      setLoadingPost(false);
+      setErrorPost("로그인이 필요합니다.");
+    }
     window.scrollTo(0, 0);
     setIsEditing(false);
-  }, [postId]);
+  }, [
+    parsedPostId,
+    currentUserProfile,
+    authLoading,
+    isTeamPostPageCalculated,
+    location.pathname,
+    refetchComments,
+    fetchPostData,
+  ]);
 
-  const isPostAuthor = post?.authorId === currentUserId;
+  // 게시물 작성자 여부 확인
+  const isPostAuthor = post?.userId === currentUserProfile?.userId;
 
-  const handleEditPost = () => {
-    if (post && post.authorId !== currentUserId) {
+  // 2. 게시물 수정 핸들러
+  const handleEditPost = useCallback(() => {
+    if (!post) return;
+    if (!currentUserProfile || authLoading) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    if (post.userId !== currentUserProfile.userId) {
       alert("게시물 작성자만 수정할 수 있습니다.");
       return;
     }
     setIsEditing(true);
-  };
+  }, [post, currentUserProfile, authLoading]);
 
-  const handleSavePost = () => {
-    const trimmedEditedContent = editedContent.trim();
-    const trimmedOriginalContent = post?.content.trim() || "";
+  const handleSavePost = useCallback(
+    async (updatedTitle?: string) => {
+      if (!post) return;
+      if (!currentUserProfile || authLoading) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
 
-    if (!trimmedEditedContent) {
-      alert("게시물 내용을 입력해주세요.");
-      return;
-    }
-    if (trimmedEditedContent === trimmedOriginalContent) {
-      alert("수정된 내용이 없습니다.");
-      setIsEditing(false);
-      return;
-    }
+      const finalTitle = updatedTitle || post.title;
+      const trimmedEditedContent = editedContent.trim();
+      const trimmedOriginalContent = post.content.trim() || "";
 
-    // 실제로는 API 호출 (PUT /posts/:id)
-    console.log(`게시물 ${postId} 수정 완료:`, trimmedEditedContent);
+      if (!finalTitle.trim()) {
+        alert("게시물 제목을 입력해주세요.");
+        return;
+      }
+      if (!trimmedEditedContent) {
+        alert("게시물 내용을 입력해주세요.");
+        return;
+      }
+      if (
+        trimmedEditedContent === trimmedOriginalContent &&
+        finalTitle === post.title
+      ) {
+        alert("수정된 내용이 없습니다.");
+        setIsEditing(false);
+        return;
+      }
 
-    if (post) {
-      setPost({
-        ...post,
-        content: trimmedEditedContent,
-        createdAt:
-          new Date().toLocaleString("ko-KR", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-          }) + " (수정됨)",
-      });
+      try {
+        if (isTeamPostPageCalculated) {
+          const communityId = location.pathname.split("/")[2];
+          if (!communityId) throw new Error("커뮤니티 ID가 없습니다.");
+          await updateTeamPost(communityId, parsedPostId, {
+            title: finalTitle,
+            content: trimmedEditedContent,
+          });
+        } else {
+          await updatePost(parsedPostId, {
+            title: finalTitle,
+            content: trimmedEditedContent,
+          });
+        }
 
-      mockPostsDetailData[post.id] = {
-        ...mockPostsDetailData[post.id],
-        content: trimmedEditedContent,
-        createdAt:
-          new Date().toLocaleString("ko-KR", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-          }) + " (수정됨)",
-      };
-    }
+        setPost((prevPost) =>
+          prevPost
+            ? {
+                ...prevPost,
+                title: finalTitle,
+                content: trimmedEditedContent,
+                updatedAt: new Date().toISOString(),
+              }
+            : undefined
+        );
+        alert("게시물이 성공적으로 수정되었습니다.");
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error("게시물 수정 실패:", err);
+          alert(
+            `게시물 수정 중 오류가 발생했습니다: ${
+              err.message || "알 수 없는 오류"
+            }`
+          );
+        } else {
+          alert("게시물 수정 중 알 수 없는 오류가 발생했습니다.");
+        }
+      } finally {
+        setIsEditing(false);
+      }
+    },
+    [
+      post,
+      editedContent,
+      parsedPostId,
+      currentUserProfile,
+      authLoading,
+      isTeamPostPageCalculated,
+      location.pathname,
+    ]
+  );
 
-    setIsEditing(false);
-  };
-
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setIsEditing(false);
     if (post) {
       setEditedContent(post.content);
     }
-  };
+  }, [post]);
 
-  const handleDeletePost = () => {
-    if (post && post.authorId !== currentUserId) {
+  // 3. 게시물 삭제 핸들러
+  const handleDeletePost = useCallback(async () => {
+    if (!post) return;
+    if (!currentUserProfile || authLoading) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    if (post.userId !== currentUserProfile.userId) {
       alert("게시물 작성자만 삭제할 수 있습니다.");
       return;
     }
 
     if (window.confirm("정말로 이 게시물을 삭제하시겠습니까?")) {
-      console.log(`Delete post ${postId}`);
-
-      delete mockPostsDetailData[postId!];
-      navigate("/posts");
-      alert("게시물이 삭제되었습니다.");
+      try {
+        if (isTeamPostPageCalculated) {
+          const communityId = location.pathname.split("/")[2];
+          if (!communityId) throw new Error("커뮤니티 ID가 없습니다.");
+          await deleteTeamPost(communityId, parsedPostId);
+        } else {
+          await deletePost(parsedPostId, currentUserProfile.userId);
+        }
+        alert("게시물이 성공적으로 삭제되었습니다.");
+        navigate(backToBoardPath); // 삭제 후 게시판으로 이동
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error("게시물 삭제 실패:", err);
+          alert(
+            `게시물 삭제 중 오류가 발생했습니다: ${
+              err.message || "알 수 없는 오류"
+            }`
+          );
+        } else {
+          alert("게시물 삭제 중 알 수 없는 오류가 발생했습니다.");
+        }
+      }
     }
-  };
+  }, [
+    post,
+    parsedPostId,
+    currentUserProfile,
+    authLoading,
+    isTeamPostPageCalculated,
+    navigate,
+    backToBoardPath,
+    location.pathname,
+  ]);
 
-  const handleAddComment = (content: string) => {
-    console.log("새 댓글 추가:", content);
-    const newComment: Comment = {
-      id: `c-${Date.now()}`,
-      author: "현재 사용자",
-      authorId: currentUserId,
-      authorProfileImage: currentUserProfileImage,
-      createdAt: new Date().toLocaleString("ko-KR", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }),
-      content: content,
+  // 4. 댓글 작성/답글 작성 핸들러 (CommentList 및 내부적으로 호출)
+  // 인자 순서: (parentId: number | null, content: string)
+  const handleAddComment = useCallback(
+    async (parentId: number | null, content: string) => {
+      if (!post) return;
+      if (!currentUserProfile || authLoading) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
 
-      postId: postId || `mock-post-${Date.now()}`,
-      postTitle: post?.title || "알 수 없는 게시물",
-      postType: post?.type || "general",
-      communityId:
-        post?.type === "community" && postId?.startsWith("comm")
-          ? postId.split("-")[0]
-          : undefined,
-      isEdited: false,
-      parentId: undefined,
-      depth: 0,
-      replies: [],
-    };
-    setComments((prevComments) => [...prevComments, newComment]);
-  };
+      try {
+        if (isTeamPostPageCalculated) {
+          const communityId = location.pathname.split("/")[2];
+          if (!communityId) throw new Error("커뮤니티 ID가 유효하지 않습니다.");
+          await createTeamComment(
+            communityId,
+            parsedPostId,
+            currentUserProfile.userId,
+            content,
+            parentId
+          );
+        } else {
+          await createComment(parsedPostId, {
+            userId: currentUserProfile.userId,
+            content: content,
+            parentId: parentId,
+          });
+        }
+
+        await refetchComments(); // 댓글 목록 새로고침
+        alert("댓글이 성공적으로 작성되었습니다.");
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error("댓글 작성 실패:", err);
+          alert(
+            `댓글 작성 중 오류가 발생했습니다: ${
+              err.message || "알 수 없는 오류"
+            }`
+          );
+        } else {
+          alert("댓글 작성 중 알 수 없는 오류가 발생했습니다.");
+        }
+      }
+    },
+    [
+      post,
+      parsedPostId,
+      currentUserProfile,
+      authLoading,
+      isTeamPostPageCalculated,
+      refetchComments,
+      location.pathname,
+    ]
+  );
+
+  // CommentInput에 전달할 래퍼 함수 (content만 받음)
+  const handleAddCommentForInput = useCallback(
+    async (content: string) => {
+      await handleAddComment(null, content); // 최상위 댓글이므로 parentId는 null
+    },
+    [handleAddComment]
+  );
+
+  // 댓글 수정 핸들러 (CommentItem에서 호출)
+  const handleEditComment = useCallback(
+    async (commentId: number, newContent: string) => {
+      if (!post || !currentUserProfile) return;
+      try {
+        if (isTeamPostPageCalculated) {
+          const communityId = location.pathname.split("/")[2];
+          if (!communityId) throw new Error("커뮤니티 ID가 없습니다.");
+          await updateTeamComment(communityId, commentId, newContent);
+        } else {
+          await updateComment(commentId, {
+            content: newContent,
+            userId: currentUserProfile.userId,
+          });
+        }
+        await refetchComments();
+        alert("댓글이 성공적으로 수정되었습니다.");
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error("댓글 수정 실패:", err);
+          alert(
+            `댓글 수정 중 오류가 발생했습니다: ${
+              err.message || "알 수 없는 오류"
+            }`
+          );
+        } else {
+          alert("댓글 수정 중 알 수 없는 오류가 발생했습니다.");
+        }
+      }
+    },
+    [
+      post,
+      currentUserProfile,
+      isTeamPostPageCalculated,
+      refetchComments,
+      location.pathname,
+    ]
+  );
+
+  // 댓글 삭제 핸들러 (CommentItem에서 호출)
+  const handleDeleteComment = useCallback(
+    async (commentId: number) => {
+      if (!post || !currentUserProfile) return;
+      if (window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) {
+        try {
+          if (isTeamPostPageCalculated) {
+            const communityId = location.pathname.split("/")[2];
+            if (!communityId) throw new Error("커뮤니티 ID가 없습니다.");
+            // deleteTeamComment는 communityId, teamPostId, teamCommentId, userId를 받음
+            await deleteTeamComment(
+              communityId,
+              parsedPostId,
+              commentId,
+              currentUserProfile.userId
+            );
+          } else {
+            await deleteComment(commentId, currentUserProfile.userId);
+          }
+          await refetchComments();
+          alert("댓글이 성공적으로 삭제되었습니다.");
+        } catch (err: unknown) {
+          if (err instanceof Error) {
+            console.error("댓글 삭제 실패:", err);
+            alert(
+              `댓글 삭제 중 오류가 발생했습니다: ${
+                err.message || "알 수 없는 오류"
+              }`
+            );
+          } else {
+            alert("댓글 삭제 중 알 수 없는 오류가 발생했습니다.");
+          }
+        }
+      }
+    },
+    [
+      post,
+      parsedPostId,
+      currentUserProfile,
+      isTeamPostPageCalculated,
+      refetchComments,
+      location.pathname,
+    ]
+  );
 
   if (loadingPost) {
     return (
@@ -558,16 +530,6 @@ const PostDetailPage: React.FC = () => {
     );
   }
 
-  let backToBoardPath: string = "/posts";
-  let backToBoardText: string = "전체 게시판으로";
-
-  const communityIdMatch = postId?.match(/^(comm\d+)-post-\d+$/);
-  if (communityIdMatch && communityIdMatch[1]) {
-    const communityId = communityIdMatch[1];
-    backToBoardPath = `/communities/${communityId}/posts`;
-    backToBoardText = "커뮤니티 게시판으로";
-  }
-
   return (
     <PostDetailTemplate
       post={post}
@@ -584,12 +546,24 @@ const PostDetailPage: React.FC = () => {
     >
       <div className="mt-12 px-10">
         <h3 className="text-xl font-bold text-gray-800 mb-4">댓글</h3>
-        <CommentInput onAddComment={handleAddComment} />
-        <CommentList
-          comments={comments}
-          onAddReply={handleAddReply}
-          currentUserId={currentUserId}
-        />
+        <CommentInput onAddComment={handleAddCommentForInput} />
+        {loadingComments && (
+          <div className="text-center text-gray-600 py-4">댓글 로딩 중...</div>
+        )}
+        {errorComments && (
+          <div className="text-center text-red-600 py-4">
+            댓글 불러오기 오류: {errorComments}
+          </div>
+        )}
+        {!loadingComments && !errorComments && (
+          <CommentList
+            comments={comments}
+            onAddReply={handleAddComment}
+            currentUserId={currentUserProfile?.userId || 0}
+            onEditComment={handleEditComment}
+            onDeleteComment={handleDeleteComment}
+          />
+        )}
       </div>
     </PostDetailTemplate>
   );

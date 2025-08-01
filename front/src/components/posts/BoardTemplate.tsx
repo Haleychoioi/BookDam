@@ -3,40 +3,67 @@
 import React from "react";
 import PostList from "./PostList";
 import Button from "../common/Button";
-// TeamPostType 임포트를 제거합니다.
-import type { TeamPost /*, TeamPostType */ } from "../../types";
+import Pagination from "../common/Pagination";
+
+import type { Post, TeamPost } from "../../types";
 
 interface BoardTemplateProps {
-  title: string;
-  posts: TeamPost[];
-  onWriteClick: () => void;
+  posts: (Post | TeamPost)[];
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onWritePostClick: () => void;
   onPostClick: (postId: number) => void;
+  boardTitle: string;
   isLoading: boolean;
-  // postType prop도 이미 제거되었습니다.
 }
 
 const BoardTemplate: React.FC<BoardTemplateProps> = ({
-  title,
   posts,
-  onWriteClick,
+  currentPage,
+  totalPages,
+  onPageChange,
+  onWritePostClick,
   onPostClick,
+  boardTitle,
   isLoading,
 }) => {
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-        {title}
-      </h1>
-      <div className="flex justify-end mb-4">
-        <Button onClick={onWriteClick}>글쓰기</Button>
+    <div className="min-h-full py-10">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center mb-8 mt-10">
+          <h1 className="text-3xl font-bold text-gray-800">{boardTitle}</h1>
+          <Button
+            onClick={onWritePostClick}
+            // 기존 Button 컴포넌트의 기본 스타일을 사용하도록 bgColor, textColor, hoverBgColor 제거
+            // bgColor="bg-black"
+            // textColor="text-white"
+            // hoverBgColor="hover:bg-gray-800"
+            className="px-4 py-2 rounded text-base"
+          >
+            게시물 작성
+          </Button>
+        </div>
+
+        {/* 게시글 목록 */}
+        <div className="mb-8">
+          {isLoading ? (
+            <div className="text-center text-gray-600">
+              게시물을 불러오는 중...
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="text-center text-gray-600">게시물이 없습니다.</div>
+          ) : (
+            <PostList posts={posts} onPostClick={onPostClick} />
+          )}
+        </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+        />
       </div>
-      {isLoading ? (
-        <div className="text-center text-gray-600">게시물을 불러오는 중...</div>
-      ) : posts.length === 0 ? (
-        <div className="text-center text-gray-600">게시물이 없습니다.</div>
-      ) : (
-        <PostList posts={posts} onPostClick={onPostClick} />
-      )}
     </div>
   );
 };
