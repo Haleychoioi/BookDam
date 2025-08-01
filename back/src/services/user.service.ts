@@ -17,27 +17,22 @@ class UserService {
     async signUp(signupData: SignupRequest): Promise<SignupResponse> {
         const { name, email, password, nickname, phone, agreement, introduction } = signupData;
 
-        // 1. 이메일 중복 확인
         const existingEmailUser = await userRepository.findByEmail(email);
         if (existingEmailUser) {
             throw new Error('ExistEmail');
         }
 
-        // 2. 닉네임 중복 확인
         const existingNickname = await userRepository.findByNickname(nickname);
         if (existingNickname) {
             throw new Error('ExistNickname');
         }
 
-        // 3. 비밀번호 해싱
         const saltRounds = parseInt(process.env.SALT_ROUNDS || '10');
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // 기본 프로필 이미지 설정
         const avatarName = encodeURIComponent(nickname) // 닉네임에 따라 고유한 아바타 생성
         const profileImage = `https://api.dicebear.com/8.x/identicon/svg?seed=${avatarName}`;
 
-        // 4. 사용자 생성
         const newUser = await userRepository.createUser({
             name,
             email,
@@ -50,7 +45,6 @@ class UserService {
             role: UserRole.USER
         });
 
-        // 5. 응답 (비밀번호 제외) - 구조 분해 할당 사용
         const { password: _, ...userWithoutPassword } = newUser;
         // 제외하는것, 나머지 모든것(password를 제외한 나머지 필드를 새 객체로 생성)
         // _는 사용하지 않는 변수를 표현
@@ -65,19 +59,16 @@ class UserService {
     async login(loginData: LoginRequest): Promise<LoginResponse> {
         const { email, password } = loginData;
 
-        // 1. 사용자 존재 확인
         const user = await userRepository.findByEmail(email);
         if (!user) {
             throw new Error('UserNotFound');
         }
 
-        // 2. 비밀번호 검증
         const isValidPassword = await bcrypt.compare(password, user.password);
         if (!isValidPassword) {
             throw new Error('PasswordValidation');
         }
 
-        // 3. JWT 토큰 생성
         const tokenPayload: JWTPayload = {
             userId: user.userId,
             email: user.email,
@@ -159,7 +150,7 @@ class UserService {
     // 비밀번호 변경
     async changePassword(userId: number, passwordData: ChangePasswordRequest): Promise<ChangePasswordResponse> {
         const { currentPassword, newPassword, confirmNewPassword } = passwordData;
-        // 1. 기본 입력값 검증
+
         if (!currentPassword || !newPassword || !confirmNewPassword) {
             throw new Error('PasswordFieldRequired');
         }
@@ -181,13 +172,11 @@ class UserService {
             throw new Error('UserNotFound');
         }
 
-        // 6. 현재 비밀번호 검증
         const isValidCurrentPassword = await bcrypt.compare(currentPassword, user.password);
         if (!isValidCurrentPassword) {
             throw new Error('CurrentPasswordMismatch');
         }
 
-        // 7. 비밀번호 변경
         const saltRounds = parseInt(process.env.SALT_ROUNDS || '10');
         const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
         await userRepository.updateUserPassword(userId, { password: hashedNewPassword });
@@ -199,42 +188,25 @@ class UserService {
 
 
     // 유저 삭제
-    // async deleteUser(userId: number) {
-    //     const existingUser = await userRepository.findById(userId);
+    async deleteUser(userId: number) {
+        const existingUser = await userRepository.findById(userId);
 
-    //     if (!existingUser) {
-    //         throw new Error('UserNotFound');
-    //     }
+        if (!existingUser) {
+            throw new Error('UserNotFound');
+        }
 
-    //     const leaderMembership = await this.teamMemberRepository.findLeaderMembershipByUserId(userId);
+        const leaderMembership = await this.teamMemberRepository.findLeaderMembershipByUserId(userId);
 
-    //     if (leaderMembership) {
-    //         throw new Error('LeaderCannotWithdraw: 팀을 위임하거나 해산한 후 탈퇴할 수 있습니다.');
-    //     }
+        if (leaderMembership) {
+            throw new Error('LeaderCannotWithdraw: 팀을 위임하거나 해산한 후 탈퇴할 수 있습니다.');
+        }
 
-    //     await userRepository.deleteUser(userId);
+        await userRepository.deleteUser(userId);
 
-    //     return {
-    //         message: "유저 삭제가 완료되었습니다."
-    //     };
-    // }
-
-    //     team-member.respository에서 추가해야됨
-    //    * 탈퇴하려는 사용자가 LEADER 역할을 맡고 있는 팀 멤버십이 있는지 확인
-    //   public async findLeaderMembershipByUserId(
-    //     userId: number
-    //   ): Promise<TeamMember | null> {
-    //     const leaderMembership = await prisma.teamMember.findFirst({
-    //       where: {
-    //         userId: userId,
-    //         role: "LEADER",
-    //       },
-    //     });
-    //     return leaderMembership;
-    //   }
-
-
-
+        return {
+            message: "유저 삭제가 완료되었습니다."
+        };
+    }
 
 }
 
