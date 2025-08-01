@@ -422,15 +422,27 @@ export const fetchAppliedCommunities = async (): Promise<
     );
 
     return response.data.data.map((backendComm) => {
-      // AppliedCommunity는 TeamCommunity를 확장하고 myApplicationStatus를 가집니다.
-      // 따라서 TeamCommunity의 모든 속성을 포함해야 합니다.
-      return {
-        ...backendComm, // TeamCommunity의 모든 속성
-        myApplicationStatus: "pending", // 임시 기본값 설정
+      // TeamCommunity (백엔드 응답)를 AppliedCommunity (프론트엔드 타입)로 명시적으로 매핑합니다.
+      const mappedCommunity: AppliedCommunity = {
+        id: backendComm.teamId.toString(), // TeamCommunity의 teamId를 AppliedCommunity의 id로 매핑
+        title: backendComm.postTitle, // TeamCommunity의 postTitle을 AppliedCommunity의 title로 매핑
+        description: backendComm.postContent, // TeamCommunity의 postContent를 AppliedCommunity의 description으로 매핑
+        hostName: backendComm.postAuthor, // TeamCommunity의 postAuthor를 AppliedCommunity의 hostName으로 매핑
+        status: backendComm.status === "RECRUITING" ? "모집중" : "모집종료", // TeamCommunity의 status를 매핑
+
+        // 아래 필드들은 TeamCommunity 응답에 직접 포함되지 않거나 기본값/유추가 필요합니다.
+        currentMembers: 0, // 백엔드에서 제공되지 않으므로 임시 기본값. 정확한 값을 원한다면 백엔드 API 개선 필요.
+        maxMembers: backendComm.maxMembers || 0, // TeamCommunity에 optional maxMembers가 있으므로 사용, 없으면 0.
+        role: "member", // 이 API는 사용자 역할을 제공하지 않으므로 'member'로 기본값 설정.
+
+        // AppliedCommunity 고유 필드
+        // myApplicationStatus는 백엔드 `GET /mypage/communities/applied` API 응답에 직접 포함되지 않으므로,
+        // 현재는 임시로 'pending' 값을 사용합니다. 정확한 상태를 얻으려면 백엔드 API 개선이 필요합니다.
+        myApplicationStatus: "pending",
       };
+      return mappedCommunity;
     });
   } catch (err: unknown) {
-    // 'error' 대신 'err: unknown' 사용
     if (err instanceof Error) {
       console.error("Failed to fetch applied communities:", err);
       throw err;

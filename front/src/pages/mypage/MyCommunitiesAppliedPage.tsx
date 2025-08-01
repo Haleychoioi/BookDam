@@ -1,88 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+// src/pages/mypage/MyCommunitiesAppliedPage.tsx
+
+import { useState, useEffect, useMemo, useCallback } from "react";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import AppliedCommunityCard from "../../components/mypage/AppliedCommunityCard";
 import Pagination from "../../components/common/Pagination";
 import { type AppliedCommunity } from "../../types";
-
-const dummyAppliedCommunities: AppliedCommunity[] = [
-  {
-    id: "applied-comm-1",
-    title: "SF 소설 클럽",
-    description: "새로운 SF 소설을 함께 읽고 토론하는 모임입니다.",
-    hostName: "SF매니아",
-    currentMembers: 3,
-    maxMembers: 7,
-    myApplicationStatus: "pending",
-    role: "member",
-    status: "모집중",
-  },
-  {
-    id: "applied-comm-2",
-    title: "클린 코드 스터디",
-    description: "개발 서적 클린 코드를 함께 읽고 스터디합니다.",
-    hostName: "코드마스터",
-    currentMembers: 5,
-    maxMembers: 5,
-    myApplicationStatus: "accepted",
-    role: "member",
-    status: "모집종료",
-  },
-  {
-    id: "applied-comm-3",
-    title: "고전 재해석 모임",
-    description: "오래된 고전을 현대적인 시각으로 재해석합니다.",
-    hostName: "옛것좋아",
-    currentMembers: 4,
-    maxMembers: 8,
-    myApplicationStatus: "rejected",
-    role: "member",
-    status: "모집중",
-  },
-  {
-    id: "applied-comm-4",
-    title: "판타지 월드 탐험",
-    description: "다양한 판타지 세계관의 소설을 탐구합니다.",
-    hostName: "판타지왕",
-    currentMembers: 2,
-    maxMembers: 6,
-    myApplicationStatus: "pending",
-    role: "member",
-    status: "모집중",
-  },
-  {
-    id: "applied-comm-5",
-    title: "경제학 스터디",
-    description: "맨큐의 경제학을 함께 읽고 토론합니다.",
-    hostName: "이코노미스트",
-    currentMembers: 5,
-    maxMembers: 10,
-    myApplicationStatus: "pending",
-    role: "member",
-    status: "모집중",
-  },
-  {
-    id: "applied-comm-6",
-    title: "자기계발 챌린지",
-    description: "성장을 위한 자기계발 도서를 읽고 실천합니다.",
-    hostName: "그로스",
-    currentMembers: 7,
-    maxMembers: 10,
-    myApplicationStatus: "accepted",
-    role: "member",
-    status: "모집중",
-  },
-  {
-    id: "applied-comm-7",
-    title: "환경 도서 읽기",
-    description: "지구를 위한 환경 도서를 읽고 지속가능성에 대해 논합니다.",
-    hostName: "에코",
-    currentMembers: 3,
-    maxMembers: 6,
-    myApplicationStatus: "rejected",
-    role: "member",
-    status: "모집종료",
-  },
-];
+import { fetchAppliedCommunities } from "../../api/communities"; // fetchAppliedCommunities는 communities.ts에 있습니다.
 
 const MyCommunitiesAppliedPage: React.FC = () => {
   const [communities, setCommunities] = useState<AppliedCommunity[]>([]);
@@ -94,20 +17,25 @@ const MyCommunitiesAppliedPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
+  // 내가 신청한 커뮤니티 목록을 불러오는 함수
+  const loadAppliedCommunities = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // fetchAppliedCommunities는 src/api/communities.ts에서 이미 AppliedCommunity[]를 반환합니다.
+      // 따라서 여기서 추가적인 .map() 변환이 필요 없습니다.
+      const fetchedData = await fetchAppliedCommunities();
+      setCommunities(fetchedData); // ★★★ 이 부분이 올바른 코드입니다. ★★★
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
+    } finally {
+      setLoading(false);
+    }
+  }, []); // 의존성 배열 비움 (컴포넌트 마운트 시 한 번만 실행)
+
   useEffect(() => {
-    const fetchAppliedCommunities = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        setCommunities(dummyAppliedCommunities);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAppliedCommunities();
-  }, []);
+    loadAppliedCommunities();
+  }, [loadAppliedCommunities]);
 
   const filteredCommunities = useMemo(() => {
     setCurrentPage(1);
@@ -131,16 +59,18 @@ const MyCommunitiesAppliedPage: React.FC = () => {
     window.scrollTo(0, 0);
   };
 
-  // ✨ 신청 취소 핸들러 ✨
   const handleCancelApplication = async (communityId: string) => {
     if (window.confirm("정말로 이 커뮤니티 가입 신청을 취소하시겠습니까?")) {
       console.log(`신청 취소 요청: ${communityId}`);
       try {
-        // TODO: 실제 API 호출: DELETE /mypage/communities/applied/:communityId
-        // 또는 API 명세서에 맞는 다른 취소 API
-        alert("커뮤니티 신청이 취소되었습니다.");
-        // Mock Data 업데이트: 해당 커뮤니티를 목록에서 제거
-        setCommunities((prev) => prev.filter((c) => c.id !== communityId));
+        // TODO: 실제 API 호출: DELETE /mypage/communities/applied/:communityId API 필요
+        // 현재 명세서에는 명확한 신청 취소 API가 없습니다.
+        // 백엔드에서 이 기능을 지원하는 API를 구현해야 합니다.
+        // 예시: await cancelApplication(communityId);
+
+        // 현재는 API 호출 없이 임시 메시지 표시
+        alert("커뮤니티 신청이 취소되었습니다. (API 미연동)");
+        loadAppliedCommunities(); // 취소 후 목록 새로고침 (API 호출 성공 가정)
       } catch (error) {
         console.error("신청 취소 중 오류 발생:", error);
         alert("신청 취소 중 오류가 발생했습니다. 다시 시도해주세요.");
@@ -215,7 +145,7 @@ const MyCommunitiesAppliedPage: React.FC = () => {
             <AppliedCommunityCard
               key={community.id}
               community={community}
-              onCancelApplication={handleCancelApplication} // ✨ prop 전달 ✨
+              onCancelApplication={handleCancelApplication}
             />
           ))
         ) : (
