@@ -1,7 +1,8 @@
 // src/api/teamPosts.ts
 
 import apiClient from "./apiClient";
-import type { Post } from "../types"; // Post 타입 임포트
+// Post 대신 TeamPost 타입을 임포트하도록 변경
+import type { TeamPost } from "../types"; // Post 타입 임포트 -> TeamPost로 변경
 
 // =========================================================
 // 팀 게시물 관련 API
@@ -21,18 +22,20 @@ export const fetchTeamPosts = async (
   page: number = 1,
   pageSize: number = 10,
   sort: string = "latest"
-): Promise<{ posts: Post[]; totalResults: number }> => {
+  // Promise 반환 타입을 { posts: Post[]; totalResults: number } -> { posts: TeamPost[]; totalResults: number }로 변경
+): Promise<{ posts: TeamPost[]; totalResults: number }> => {
   try {
     const response = await apiClient.get<{
       message: string;
-      data: Post[];
+      // data: Post[]; -> data: TeamPost[]; 로 변경
+      data: TeamPost[];
     }>(
       `/communities/${communityId}/posts?page=${page}&size=${pageSize}&sort=${sort}`
     );
 
     return {
       posts: response.data.data,
-      totalResults: response.data.data.length, // 백엔드에서 totalResults를 받지 않으므로 임시
+      totalResults: response.data.data.length,
     };
   } catch (error) {
     console.error("Failed to fetch team posts:", error);
@@ -69,14 +72,15 @@ export const createTeamPost = async (
  * GET /api/communities/:communityId/posts/:teamPostId
  * @param communityId - 팀 커뮤니티 ID
  * @param teamPostId - 팀 게시물 ID
- * @returns Post 객체
+ * @returns TeamPost 객체로 반환하도록 변경
  */
 export const fetchTeamPostById = async (
   communityId: string,
   teamPostId: string
-): Promise<Post> => {
+): Promise<TeamPost> => {
+  // Post -> TeamPost로 변경
   try {
-    const response = await apiClient.get<{ message: string; data: Post }>(
+    const response = await apiClient.get<{ message: string; data: TeamPost }>( // Post -> TeamPost로 변경
       `/communities/${communityId}/posts/${teamPostId}`
     );
     return response.data.data;

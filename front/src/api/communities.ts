@@ -1,21 +1,15 @@
 // src/api/communities.ts
 
 import apiClient from "./apiClient";
-import type { Community, AppliedCommunity } from "../types"; // AppliedCommunity 임포트 유지
+// Community, AppliedCommunity, TeamCommunity, ApplicantWithStatus 타입을 types/index.ts에서 임포트
+import type {
+  Community,
+  AppliedCommunity,
+  TeamCommunity,
+  ApplicantWithStatus,
+} from "../types";
 
-// 백엔드에서 반환하는 TeamCommunity 스키마의 타입 (Prisma 모델 기반)
-interface BackendTeamCommunity {
-  teamId: number;
-  postId: number; // 관련 Post의 ID
-  isbn13: string | null;
-  status: "RECRUITING" | "ACTIVE" | "COMPLETED" | "CLOSED"; // 백엔드 Enum
-  postTitle: string; // 커뮤니티 제목 (모집글 제목)
-  postContent: string; // 커뮤니티 설명 (모집글 내용)
-  postAuthor: string; // 커뮤니티 생성자 닉네임 (모집글 작성자)
-  createdAt: string;
-  updatedAt: string;
-  // 참고: currentMembers, maxMembers, role은 이 엔드포인트에서 직접 제공되지 않음
-}
+// 백엔드에서 반환하는 TeamCommunity 스키마의 타입은 이미 src/types/index.ts에 TeamCommunity로 정의되어 있습니다.
 
 /**
  * 백엔드 TeamCommunity 응답을 프론트엔드 Community 타입으로 매핑합니다.
@@ -24,7 +18,7 @@ interface BackendTeamCommunity {
  * @returns 프론트엔드 Community 객체
  */
 const mapBackendCommunityToFrontendCommunity = (
-  backendCommunity: BackendTeamCommunity
+  backendCommunity: TeamCommunity
 ): Community => {
   return {
     id: backendCommunity.teamId.toString(), // teamId를 id로 매핑
@@ -59,7 +53,7 @@ export const fetchCommunities = async (
   try {
     const response = await apiClient.get<{
       message: string;
-      data: BackendTeamCommunity[]; // 백엔드 응답 타입 명확화
+      data: TeamCommunity[]; // 백엔드 응답 타입 명확화
     }>(`/communities?page=${page}&pageSize=${pageSize}&sort=${sort}`);
 
     const mappedCommunities = response.data.data.map(
@@ -70,9 +64,14 @@ export const fetchCommunities = async (
       communities: mappedCommunities,
       totalResults: mappedCommunities.length, // 현재는 응답 개수를 총 결과로 사용 (백엔드 totalResults 필요)
     };
-  } catch (error) {
-    console.error("Failed to fetch communities:", error);
-    throw error;
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용
+    if (err instanceof Error) {
+      // Error 인스턴스 확인
+      console.error("Failed to fetch communities:", err); // 'error' 대신 'err' 사용
+      throw err; // 'error' 대신 'err' 사용
+    }
+    throw new Error("Unknown error occurred"); // 알 수 없는 오류 처리
   }
 };
 
@@ -90,12 +89,16 @@ export const fetchCommunitiesByBook = async (
   try {
     const response = await apiClient.get<{
       message: string;
-      data: BackendTeamCommunity[]; // 백엔드 응답 타입 명확화
+      data: TeamCommunity[]; // 백엔드 응답 타입 명확화
     }>(`/communities/books/${itemId}?size=${size}`);
     return response.data.data.map(mapBackendCommunityToFrontendCommunity); // 매핑 함수 사용
-  } catch (error) {
-    console.error("Failed to fetch communities by book:", error);
-    throw error;
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용
+    if (err instanceof Error) {
+      console.error("Failed to fetch communities by book:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
 
@@ -103,20 +106,24 @@ export const fetchCommunitiesByBook = async (
  * 특정 커뮤니티 상세 정보를 조회합니다.
  * GET /api/communities/:communityId
  * @param communityId - 커뮤니티 ID
- * @returns Community 객체
+ * @returns TeamCommunity 객체
  */
 export const fetchCommunityById = async (
   communityId: string
-): Promise<Community> => {
+): Promise<TeamCommunity> => {
   try {
-    const response = await apiClient.get<{
-      message: string;
-      data: BackendTeamCommunity; // 단일 객체
-    }>(`/communities/${communityId}`);
-    return mapBackendCommunityToFrontendCommunity(response.data.data); // 단일 객체 매핑
-  } catch (error) {
-    console.error("Failed to fetch community by ID:", error);
-    throw error;
+    // try-catch 블록 추가 (일관성 유지)
+    const response = await apiClient.get<TeamCommunity>(
+      `/communities/${communityId}`
+    );
+    return response.data;
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용
+    if (err instanceof Error) {
+      console.error("Failed to fetch community by ID:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
 
@@ -142,10 +149,14 @@ export const createCommunity = async (communityData: {
       message: string;
       communityId: number;
     }>(`/communities`, communityData);
-    return response.data.communityId.toString(); // ID를 string으로 반환
-  } catch (error) {
-    console.error("Failed to create community:", error);
-    throw error;
+    return response.data.communityId.toString(); // ID를 string으로 변환
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용
+    if (err instanceof Error) {
+      console.error("Failed to create community:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
 
@@ -165,15 +176,20 @@ export const updateCommunityDetails = async (
     recruiting?: boolean; // 모집 여부
   }
 ): Promise<Community> => {
+  // 반환 타입은 Community
   try {
     const response = await apiClient.put<{
       message: string;
-      data: BackendTeamCommunity;
+      data: TeamCommunity; // 백엔드는 TeamCommunity를 반환
     }>(`/communities/${communityId}`, updateData);
     return mapBackendCommunityToFrontendCommunity(response.data.data); // 업데이트된 단일 객체 매핑
-  } catch (error) {
-    console.error("Failed to update community details:", error);
-    throw error;
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용, = { 제거
+    if (err instanceof Error) {
+      console.error("Failed to update community details:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
 
@@ -188,15 +204,20 @@ export const updateCommunityStatus = async (
   communityId: string,
   newStatus: "RECRUITING" | "ACTIVE" | "COMPLETED" | "CLOSED"
 ): Promise<Community> => {
+  // 반환 타입은 Community
   try {
     const response = await apiClient.put<{
       message: string;
-      data: BackendTeamCommunity;
+      data: TeamCommunity; // 백엔드는 TeamCommunity를 반환
     }>(`/communities/${communityId}/status`, { newStatus });
-    return mapBackendCommunityToFrontendCommunity(response.data.data); // 업데이트된 단일 객체 매핑
-  } catch (error) {
-    console.error("Failed to update community status:", error);
-    throw error;
+    return mapBackendCommunityToFrontendCommunity(response.data.data);
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용
+    if (err instanceof Error) {
+      console.error("Failed to update community status:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
 
@@ -208,9 +229,13 @@ export const updateCommunityStatus = async (
 export const deleteCommunity = async (communityId: string): Promise<void> => {
   try {
     await apiClient.delete(`/communities/${communityId}`);
-  } catch (error) {
-    console.error("Failed to delete community:", error);
-    throw error;
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용
+    if (err instanceof Error) {
+      console.error("Failed to delete community:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
 
@@ -232,9 +257,13 @@ export const applyToCommunity = async (
     await apiClient.post(`/communities/${communityId}/apply`, {
       applicationMessage,
     });
-  } catch (error) {
-    console.error("Failed to apply to community:", error);
-    throw error;
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용
+    if (err instanceof Error) {
+      console.error("Failed to apply to community:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
 
@@ -248,52 +277,50 @@ export const fetchApplicantsByCommunity = async (
   communityId: string
 ): Promise<{
   message: string;
-  applicants: {
-    // ✨ 이 타입 정의가 프론트엔드의 ApplicantWithStatus 타입과 일치하도록 합니다. ✨
-    id: string; // ApplicantWithStatus.id
-    nickname: string;
-    appliedAt: string;
-    applicationMessage: string;
-    status: "pending" | "accepted" | "rejected"; // ApplicantWithStatus.status (소문자)
-  }[];
+  applicants: ApplicantWithStatus[]; // 반환 타입 ApplicantWithStatus[]로 직접 지정
 }> => {
   try {
     const response = await apiClient.get<{
       message: string;
       applicants: {
-        // 백엔드에서 반환하는 실제 필드와 타입을 명시
-        userId: number; // 백엔드 필드
-        applicationId: number; // 백엔드 필드
+        userId: number;
+        applicationId: number;
+        // postId는 백엔드 응답에 직접 없으므로 제거 (혹은 매핑 시 고정값 부여)
         applicationMessage: string;
         appliedAt: string;
-        status: "PENDING" | "ACCEPTED" | "REJECTED"; // 백엔드 Status (대문자)
-        user: { nickname: string }; // 백엔드 포함 관계
+        status: "PENDING" | "ACCEPTED" | "REJECTED";
+        user: { nickname: string };
       }[];
     }>(`/mypage/communities/recruiting/${communityId}/applicants`);
 
     // 백엔드 응답을 프론트엔드 ApplicantWithStatus 타입에 맞게 매핑
-    const transformedApplicants = response.data.applicants.map((app) => ({
-      id: app.applicationId.toString(), // applicationId를 id로 사용
-      nickname: app.user.nickname, // user 객체에서 nickname 추출
-      appliedAt: app.appliedAt,
-      applicationMessage: app.applicationMessage,
-      status: app.status.toLowerCase() as "pending" | "accepted" | "rejected", // 백엔드 status를 소문자로 변환하여 매핑
-    }));
+    const transformedApplicants: ApplicantWithStatus[] =
+      response.data.applicants.map((app) => ({
+        id: app.applicationId.toString(), // applicationId를 id로 사용
+        applicationId: app.applicationId, // 추가: applicationId 필드
+        userId: app.userId, // 추가: userId 필드
+        nickname: app.user.nickname,
+        appliedAt: app.appliedAt,
+        applicationMessage: app.applicationMessage,
+        status: app.status.toLowerCase() as "pending" | "accepted" | "rejected",
+      }));
 
-    // ✨ 함수가 기대하는 반환 타입에 정확히 일치하도록 객체를 재구성합니다. ✨
     return {
       message: response.data.message,
       applicants: transformedApplicants,
     };
-  } catch (error) {
-    console.error("Failed to fetch applicants:", error);
-    throw error;
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error("Failed to fetch applicants:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
 
 /**
  * 커뮤니티 가입 신청을 수락/거절합니다 (팀장만 가능).
- * PUT /mypage/communities/recruiting/:communityId/applicants/:userId
+ * PUT /api/mypage/communities/recruiting/:communityId/applicants/:userId
  * @param communityId - 커뮤니티 ID
  * @param userId - 신청자의 사용자 ID (문자열)
  * @param status - 변경할 상태 ("ACCEPTED" | "REJECTED")
@@ -308,9 +335,13 @@ export const updateApplicationStatus = async (
       `/mypage/communities/recruiting/${communityId}/applicants/${userId}`,
       { status }
     );
-  } catch (error) {
-    console.error("Failed to update application status:", error);
-    throw error;
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용
+    if (err instanceof Error) {
+      console.error("Failed to update application status:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
 
@@ -322,9 +353,13 @@ export const updateApplicationStatus = async (
 export const cancelRecruitment = async (communityId: string): Promise<void> => {
   try {
     await apiClient.delete(`/mypage/communities/recruiting/${communityId}`);
-  } catch (error) {
-    console.error("Failed to cancel recruitment:", error);
-    throw error;
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용
+    if (err instanceof Error) {
+      console.error("Failed to cancel recruitment:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
 
@@ -338,15 +373,19 @@ export const cancelRecruitment = async (communityId: string): Promise<void> => {
  * @returns Community 목록 배열 (role 포함)
  */
 export const fetchParticipatingCommunities = async (): Promise<Community[]> => {
+  // 반환 타입은 Community[]
   try {
-    const response = await apiClient.get<{ data: BackendTeamCommunity[] }>( // BackendTeamCommunity[] 타입
+    const response = await apiClient.get<{ data: TeamCommunity[] }>(
       `/mypage/communities/participating`
     );
-    // BackendTeamCommunity를 Community로 매핑
     return response.data.data.map(mapBackendCommunityToFrontendCommunity);
-  } catch (error) {
-    console.error("Failed to fetch participating communities:", error);
-    throw error;
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용
+    if (err instanceof Error) {
+      console.error("Failed to fetch participating communities:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
 
@@ -360,46 +399,42 @@ export const leaveOrDeleteCommunity = async (
 ): Promise<void> => {
   try {
     await apiClient.delete(`/mypage/communities/participating/${communityId}`);
-  } catch (error) {
-    console.error("Failed to leave or delete community:", error);
-    throw error;
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용
+    if (err instanceof Error) {
+      console.error("Failed to leave or delete community:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
 
 /**
  * 내가 신청한 커뮤니티 목록을 조회합니다.
  * GET /api/mypage/communities/applied
- * @returns AppliedCommunity 목록 배열
  */
 export const fetchAppliedCommunities = async (): Promise<
   AppliedCommunity[]
 > => {
   try {
-    // 백엔드 API 명세서에 따르면 AppliedCommunity는 신청 상태를 포함해야 합니다.
-    // 현재 BackendTeamCommunity에는 myApplicationStatus 필드가 없으므로,
-    // 이 엔드포인트가 BackendTeamCommunity를 반환한다면,
-    // myApplicationStatus는 'pending' 등으로 임시 처리할 수밖에 없습니다.
-    // 백엔드에서 이 필드를 제공하지 않는다면, BackendTeamCommunity를 확장하는 새 타입이 필요합니다.
-    const response = await apiClient.get<{ data: BackendTeamCommunity[] }>(
+    const response = await apiClient.get<{ data: TeamCommunity[] }>(
       `/mypage/communities/applied`
     );
 
     return response.data.data.map((backendComm) => {
-      // API 명세에 따라 myApplicationStatus가 이 응답에 포함되어야 함 (현재 백엔드 TeamCommunity에는 없음)
-      // 따라서, 백엔드에서 해당 정보를 주지 않는다면 프론트엔드에서 임의의 기본값으로 설정해야 함
-      // 이 부분은 백엔드의 `applications.service.ts`의 `findApplicantsByCommunity`와 유사하게
-      // 백엔드 `communities.service.ts`에서 `myApplicationStatus`를 포함하여 데이터를
-      // "Enrich" 해주지 않는 한 프론트엔드에서 정확한 값을 알 수 없습니다.
+      // AppliedCommunity는 TeamCommunity를 확장하고 myApplicationStatus를 가집니다.
+      // 따라서 TeamCommunity의 모든 속성을 포함해야 합니다.
       return {
-        ...mapBackendCommunityToFrontendCommunity(backendComm), // 기본 필드 매핑
-        // myApplicationStatus 필드는 백엔드에서 명확히 제공되지 않으므로, 임시 'pending'으로 설정
-        // 실제 백엔드가 이 데이터를 주지 않는다면, 프론트엔드 타입에서 이 필드를 선택적으로 만들거나
-        // 백엔드 수정이 필요합니다.
-        myApplicationStatus: "pending", // ✨ 임시 기본값 설정, 백엔드 응답에 따라 수정 필요 ✨
+        ...backendComm, // TeamCommunity의 모든 속성
+        myApplicationStatus: "pending", // 임시 기본값 설정
       };
     });
-  } catch (error) {
-    console.error("Failed to fetch applied communities:", error);
-    throw error;
+  } catch (err: unknown) {
+    // 'error' 대신 'err: unknown' 사용
+    if (err instanceof Error) {
+      console.error("Failed to fetch applied communities:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
   }
 };
