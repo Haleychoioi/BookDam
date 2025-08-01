@@ -1,70 +1,42 @@
+// src/components/posts/BoardTemplate.tsx
+
+import React from "react";
+import PostList from "./PostList";
 import Button from "../common/Button";
-import Pagination from "../common/Pagination";
-import PostList from "../posts/PostList";
-import type { Post } from "../../types";
+// TeamPostType 임포트를 제거합니다.
+import type { TeamPost /*, TeamPostType */ } from "../../types";
 
 interface BoardTemplateProps {
-  bookTitle?: string;
-  communityTopic?: string;
-  posts: Post[];
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  onWritePostClick: () => void;
-  boardTitle: string;
-  headerContent?: React.ReactNode;
+  title: string;
+  posts: TeamPost[];
+  onWriteClick: () => void;
+  onPostClick: (postId: number) => void;
+  isLoading: boolean;
+  // postType prop도 이미 제거되었습니다.
 }
 
 const BoardTemplate: React.FC<BoardTemplateProps> = ({
-  bookTitle,
-  communityTopic,
+  title,
   posts,
-  currentPage,
-  totalPages,
-  onPageChange,
-  onWritePostClick,
-  boardTitle,
-  headerContent,
+  onWriteClick,
+  onPostClick,
+  isLoading,
 }) => {
   return (
-    <div className="min-h-full py-10">
-      <div className="container mx-auto px-4 lg:px-20 xl:px-32">
-        {headerContent ? (
-          <div className="mb-36 mt-24">{headerContent}</div>
-        ) : (
-          <h1 className="text-4xl md:text-4xl font-bold text-gray-800 mb-36 mt-24">
-            {communityTopic && bookTitle
-              ? `${communityTopic} | ${bookTitle}`
-              : communityTopic || bookTitle}
-          </h1>
-        )}
-
-        {/* 게시글 목록 및 작성 버튼 */}
-        <div className="relative mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            {boardTitle}
-          </h2>
-          <div className="absolute top-0 right-0">
-            <Button
-              onClick={onWritePostClick}
-              bgColor="bg-main"
-              textColor="text-white"
-              hoverBgColor="hover:bg-apply"
-              className="px-5 py-2 rounded-lg text-base"
-            >
-              게시물 작성
-            </Button>
-          </div>
-
-          <PostList posts={posts} />
-        </div>
-
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+        {title}
+      </h1>
+      <div className="flex justify-end mb-4">
+        <Button onClick={onWriteClick}>글쓰기</Button>
       </div>
+      {isLoading ? (
+        <div className="text-center text-gray-600">게시물을 불러오는 중...</div>
+      ) : posts.length === 0 ? (
+        <div className="text-center text-gray-600">게시물이 없습니다.</div>
+      ) : (
+        <PostList posts={posts} onPostClick={onPostClick} />
+      )}
     </div>
   );
 };

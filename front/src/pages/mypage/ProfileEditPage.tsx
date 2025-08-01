@@ -229,6 +229,40 @@ const ProfileEditPage: React.FC = () => {
           </div>
         </div>
 
+        {/* 이름 섹션 */}
+        <div>
+          <label
+            htmlFor="name"
+            className="block text-gray-700 text-lg font-medium mb-2"
+          >
+            이름
+          </label>
+          <input
+            id="name"
+            type="text"
+            value={currentUserProfile?.name || ""}
+            readOnly
+            className="w-full p-3 border border-gray-300 rounded-md text-gray-800 bg-gray-100"
+
+
+          />
+        </div>
+        {/* 전화번호 섹션 */}
+        <div>
+          <label
+            htmlFor="phone"
+            className="block text-gray-700 text-lg font-medium mb-2"
+          >
+            전화번호
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            value={currentUserProfile?.phone || ""}
+            readOnly
+            className="w-full p-3 border border-gray-300 rounded-md text-gray-800 bg-gray-100"
+          />
+        </div>
         {/* 닉네임 섹션 */}
         <div>
           <label

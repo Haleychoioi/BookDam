@@ -1,71 +1,38 @@
 // src/types/index.ts
 
 // =========================================================
-// 1. 기본 엔티티 타입 (Core Entities)
+// 1. 핵심 엔티티 타입 (Core Entities)
+// 백엔드 Prisma 모델 및 API 응답에 최대한 맞춰 재정의
 // =========================================================
 
-// 1.1 사용자 프로필 타입 (기본 사용자 정보)
+// 1.0 Community 인터페이스 (프론트엔드에서 사용될 커뮤니티 공통 타입)
+export interface Community {
+  id: string; // 커뮤니티 ID (백엔드의 teamId를 string으로 매핑)
+  title: string; // 커뮤니티 제목 (백엔드의 postTitle)
+  description: string; // 커뮤니티 설명 (백엔드의 postContent)
+  hostName: string; // 커뮤니티 호스트 닉네임 (백엔드의 postAuthor)
+  currentMembers: number; // 현재 멤버 수 (백엔드에서 직접 제공하지 않으면 프론트엔드에서 계산 또는 임시값)
+  maxMembers: number; // 최대 멤버 수 (백엔드에서 직접 제공하지 않으면 프론트엔드에서 임시값)
+  role: "host" | "member"; // 현재 사용자의 커뮤니티 내 역할 (로그인된 사용자 기준)
+  status: "모집중" | "모집종료"; // 프론트엔드에서 표시할 모집 상태 (백엔드의 status 매핑)
+}
+
+// 1.1 사용자 프로필 타입
 export interface UserProfile {
   userId: number;
   email: string;
   name: string;
   nickname: string;
   phone: string;
-  profileImage?: string;
-  introduction?: string;
-  agreement: boolean;
-  role: "USER" | "ADMIN";
+  profileImage: string | null;
+  introduction: string | null;
+  role: string; // UserRole enum 대신 string으로 일반화
   createdAt: string;
   updatedAt: string;
 }
 
-// 1.2 도서 기본 타입 (일반적인 도서 정보, 알라딘 API 등에서 올 수 있는 전체 정보)
-export interface Book {
-  isbn13: string;
-  coverImage: string | null; // map from 'cover'
-  title: string;
-  author: string;
-  publisher: string;
-  publicationDate: string | null; // map from 'pubDate'
-  description: string | null;
-  genre: string | null; // map from 'categoryName' or 'category'
-}
-
-// 1.3 게시물 기본 타입 (상세 정보 포함)
-export interface Post {
-  id: string;
-  title: string;
-  commentCount: number;
-  createdAt: string;
-  updatedAt?: string;
-  type: "community" | "general";
-  author: string;
-  authorId: number;
-  authorProfileImage?: string;
-  content: string;
-}
-
-// 1.4 댓글 기본 타입
-export interface Comment {
-  id: string;
-  author: string;
-  authorId: number;
-  authorProfileImage?: string;
-  createdAt: string;
-  updatedAt?: string;
-  content: string;
-  isEdited?: boolean;
-  postId: string;
-  postTitle: string;
-  postType: "community" | "general";
-  communityId?: string;
-  parentId?: string;
-  replies?: Comment[];
-  depth?: number;
-}
-
+// 1.2 도서 기본 타입 (DB에 저장되는 Book 모델 기준)
 export interface BookEntity {
-  // 백엔드 DB에 저장되는 최소한의 책 정보 (isbn13으로 조회 시 반환)
   isbn13: string;
   title: string;
   author: string;
@@ -75,198 +42,182 @@ export interface BookEntity {
   cover: string | null;
   category: string | null;
   pageCount: number | null;
-  toc: string | null;
-  story: string | null;
+  toc: string | null; // Table of Contents
+  story: string | null; // Plot/Story
   createdAt: string;
 }
 
-// =========================================================
-// 2. 기본 엔티티의 상세/확장 타입 (Extended Entities)
-// =========================================================
-
-// 2.1 도서 상세 정보 타입 (Book을 확장) - 알라딘 상세 조회 후 프론트엔드에서 사용
-export interface BookDetail extends Book {
-  communityCount: number;
-  isWished: boolean;
-  summary: string | null; // Aladin description 또는 subInfo.story에서 파싱
-  tableOfContents: string[] | null; // Aladin subInfo.toc 파싱
-  commentaryContent: string | null; // Aladin subInfo.fullDescription 등
-  averageRating: number | null;
-  recommendedBooks?: Book[];
-  pageCount: number | null;
+// 1.3 TeamPostType Enum (팀 게시물 타입)
+export enum TeamPostType { // as const 제거, export enum으로 변경
+  DISCUSSION = "DISCUSSION",
+  NOTICE = "NOTICE",
 }
 
-// =========================================================
-// 3. 커뮤니티 관련 타입 (Community Related)
-// =========================================================
-
-// 3.1 커뮤니티 기본 정보 타입
-export interface Community {
-  id: string; // 커뮤니티 ID
+// 1.4 TeamPost 인터페이스 (팀 게시물 모델)
+export interface TeamPost {
+  teamPostId: number;
+  teamId: number;
+  userId: number;
   title: string;
-  description: string;
-  hostName: string;
-  currentMembers: number;
-  maxMembers: number;
-  role: "host" | "member";
-  status: "모집중" | "모집종료";
+  content: string;
+  type: TeamPostType;
+  createdAt: string;
+  updatedAt: string; // 통일된 string 타입
+  user: {
+    nickname: string;
+    profileImage?: string | null; // 백엔드 include에 따라 없을 수도 있음
+  };
+  _count?: {
+    comments: number;
+  };
 }
 
-// 3.2 마이페이지 커뮤니티 정보 타입 (CommunityBoardPage에서 사용)
-export interface CommunityInfo {
-  bookTitle: string;
-  hostName: string;
-  communityTopic: string;
-}
-
-// =========================================================
-// 4. 사용자 활동 및 마이페이지 특정 타입 (User Activity & MyPage Specific)
-// =========================================================
-
-// 4.1 마이페이지 - 내 서재 도서 타입 (백엔드 MyLibrary ResponseData.data.book + MyLibrary item)
-// MyLibrary API 응답에 맞춰 정확히 재정의. Book을 확장하지 않음.
-export interface MyLibraryBook {
+// 1.5 TeamCommunity 인터페이스 (팀 커뮤니티 모델)
+export interface TeamCommunity {
+  teamId: number;
+  postId: number;
   isbn13: string;
+  status: string; // CommunityStatus enum (예: 'RECRUITING', 'ACTIVE', 'COMPLETED')
+  postTitle: string;
+  postContent: string;
+  postAuthor: string; // User의 nickname
+  createdAt: string;
+  updatedAt: string; // 통일된 string 타입
+  maxMembers?: number; // Post에서 가져오는 최대 인원수
+}
+
+// 1.6 PostType Enum (일반 게시물 타입)
+export enum PostType { // as const 제거, export enum으로 변경
+  GENERAL = "GENERAL",
+  RECRUITMENT = "RECRUITMENT",
+}
+
+// 1.7 Post 인터페이스 (일반 게시물 모델)
+export interface Post {
+  postId: number; // id -> postId (백엔드와 일치)
+  userId: number;
   title: string;
-  author: string;
-  publisher: string;
-  coverImage: string | null; // 'book.cover'에서 매핑
-  genre: string | null; // 'book.category'에서 매핑
-
-  // MyLibrary 엔티티의 최상위 속성들
-  libraryId: number; // libraryId 필드 추가
-  status: "reading" | "read" | "to-read"; // 백엔드 Enum "WANT_TO_READ" | "READING" | "COMPLETED"에서 소문자로 매핑
-  myRating: number | null; // myRating은 null 가능성도 있으므로 null 포함
-  updatedAt: string; // updatedAt 필드 추가
-
-  // UI에서 필요할 수 있지만 MyLibrary API 응답에 직접 포함되지 않는 필드는 optional 처리
-  publicationDate?: string | null; // Book에서 오는 pubDate는 myLibrary 응답에 없음
-  description?: string | null; // Book에서 오는 description은 myLibrary 응답에 없음
-  summary?: string | null; // MyLibrary API 응답에 없음
-  averageRating?: number | null; // MyLibrary API 응답에 없음
+  content: string;
+  type: PostType;
+  createdAt: string;
+  updatedAt: string; // 통일된 string 타입
+  user: {
+    nickname: string;
+    profileImage: string | null;
+  };
+  _count?: {
+    comments: number;
+  };
+  book?: {
+    title: string;
+    author: string;
+    cover: string | null;
+    isbn13: string;
+    toc?: string | null;
+    story?: string | null;
+  } | null;
+  recruitmentStatus?: string; // RecruitmentStatus (string으로 일반화)
+  maxMembers?: number; // 모집글일 경우 최대 인원
 }
 
-// 4.2 마이페이지 - 커뮤니티 신청자 타입
-export interface ApplicantWithStatus {
-  id: string;
-  nickname: string;
-  appliedAt: string;
-  applicationMessage: string;
-  status: "pending" | "accepted" | "rejected";
+// 1.8 Comment 인터페이스 (일반 게시물 댓글 모델)
+export interface Comment {
+  commentId: number; // id -> commentId (백엔드와 일치)
+  postId: number; // postId는 number
+  userId: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string; // 통일된 string 타입
+  parentId: number | null; // parentId는 number | null
+  user: {
+    nickname: string;
+    profileImage: string | null;
+  };
+  replies?: Comment[];
 }
 
-// 4.3 마이페이지 - 커뮤니티 참여 이력 타입
-export interface CommunityHistoryEntry {
-  communityName: string;
-  role: "host" | "member";
-  startDate: string;
-  endDate?: string;
-  status: "활동중" | "활동종료";
+// 1.9 TeamComment 인터페이스 (팀 게시물 댓글 모델)
+export interface TeamComment {
+  teamCommentId: number;
+  teamPostId: number;
+  userId: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  parentId: number | null;
+  user: {
+    nickname: string;
+    profileImage?: string | null; // 백엔드 include에 따라 없을 수도 있음
+  };
+  replies?: TeamComment[];
 }
 
-// 4.4 마이페이지 - 내가 신청한 커뮤니티 타입 (Community를 확장)
-export interface AppliedCommunity extends Community {
-  myApplicationStatus: "pending" | "accepted" | "rejected"; // 사용자의 신청 상태 (Community의 status와 다름)
-}
-
-// 4.5 회원가입 요청
-export interface SignupRequest {
+// 1.10 JWT Payload 타입
+export interface JWTPayload {
+  userId: number;
   email: string;
-  password: string;
-  name: string;
-  nickname: string;
-  phone: string;
-  agreement: boolean;
-  profileImage?: string;
-  introduction?: string;
-}
-
-// 4.6 사용자 정보 수정 요청 (ProfileEditPage에서 FormData로 전달되지만, DTO의 구조를 명시)
-export interface UpdateUserData {
-  nickname: string;
-  introduction?: string;
-  profileImage?: string; // 파일 URL 또는 'true' (기본 이미지로 변경)
-  deleteProfileImage?: string; // 'true'일 경우 기본 이미지로 변경
+  role: string; // UserRole enum 대신 string으로 일반화
+  iat?: number;
+  exp?: number;
 }
 
 // =========================================================
-// 알라딘 API 관련 Enum
+// 2. 알라딘 API 관련 Enum (as const 제거, 일반 enum으로 선언)
 // =========================================================
 
-// AladinQueryType
-export const AladinQueryType = {
-  KEYWORD: "Keyword",
-  TITLE: "Title",
-  AUTHOR: "Author",
-  PUBLISHER: "Publisher",
-} as const;
-export type AladinQueryType =
-  (typeof AladinQueryType)[keyof typeof AladinQueryType];
+export enum AladinQueryType { // as const 제거
+  KEYWORD = "Keyword",
+  TITLE = "Title",
+  AUTHOR = "Author",
+  PUBLISHER = "Publisher",
+}
 
-// AladinSearchTarget
-export const AladinSearchTarget = {
-  BOOK: "Book",
-  FOREIGN: "Foreign",
-  EBOOK: "eBook",
-  ALL: "All",
-} as const;
-export type AladinSearchTarget =
-  (typeof AladinSearchTarget)[keyof typeof AladinSearchTarget];
+export enum AladinSearchTarget { // as const 제거
+  BOOK = "Book",
+  FOREIGN = "Foreign",
+  EBOOK = "eBook",
+  ALL = "All",
+}
 
-// AladinSortType
-export const AladinSortType = {
-  ACCURACY: "Accuracy",
-  PUBLISH_TIME: "PublishTime",
-  TITLE: "Title",
-  SALES_POINT: "SalesPoint",
-  CUSTOMER_RATING: "CustomerRating",
-  MY_REVIEW_COUNT: "MyReviewCount",
-} as const;
-export type AladinSortType =
-  (typeof AladinSortType)[keyof typeof AladinSortType];
+export enum AladinSortType { // as const 제거
+  ACCURACY = "Accuracy",
+  PUBLISH_TIME = "PublishTime",
+  TITLE = "Title",
+  SALES_POINT = "SalesPoint",
+  CUSTOMER_RATING = "CustomerRating",
+  MY_REVIEW_COUNT = "MyReviewCount",
+}
 
-// AladinListType
-export const AladinListType = {
-  NEW_ALL: "ItemNewAll",
-  NEW_SPECIAL: "ItemNewSpecial",
-  EDITOR_CHOICE: "ItemEditorChoice",
-  BESTSELLER: "Bestseller",
-  BLOG_BEST: "BlogBest",
-} as const;
-export type AladinListType =
-  (typeof AladinListType)[keyof typeof AladinListType];
+export enum AladinListType { // as const 제거
+  NEW_ALL = "ItemNewAll",
+  NEW_SPECIAL = "ItemNewSpecial",
+  EDITOR_CHOICE = "ItemEditorChoice",
+  BESTSELLER = "Bestseller",
+  BLOG_BEST = "BlogBest",
+}
 
-// AladinCoverSize
-export const AladinCoverSize = {
-  BIG: "Big",
-  MID_BIG: "MidBig",
-  MID: "Mid",
-  SMALL: "Small",
-  MINI: "Mini",
-  NONE: "None",
-} as const;
-export type AladinCoverSize =
-  (typeof AladinCoverSize)[keyof typeof AladinCoverSize];
+export enum AladinCoverSize { // as const 제거
+  BIG = "Big",
+  MID_BIG = "MidBig",
+  MID = "Mid",
+  SMALL = "Small",
+  MINI = "Mini",
+  NONE = "None",
+}
 
-// AladinOutputType
-export const AladinOutputType = {
-  XML: "XML",
-  JS: "JS",
-} as const;
-export type AladinOutputType =
-  (typeof AladinOutputType)[keyof typeof AladinOutputType];
+export enum AladinOutputType { // as const 제거
+  XML = "XML",
+  JS = "JS",
+}
 
-// AladinItemIdType
-export const AladinItemIdType = {
-  ISBN: "ISBN",
-  ISBN13: "ISBN13",
-  ITEM_ID: "ItemId",
-} as const;
-export type AladinItemIdType =
-  (typeof AladinItemIdType)[keyof typeof AladinItemIdType];
+export enum AladinItemIdType { // as const 제거
+  ISBN = "ISBN",
+  ISBN13 = "ISBN13",
+  ITEM_ID = "ItemId",
+}
 
 // =========================================================
-// 알라딘 API 응답 관련 타입들
+// 3. 알라딘 API 응답 관련 타입들
 // =========================================================
 
 // 알라딘 API 공통 응답 구조
@@ -321,18 +272,164 @@ export interface AladinBookItem {
 }
 
 // =========================================================
-// 클라이언트 응답용 타입들 (searchBooks에서 사용)
+// 4. 클라이언트 응답 및 요청용 확장 타입들
 // =========================================================
 
+// 4.1 책 요약 정보 (검색 결과용) - BookEntity에서 필요한 필드만 가져와 클라이언트에 표시
 export interface BookSummary {
   isbn13: string;
   title: string;
   author: string;
   publisher: string;
-  publicationDate: string | null;
-  coverImage: string | null;
-  genre: string | null;
+  pubDate: string | null; // publicationDate -> pubDate
+  cover: string | null; // coverImage -> cover
+  category: string | null; // genre -> category
   description: string | null;
+}
+
+// 4.2 개인 도서관 도서 타입 (MyLibrary API 응답에 맞춰 재정의)
+export interface MyLibraryBook {
+  libraryId: number;
+  status: string; // ReadingStatus Enum 대신 string으로 일반화
+  myRating: number | null;
+  updatedAt: string;
+
+  book: {
+    // 중첩된 book 객체
+    isbn13: string;
+    title: string;
+    author: string;
+    publisher: string;
+    cover: string | null;
+    category: string | null;
+  };
+  user: {
+    nickname: string;
+  };
+}
+
+// 4.3 마이페이지 - 커뮤니티 신청자 타입
+export interface ApplicantWithStatus {
+  id: string; // 프론트엔드용 ID, applicationId를 string으로 변환하여 사용
+  applicationId: number; // 백엔드 응답 필드
+  userId: number; // 백엔드 응답 필드
+  nickname: string;
+  appliedAt: string;
+  applicationMessage: string;
+  status: "pending" | "accepted" | "rejected";
+}
+// 4.4 마이페이지 - 커뮤니티 참여 이력 타입 (현재 불필요한 필드 제거)
+// 백엔드 명세서에 명확한 API가 없으므로 프론트엔드 목업에 기반
+export interface CommunityHistoryEntry {
+  communityName: string;
+  role: string; // "host" | "member"
+  startDate: string;
+  endDate?: string;
+  status: string; // "활동중" | "활동종료"
+}
+
+// 4.5 마이페이지 - 내가 신청한 커뮤니티 타입 (TeamCommunity를 확장)
+export interface AppliedCommunity extends TeamCommunity {
+  myApplicationStatus: string; // "pending" | "accepted" | "rejected"
+}
+
+// 4.6 회원가입 요청 DTO
+export interface SignupRequest {
+  email: string;
+  password: string;
+  name: string;
+  nickname: string;
+  phone: string;
+  agreement: boolean;
+  profileImage?: string;
+  introduction?: string;
+}
+
+// 4.7 사용자 정보 수정 요청 DTO
+export interface UpdateUserData {
+  nickname?: string;
+  introduction?: string;
+  profileImage?: string; // 파일 URL 또는 'true' (기본 이미지로 변경)
+  deleteProfileImage?: string; // 'true'일 경우 기본 이미지로 변경
+}
+
+// 4.8 로그인 요청 DTO
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+// 4.9 비밀번호 변경 요청 DTO
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
+// 4.10 위시리스트 추가 요청 DTO
+export interface AddWishListRequest {
+  isbn13: string;
+}
+
+// 4.11 위시리스트 응답 타입
+export interface WishListResponse {
+  wishListId: number;
+  addedAt: string;
+  book: {
+    isbn13: string;
+    title: string;
+    cover: string | null;
+  };
+  user: {
+    nickname: string;
+  };
+}
+
+// 4.12 마이페이지 읽은 책 취향 분석 결과
+export interface CategoryStats {
+  categoryName: string;
+  count: number;
+  averageRating: number;
+  percentage: number;
+}
+
+export interface AuthorStats {
+  author: string;
+  count: number;
+  averageRating: number;
+}
+
+export interface PublisherStats {
+  publisher: string;
+  count: number;
+  averageRating: number;
+}
+
+export interface FullCategoryStats {
+  categoryName: string;
+  count: number;
+  averageRating: number;
+}
+
+export interface LibraryStats {
+  totalBooks: number;
+  overallAverageRating: number;
+  preferredCategories: CategoryStats[];
+  allCategoryStats: FullCategoryStats[];
+  preferredAuthors: AuthorStats[];
+  preferredPublishers: PublisherStats[];
+  ratingDistribution: {
+    rating: number;
+    count: number;
+    percentage: number;
+  }[];
+}
+
+// 4.13 개인 서재 책 추가/수정 요청 DTO
+export interface UpsertMyLibraryRequest {
+  isbn13: string;
+  status: string; // ReadingStatus Enum (WANT_TO_READ, READING, COMPLETED)
+  myRating?: number | null;
 }
 
 // =========================================================

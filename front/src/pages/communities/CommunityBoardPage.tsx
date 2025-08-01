@@ -1,137 +1,107 @@
-import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+// src/pages/communities/CommunityBoardPage.tsx
+
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import BoardTemplate from "../../components/posts/BoardTemplate";
-import type { Post } from "../../types";
+// TeamCommunity, TeamPost는 형식(interface)이므로 'import type' 사용
+import type { TeamCommunity, TeamPost } from "../../types";
 
-const communityPostsMockData: { [key: string]: Post[] } = {
-  comm1: Array.from({ length: 15 }, (_, i) => ({
-    id: `comm1-post-${i + 1}`,
-    title: `[해리포터] ${i + 1}번째 독서 스터디 논의점`,
-    commentCount: Math.floor(Math.random() * 10) + 1,
-    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-    type: "community",
-    author: `호그와트 ${i + 1}`,
-    authorId: (i + 1) * 100 + 1, // ★★★ FIX: string -> number (예시: 고유한 숫자 ID 할당) ★★★
-    content: `이것은 [해리포터] 커뮤니티의 ${i + 1}번째 게시물 내용입니다.`,
-  })),
-  comm2: Array.from({ length: 25 }, (_, i) => ({
-    id: `comm2-post-${i + 1}`,
-    title: `[노인과바다] 깊은 바다 이야기 ${i + 1}`,
-    commentCount: Math.floor(Math.random() * 15) + 1,
-    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-    type: "community",
-    author: `어부 ${i + 1}`,
-    authorId: (i + 1) * 100 + 2, // ★★★ FIX: string -> number ★★★
-    content: `노인과 바다 ${i + 1}번째 게시물 내용입니다.`,
-  })),
-  comm3: Array.from({ length: 8 }, (_, i) => ({
-    id: `comm3-post-${i + 1}`,
-    title: `[삼국지] 위촉오 인물 분석 ${i + 1}탄`,
-    commentCount: Math.floor(Math.random() * 5) + 1,
-    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-    type: "community",
-    author: `촉한 ${i + 1}`,
-    authorId: (i + 1) * 100 + 3, // ★★★ FIX: string -> number ★★★
-    content: `삼국지 ${i + 1}탄 인물 분석 내용입니다.`,
-  })),
-};
-
-const communityInfoMockData: {
-  [key: string]: {
-    bookTitle: string;
-    hostName: string;
-    communityTopic: string;
-  };
-} = {
-  comm1: {
-    bookTitle: "해리포터와 마법사의 돌",
-    hostName: "산삼",
-    communityTopic: "마법 세계 탐험",
-  },
-  comm2: {
-    bookTitle: "노인과 바다",
-    hostName: "문학소녀",
-    communityTopic: "인간과 자연의 대결",
-  },
-  comm3: {
-    bookTitle: "삼국지연의",
-    hostName: "책벌레왕",
-    communityTopic: "역사와 전략의 미학",
-  },
-  "default-community-info": {
-    bookTitle: "알 수 없는 책",
-    hostName: "미상",
-    communityTopic: "알 수 없는 커뮤니티",
-  },
-};
+// fetchCommunityByIdResponse 임포트를 제거합니다.
+import { fetchCommunityById } from "../../api/communities";
+import { fetchTeamPosts } from "../../api/teamPosts";
+import { useAuth } from "../../hooks/useAuth";
 
 const CommunityBoardPage: React.FC = () => {
   const { communityId } = useParams<{ communityId: string }>();
   const navigate = useNavigate();
+  const { currentUserProfile, loading: authLoading } = useAuth();
 
-  const currentCommunityInfo = useMemo(() => {
-    return (
-      communityInfoMockData[communityId || "default-community-info"] ||
-      communityInfoMockData["default-community-info"]
-    );
-  }, [communityId]);
+  const [communityInfo, setCommunityInfo] = useState<TeamCommunity | null>(
+    null
+  );
+  const [communityPosts, setCommunityPosts] = useState<TeamPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const allPostsForCurrentCommunity = useMemo(() => {
-    return communityPostsMockData[communityId || "default-community-id"] || [];
-  }, [communityId]);
-
-  const totalPosts = allPostsForCurrentCommunity.length;
-  const itemsPerPage = 8;
-  const totalPages = Math.ceil(totalPosts / itemsPerPage);
-
-  const displayedPosts = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return allPostsForCurrentCommunity.slice(startIndex, endIndex);
-  }, [currentPage, itemsPerPage, allPostsForCurrentCommunity]);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handleWritePostClick = () => {
-    // API 명세서에 따르면 커뮤니티 게시물 작성은 POST /communities/{id}/posts [cite: 5]
-    // 따라서 새로운 게시물 작성 페이지로 이동하는 경로는 /communities/:communityId/posts/new
-    navigate(`/communities/${communityId}/posts/new`);
-  };
+  const parsedCommunityId = Number(communityId);
 
   useEffect(() => {
-    setCurrentPage(1);
-    window.scrollTo(0, 0);
-  }, [communityId]);
+    const loadCommunityData = async () => {
+      if (isNaN(parsedCommunityId)) {
+        setError("유효하지 않은 커뮤니티 ID입니다.");
+        setLoading(false);
+        return;
+      }
 
-  if (!communityId) {
+      if (!authLoading && !currentUserProfile) {
+        setError("로그인이 필요합니다.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // fetchCommunityById는 communityId를 string으로 받고 Promise<TeamCommunity>를 반환합니다.
+        const communityResponse = await fetchCommunityById(
+          String(parsedCommunityId)
+        ); // 인자를 string으로 변환
+        setCommunityInfo(communityResponse); // .data 접근 없이 바로 사용
+
+        // fetchTeamPosts는 communityId를 string으로 받고, Promise<{ posts: TeamPost[]; totalResults: number }>를 반환하도록 아래에서 수정합니다.
+        const postsResponse = await fetchTeamPosts(
+          String(parsedCommunityId),
+          1,
+          10,
+          "latest"
+        );
+        setCommunityPosts(postsResponse.posts); // postsResponse.posts에 게시물 배열이 있습니다.
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error("Failed to load community data:", err);
+          setError(err.message || "커뮤니티 데이터를 불러오는데 실패했습니다.");
+        } else {
+          setError("알 수 없는 오류가 발생했습니다.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!authLoading) {
+      loadCommunityData();
+    }
+  }, [parsedCommunityId, currentUserProfile, authLoading]);
+
+  const handleWriteClick = () => {
+    navigate(`/communities/${communityId}/posts/write`);
+  };
+
+  const handlePostClick = (postId: number) => {
+    navigate(`/communities/${communityId}/posts/${postId}`);
+  };
+
+  if (loading) {
     return (
-      <div className="text-center py-12 text-xl text-gray-700">
-        유효한 커뮤니티 ID가 필요합니다.
-      </div>
+      <BoardTemplate
+        title="게시판 로딩 중..."
+        posts={[]}
+        onWriteClick={handleWriteClick}
+        onPostClick={handlePostClick}
+        isLoading={true}
+      />
     );
   }
-  if (!currentCommunityInfo || totalPosts === 0) {
-    return (
-      <div className="text-center py-12 text-xl text-gray-700">
-        해당 커뮤니티를 찾을 수 없습니다.
-      </div>
-    );
+
+  if (error) {
+    return <div className="text-center p-8 text-red-600">오류: {error}</div>;
   }
 
   return (
     <BoardTemplate
-      bookTitle={currentCommunityInfo.bookTitle}
-      communityTopic={currentCommunityInfo.communityTopic}
-      posts={displayedPosts}
-      currentPage={currentPage}
-      totalPages={totalPages}
-      onPageChange={handlePageChange}
-      onWritePostClick={handleWritePostClick}
-      boardTitle="게시글"
+      title={`${communityInfo?.postTitle || "커뮤니티"} 게시판`}
+      posts={communityPosts}
+      onWriteClick={handleWriteClick}
+      onPostClick={handlePostClick}
+      isLoading={false}
     />
   );
 };

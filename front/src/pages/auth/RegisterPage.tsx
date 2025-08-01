@@ -7,7 +7,7 @@ import { useAuth } from "../../hooks/useAuth";
 {
   /* 가상의 URL 설정 */
 }
-const DEFAULT_PROFILE = "https://via.placeholder.com/120?text=Profile";
+// const DEFAULT_PROFILE = "https://via.placeholder.com/120?text=Profile"; //회원가입 페이지에서는 프로필X
 
 const RegisterPage: React.FC = () => {
   // const navigate = useNavigate(); // navigate 선언 제거
@@ -48,7 +48,18 @@ const RegisterPage: React.FC = () => {
       alert("비밀번호가 일치하지 않습니다.");
       return;
     }
-
+    if (form.password.length < 6) {
+      alert("비밀번호는 최소 6자 이상이어야 합니다.");
+      return;
+    }
+    if (form.nickname.length < 1 || form.nickname.length > 10) {
+      alert("닉네임은 1자 이상 10자 이하로 입력해주세요.");
+      return;
+    }
+    if (form.introduction.length > 100) {
+      alert("한 줄 소개는 100자 이내로 입력해주세요.");
+      return;
+    }
     if (!form.agreement) {
       alert("이용약관에 동의해야 회원가입을 할 수 있습니다.");
       return;
@@ -82,7 +93,7 @@ const RegisterPage: React.FC = () => {
           </h2>
         </div>
         <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-4">
-          <div className="flex flex-col items-center mb-6">
+          {/* <div className="flex flex-col items-center mb-6">
             <img
               src={DEFAULT_PROFILE}
               alt="프로필 이미지"
@@ -91,7 +102,7 @@ const RegisterPage: React.FC = () => {
             <p className="text-sm text-gray-500 mt-2">
               랜덤 프로필 이미지입니다.
             </p>
-          </div>
+          </div> */} {/*회원가입 페이지에서는 프로필X*/}
           <div>
             <label htmlFor="name" className="block text-sm font-semibold mb-1">
               이름
