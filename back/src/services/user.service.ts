@@ -2,35 +2,37 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { UserRole } from '@prisma/client';
 import userRepository from '../repositories/user.repository';
-import { SignupRequest, SignupResponse, LoginRequest, LoginResponse, JWTPayload, UpdateUserData } from '../types/user.type';
+import { TeamMemberRepository } from '../repositories/team-members.repository';
+import { SignupRequest, SignupResponse, LoginRequest, LoginResponse, JWTPayload, UpdateUserData, ChangePasswordRequest, ChangePasswordResponse } from '../types/user.type';
 
 class UserService {
+
+    private teamMemberRepository: TeamMemberRepository;
+
+    constructor() {
+        this.teamMemberRepository = new TeamMemberRepository();
+    }
 
     // 회원가입
     async signUp(signupData: SignupRequest): Promise<SignupResponse> {
         const { name, email, password, nickname, phone, agreement, introduction } = signupData;
 
-        // 1. 이메일 중복 확인
         const existingEmailUser = await userRepository.findByEmail(email);
         if (existingEmailUser) {
             throw new Error('ExistEmail');
         }
 
-        // 2. 닉네임 중복 확인
         const existingNickname = await userRepository.findByNickname(nickname);
         if (existingNickname) {
             throw new Error('ExistNickname');
         }
 
-        // 3. 비밀번호 해싱
         const saltRounds = parseInt(process.env.SALT_ROUNDS || '10');
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // 기본 프로필 이미지 설정
         const avatarName = encodeURIComponent(nickname) // 닉네임에 따라 고유한 아바타 생성
         const profileImage = `https://api.dicebear.com/8.x/identicon/svg?seed=${avatarName}`;
 
-        // 4. 사용자 생성
         const newUser = await userRepository.createUser({
             name,
             email,
@@ -43,7 +45,6 @@ class UserService {
             role: UserRole.USER
         });
 
-        // 5. 응답 (비밀번호 제외) - 구조 분해 할당 사용
         const { password: _, ...userWithoutPassword } = newUser;
         // 제외하는것, 나머지 모든것(password를 제외한 나머지 필드를 새 객체로 생성)
         // _는 사용하지 않는 변수를 표현
@@ -58,19 +59,16 @@ class UserService {
     async login(loginData: LoginRequest): Promise<LoginResponse> {
         const { email, password } = loginData;
 
-        // 1. 사용자 존재 확인
         const user = await userRepository.findByEmail(email);
         if (!user) {
             throw new Error('UserNotFound');
         }
 
-        // 2. 비밀번호 검증
         const isValidPassword = await bcrypt.compare(password, user.password);
         if (!isValidPassword) {
             throw new Error('PasswordValidation');
         }
 
-        // 3. JWT 토큰 생성
         const tokenPayload: JWTPayload = {
             userId: user.userId,
             email: user.email,
@@ -149,6 +147,46 @@ class UserService {
     }
 
 
+    // 비밀번호 변경
+    async changePassword(userId: number, passwordData: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+        const { currentPassword, newPassword, confirmNewPassword } = passwordData;
+
+        if (!currentPassword || !newPassword || !confirmNewPassword) {
+            throw new Error('PasswordFieldRequired');
+        }
+
+        if (newPassword !== confirmNewPassword) {
+            throw new Error('PasswordMismatch');
+        }
+
+        if (newPassword.length < 8) {
+            throw new Error('PasswordTooShort');
+        }
+
+        if (currentPassword === newPassword) {
+            throw new Error('PasswordSame');
+        }
+
+        const user = await userRepository.findById(userId);
+        if (!user) {
+            throw new Error('UserNotFound');
+        }
+
+        const isValidCurrentPassword = await bcrypt.compare(currentPassword, user.password);
+        if (!isValidCurrentPassword) {
+            throw new Error('CurrentPasswordMismatch');
+        }
+
+        const saltRounds = parseInt(process.env.SALT_ROUNDS || '10');
+        const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+        await userRepository.updateUserPassword(userId, { password: hashedNewPassword });
+
+        return {
+            message: '비밀번호가 성공적으로 변경되었습니다.'
+        };
+    }
+
+
     // 유저 삭제
     async deleteUser(userId: number) {
         const existingUser = await userRepository.findById(userId);
@@ -157,66 +195,16 @@ class UserService {
             throw new Error('UserNotFound');
         }
 
+        const leaderMembership = await this.teamMemberRepository.findLeaderMembershipByUserId(userId);
+
+        if (leaderMembership) {
+            throw new Error('LeaderCannotWithdraw');
+        }
+
         await userRepository.deleteUser(userId);
 
         return {
-            message: "유저 삭제"
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // 비밀번호 변경
-    // async changePassword(userId: number, oldPassword: string, newPassword: string) {
-    //     // 1. 현재 사용자 정보 조회
-    //     const user = await userRepository.findById(userId);
-    //     if (!user) {
-    //         throw new Error('사용자를 찾을 수 없습니다.');
-    //     }
-
-    //     // 2. 기존 비밀번호 확인
-    //     const isValidPassword = await bcrypt.compare(oldPassword, user.password);
-    //     if (!isValidPassword) {
-    //         throw new Error('현재 비밀번호가 올바르지 않습니다.');
-    //     }
-
-    //     // 3. 새 비밀번호 해싱
-    //     const saltRounds = parseInt(process.env.SALT_ROUNDS || '10');
-    //     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
-
-    //     // 4. 비밀번호 업데이트
-    //     await userRepository.updateUser(userId, { password: hashedNewPassword });
-
-    //     return {
-    //         message: '비밀번호가 성공적으로 변경되었습니다.'
-    //     };
-    // }
-
-    // 사용자 통계 (관리자용)
-    async getUserStats() {
-        const totalUsers = await userRepository.countUsers();
-        const allUsers = await userRepository.findAllUsers();
-
-        return {
-            totalUsers,
-            recentUsers: allUsers.slice(0, 10) // 최근 10명
+            message: "유저 삭제가 완료되었습니다."
         };
     }
 
