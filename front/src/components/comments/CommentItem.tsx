@@ -5,6 +5,7 @@ import type { Comment, TeamComment } from "../../types";
 import { useState } from "react";
 import CommentInput from "./CommentInput";
 import CommentList from "./CommentList"; // 재귀적으로 CommentList 사용
+import { formatKoreanDateTime } from "../../utils/dateFormatter"; // ✨ 추가: formatKoreanDateTime 임포트 ✨
 
 interface CommentItemProps {
   comment: Comment | TeamComment;
@@ -103,34 +104,38 @@ const CommentItem: React.FC<CommentItemProps> = ({
     return <div className="block rounded-lg">{children}</div>;
   };
 
-  // comment.depth는 이제 Comment 타입에 정의되어 있으므로 안전하게 접근 가능
-  const paddingLeft = (comment.depth || 0) * 20;
+  // 들여쓰기를 위한 margin-left와 padding-left를 조합
+  // depth가 0일 때 (최상위)는 ml-0, p-4. depth가 1일 때 (대댓글)는 ml-8, p-4
+  const indentationClass = comment.depth ? `ml-${comment.depth * 8}` : "ml-0"; // Tailwind ml-8, ml-16 등
+  const basePadding = "p-4"; // 기본 패딩은 유지
 
-  const canReply = (comment.depth || 0) < 1;
+  const canReply = (comment.depth || 0) < 1; // ✨ 추가: canReply 변수 정의 ✨
 
   const DEFAULT_AVATAR_URL = "https://via.placeholder.com/40?text=User";
 
   return (
     <OuterWrapper>
-      <div
-        className="mb-2 border-t border-gray-300 last:border-b-0 p-8"
-        style={{ paddingLeft: `${paddingLeft}px` }}
-      >
+      <div className={`mb-2 ${basePadding} ${indentationClass}`}>
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center">
             <img
               src={comment.user?.profileImage || DEFAULT_AVATAR_URL}
-              alt={comment.user?.nickname || "작성자"} // ✨ 수정: comment.author 대신 comment.user?.nickname 사용 ✨
+              alt={comment.user?.nickname || "작성자"}
               className="w-8 h-8 rounded-full mr-3 object-cover border border-gray-200"
             />
             <span className="font-semibold text-gray-700">
-              {comment.user?.nickname || "작성자"}{" "}
-              {/* ✨ 수정: comment.author 대신 comment.user?.nickname 사용 ✨ */}
+              {comment.user?.nickname || "작성자"}
             </span>
           </div>
           <span className="text-gray-500 text-sm">
-            {comment.createdAt}
-            {comment.updatedAt !== comment.createdAt && " (수정됨)"}
+            {comment.updatedAt && comment.updatedAt !== comment.createdAt
+              ? "수정일: "
+              : "게시일: "}
+            {formatKoreanDateTime(
+              comment.updatedAt && comment.updatedAt !== comment.createdAt
+                ? comment.updatedAt
+                : comment.createdAt
+            )}
           </span>
         </div>
 
@@ -188,7 +193,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
         </div>
 
         {showReplyInput && (
-          <div className="mt-4 ml-6">
+          <div className="mt-4">
             <CommentInput
               onAddComment={handleReplySubmit}
               placeholder="답글을 작성하세요..."
@@ -205,6 +210,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
           </div>
         )}
 
+        {/* 대댓글 목록은 CommentList가 받도록 유지 */}
         {Array.isArray(comment.replies) && comment.replies.length > 0 && (
           <div className="mt-4">
             <CommentList
@@ -218,12 +224,11 @@ const CommentItem: React.FC<CommentItemProps> = ({
           </div>
         )}
 
-        {postLink &&
-          comment.postTitle && ( // ✨ 수정: comment.postTitle이 있을 때만 표시 ✨
-            <p className="text-sm text-main mt-2">
-              <span className="font-medium">원문:</span> {comment.postTitle}
-            </p>
-          )}
+        {postLink && comment.postTitle && (
+          <p className="text-sm text-main mt-2">
+            <span className="font-medium">원문:</span> {comment.postTitle}
+          </p>
+        )}
       </div>
     </OuterWrapper>
   );

@@ -33,9 +33,6 @@ export const createPost = async (postData: {
 /**
  * 모든 일반 게시물 목록을 조회합니다. (일반 게시판용)
  * GET /api/posts
- * @param page - 페이지 번호
- * @param pageSize - 페이지당 항목 수
- * @param sort - 정렬 기준 (예: 'latest')
  * @returns 게시물 목록 배열 및 총 결과 수
  */
 export const fetchAllPosts = async (
@@ -46,12 +43,12 @@ export const fetchAllPosts = async (
   try {
     const response = await apiClient.get<{
       message: string;
-      data: Post[]; // 백엔드 응답 타입 명확화
+      data: Post[];
     }>(`/posts?page=${page}&pageSize=${pageSize}&sort=${sort}`);
 
     return {
       posts: response.data.data,
-      totalResults: response.data.data.length, // 백엔드에서 totalResults를 받지 않으므로 임시
+      totalResults: response.data.data.length,
     };
   } catch (error) {
     console.error("Failed to fetch all posts:", error);
@@ -62,13 +59,14 @@ export const fetchAllPosts = async (
 /**
  * 특정 일반 게시물 상세 정보를 조회합니다.
  * GET /api/posts/:postId
- * @param postId - 게시물 ID
+ * @param postId - 게시물 ID (number)
  * @returns Post 객체
  */
-export const fetchPostById = async (postId: string): Promise<Post> => {
+export const fetchPostById = async (postId: number): Promise<Post> => {
+  // ✨ 수정: string -> number ✨
   try {
     const response = await apiClient.get<{ message: string; data: Post }>(
-      `/posts/${postId}`
+      `/posts/${postId}` // URL에 number 직접 사용
     );
     return response.data.data;
   } catch (error) {
@@ -80,15 +78,15 @@ export const fetchPostById = async (postId: string): Promise<Post> => {
 /**
  * 특정 일반 게시물을 수정합니다.
  * PUT /api/posts/:postId
- * @param postId - 수정할 게시물 ID
+ * @param postId - 수정할 게시물 ID (number)
  * @param updateData - 업데이트할 데이터 { title?, content? }
  */
 export const updatePost = async (
-  postId: string,
+  postId: number, // ✨ 수정: string -> number ✨
   updateData: { title?: string; content?: string }
 ): Promise<void> => {
   try {
-    await apiClient.put(`/posts/${postId}`, updateData);
+    await apiClient.put(`/posts/${postId}`, updateData); // URL에 number 직접 사용
   } catch (error) {
     console.error("Failed to update post:", error);
     throw error;
@@ -98,11 +96,16 @@ export const updatePost = async (
 /**
  * 특정 일반 게시물을 삭제합니다.
  * DELETE /api/posts/:postId
- * @param postId - 삭제할 게시물 ID
+ * @param postId - 삭제할 게시물 ID (number)
+ * @param userId - 삭제를 요청하는 사용자 ID (권한 확인용)
  */
-export const deletePost = async (postId: string): Promise<void> => {
+export const deletePost = async (
+  postId: number,
+  userId: number
+): Promise<void> => {
+  // ✨ 수정: string -> number ✨
   try {
-    await apiClient.delete(`/posts/${postId}`);
+    await apiClient.delete(`/posts/${postId}`, { data: { userId } }); // URL에 number 직접 사용
   } catch (error) {
     console.error("Failed to delete post:", error);
     throw error;

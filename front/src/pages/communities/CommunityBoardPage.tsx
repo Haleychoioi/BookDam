@@ -102,7 +102,6 @@ const CommunityBoardPage: React.FC = () => {
 
   return (
     <BoardTemplate
-      // bookTitle, communityTopic, headerContent 프롭들은 BoardTemplate에서 제거되었으므로 여기서도 전달하지 않습니다.
       boardTitle="게시물" // 이미지의 "게시물" 제목
       posts={communityPosts}
       onWritePostClick={handleWritePostClick}

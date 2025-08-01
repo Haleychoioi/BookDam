@@ -1,23 +1,15 @@
 // src/api/comments.ts
 
 import apiClient from "./apiClient";
-import type { Comment } from "../types"; // Comment 타입 임포트
+import type { Comment } from "../types";
 
 // =========================================================
 // 일반 게시물 댓글 관련 API
 // =========================================================
 
-/**
- * 특정 게시물의 댓글 목록을 조회합니다.
- * GET /api/posts/:postId/comments
- * @param postId - 게시물 ID
- * @param page - 페이지 번호 (선택 사항)
- * @param size - 페이지당 항목 수 (선택 사항)
- * @param sort - 정렬 기준 (선택 사항)
- * @returns 댓글 목록 배열
- */
 export const fetchCommentsByPost = async (
-  postId: string,
+  // ✨ export 추가 ✨
+  postId: number,
   page?: number,
   size?: number,
   sort?: string
@@ -44,15 +36,8 @@ export const fetchCommentsByPost = async (
   }
 };
 
-/**
- * 특정 게시물에 댓글 또는 대댓글을 작성합니다.
- * POST /api/posts/:postId/comments
- * @param postId - 게시물 ID
- * @param commentData - 댓글 데이터 { userId, content, parentId? }
- * @returns 생성된 댓글 객체
- */
 export const createComment = async (
-  postId: string,
+  postId: number,
   commentData: { userId: number; content: string; parentId: number | null } // ✨ 수정: parentId 타입을 number | null로 변경 ✨
 ): Promise<Comment> => {
   try {
@@ -62,7 +47,6 @@ export const createComment = async (
       commentId: number;
     }>(`/posts/${postId}/comments`, commentData);
 
-    // 생성 후 다시 조회하여 완전한 Comment 객체 반환
     const fetchedComment = await apiClient.get<{
       status: string;
       message: string;
@@ -74,15 +58,10 @@ export const createComment = async (
     throw error;
   }
 };
-/**
- * 특정 댓글을 수정합니다.
- * PUT /api/comments/:commentId
- * @param commentId - 수정할 댓글 ID
- * @param updateData - 업데이트할 데이터 { content, userId }
- * @returns void (성공 여부만 반환)
- */
+
 export const updateComment = async (
-  commentId: string,
+  // ✨ export 추가 ✨
+  commentId: number,
   updateData: { content: string; userId: number }
 ): Promise<void> => {
   try {
@@ -93,21 +72,13 @@ export const updateComment = async (
   }
 };
 
-/**
- * 특정 댓글을 삭제합니다.
- * DELETE /api/comments/:commentId
- * @param commentId - 삭제할 댓글 ID
- * @param userId - 삭제를 요청하는 사용자 ID (권한 확인용)
- * @returns void (성공 여부만 반환)
- */
 export const deleteComment = async (
-  commentId: string,
+  // ✨ export 추가 ✨
+  commentId: number,
   userId: number
 ): Promise<void> => {
   try {
-    // 백엔드가 userId를 쿼리 파라미터나 바디로 받지 않는다면, 인증 미들웨어를 통해 userId를 확인합니다.
-    // 현재 백엔드 deleteComment 컨트롤러는 userId를 받습니다.
-    await apiClient.delete(`/comments/${commentId}`, { data: { userId } }); // DELETE 요청에 body 전달
+    await apiClient.delete(`/comments/${commentId}`, { data: { userId } });
   } catch (error) {
     console.error("Failed to delete comment:", error);
     throw error;

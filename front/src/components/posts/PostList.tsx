@@ -13,8 +13,6 @@ const PostList: React.FC<PostListProps> = ({ posts, onPostClick }) => {
   // onPostClick을 props로 받기
   return (
     <div className="border-t border-gray-300">
-      {" "}
-      {/* 맨 위 가로선 */}
       {posts.map((post) => {
         // Post와 TeamPost의 ID 필드명이 다르므로 동적으로 접근
         const postId = "postId" in post ? post.postId : post.teamPostId;
@@ -36,7 +34,7 @@ const PostList: React.FC<PostListProps> = ({ posts, onPostClick }) => {
               e.preventDefault(); // Link의 기본 이동 막기 (PostDetailPage에서 로드하도록)
               onPostClick(postId); // 부모 컴포넌트로 게시물 ID 전달
             }}
-            className="flex justify-between items-center py-4 border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200"
+            className="flex justify-between items-center pl-5 py-4 border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200"
           >
             <div>
               <span className="text-md text-gray-800 font-medium mr-3">
