@@ -65,7 +65,7 @@ export class CommentController {
   ) => {
     try {
       const { postId: rawPostId } = req.params;
-      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
+      const userId = req.user;
       const { content, parentId: rawParentId } = req.body;
 
       if (userId === undefined) {
@@ -128,7 +128,7 @@ export class CommentController {
   ) => {
     try {
       const { id: rawCommentId } = req.params;
-      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
+      const userId = req.user;
       const { content } = req.body;
 
       if (userId === undefined) {
@@ -178,7 +178,7 @@ export class CommentController {
   ) => {
     try {
       const { id: rawCommentId } = req.params;
-      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
+      const userId = req.user;
 
       if (userId === undefined) {
         throw new CustomError(401, "인증된 사용자 ID는 필수입니다.");
@@ -215,7 +215,7 @@ export class CommentController {
   };
 
   /**
-   * GET /comments/:id - 특정 댓글 상세 정보 조회 (새로 추가)
+   * GET /comments/:id - 특정 댓글 상세 정보 조회
    */
   public getCommentById = async (
     req: Request,

@@ -3,7 +3,8 @@
 import { Request, Response, NextFunction } from "express";
 import { CommunityService } from "../services/communities.service";
 import { CommunityStatus } from "@prisma/client";
-import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
+import { CustomError } from "../middleware/error-handing-middleware";
+import { bookService } from "../services/book.service";
 
 export class CommunityController {
   private communityService: CommunityService;
@@ -31,12 +32,11 @@ export class CommunityController {
         .status(200)
         .json({ message: "커뮤니티 목록 조회 성공", data: communities });
     } catch (error) {
-      // 서비스 계층에서 발생한 에러는 CustomError로 변환하여 next로 전달
       if (error instanceof Error) {
         if (error.message === "No communities found") {
           next(new CustomError(404, error.message));
         } else {
-          next(error); // 그 외 에러는 다음 미들웨어로 전달
+          next(error);
         }
       } else {
         next(error);
@@ -53,28 +53,23 @@ export class CommunityController {
     next: NextFunction
   ) => {
     try {
-      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
-      const {
-        bookIsbn13,
-        title,
-        content,
-        maxMembers: rawMaxMembers,
-      } = req.body;
+      const userId = req.user;
+      const { isbn13, title, content, maxMembers: rawMaxMembers } = req.body;
 
       // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
         throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
       }
 
-      // 필수 필드 유효성 검사
       if (
+        isbn13 === undefined ||
         title === undefined ||
         content === undefined ||
         rawMaxMembers === undefined
       ) {
         throw new CustomError(
           400,
-          "필수 필드(title, content, maxMembers)가 누락되었습니다."
+          "필수 필드(isbn13, title, content, maxMembers)가 누락되었습니다."
         );
       }
 
@@ -83,9 +78,11 @@ export class CommunityController {
         throw new CustomError(400, "유효한 최대 인원(maxMembers)이 아닙니다.");
       }
 
+      await bookService.getBookDetail(isbn13);
+
       const newCommunity = await this.communityService.createCommunity({
-        userId, // req.user에서 가져온 userId 사용
-        bookIsbn13,
+        userId,
+        isbn13,
         title,
         content,
         maxMembers,
@@ -96,7 +93,6 @@ export class CommunityController {
         communityId: newCommunity.teamId,
       });
     } catch (error) {
-      // 서비스 계층에서 발생한 에러를 CustomError로 변환하여 전달
       if (error instanceof Error) {
         if (error.message === "User not found") {
           next(new CustomError(404, error.message));
@@ -105,7 +101,7 @@ export class CommunityController {
         } else if (
           error.message === "Community with this ISBN already exists"
         ) {
-          next(new CustomError(409, error.message)); // Conflict
+          next(new CustomError(409, error.message));
         } else {
           next(error);
         }
@@ -124,7 +120,7 @@ export class CommunityController {
     next: NextFunction
   ) => {
     try {
-      const { itemId } = req.params; // 도서 ISBN13
+      const { itemId } = req.params;
 
       if (!itemId) {
         throw new CustomError(400, "도서 ID(ISBN13)가 필요합니다.");
@@ -199,7 +195,7 @@ export class CommunityController {
   };
 
   /**
-   * PUT /communities/:communityId - 특정 커뮤니티 상세 정보 업데이트 (recruiting 포함)
+   * PUT /communities/:communityId - 특정 커뮤니티 상세 정보 업데이트
    */
   public updateCommunityDetails = async (
     req: Request,
@@ -208,8 +204,8 @@ export class CommunityController {
   ) => {
     try {
       const { communityId: rawCommunityId } = req.params;
-      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
-      const updateData = req.body; // userId는 이제 req.user에서 가져오므로 body에서 제거
+      const userId = req.user;
+      const updateData = req.body;
 
       // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
@@ -226,7 +222,7 @@ export class CommunityController {
         throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
-      // updateData에 유효한 필드가 있는지 확인 (recruiting, title, content, maxMembers 등)
+      // updateData에 유효한 필드가 있는지 확인
       const validUpdateKeys = ["recruiting", "title", "content", "maxMembers"];
       const hasValidUpdateData = Object.keys(updateData).some((key) =>
         validUpdateKeys.includes(key)
@@ -252,7 +248,7 @@ export class CommunityController {
 
       // maxMembers 필드가 있다면 숫자 타입인지 확인
       if (updateData.maxMembers !== undefined) {
-        updateData.maxMembers = Number(updateData.maxMembers); // 숫자로 변환
+        updateData.maxMembers = Number(updateData.maxMembers);
         if (isNaN(updateData.maxMembers) || updateData.maxMembers <= 0) {
           throw new CustomError(
             400,
@@ -264,7 +260,7 @@ export class CommunityController {
       const updatedCommunity =
         await this.communityService.updateCommunityDetails(
           communityId,
-          userId, // req.user에서 가져온 userId 사용
+          userId,
           updateData
         );
       res.status(200).json({
@@ -273,7 +269,7 @@ export class CommunityController {
         data: updatedCommunity,
       });
     } catch (error) {
-      console.error("Error in updateCommunityDetails:", error); // 디버깅용 로그 유지
+      console.error("Error in updateCommunityDetails:", error);
       if (error instanceof Error) {
         if (error.message === "Community not found") {
           next(new CustomError(404, error.message));
@@ -301,7 +297,7 @@ export class CommunityController {
   ) => {
     try {
       const { communityId: rawCommunityId } = req.params;
-      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
+      const userId = req.user;
       const { newStatus } = req.body;
 
       // 인증된 사용자 ID가 없는 경우
@@ -333,7 +329,7 @@ export class CommunityController {
         await this.communityService.updateCommunityStatus(
           communityId,
           newStatus.toUpperCase() as CommunityStatus,
-          userId // req.user에서 가져온 userId 사용
+          userId
         );
       res.status(200).json({
         status: "success",
@@ -370,7 +366,7 @@ export class CommunityController {
   ) => {
     try {
       const { communityId: rawCommunityId } = req.params;
-      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
+      const userId = req.user;
 
       // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
@@ -386,10 +382,7 @@ export class CommunityController {
         throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
-      await this.communityService.deleteCommunity(
-        communityId,
-        userId // req.user에서 가져온 userId 사용
-      );
+      await this.communityService.deleteCommunity(communityId, userId);
       res
         .status(200)
         .json({ status: "success", message: "커뮤니티 삭제 완료" });
