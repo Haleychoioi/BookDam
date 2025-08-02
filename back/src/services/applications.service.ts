@@ -8,9 +8,18 @@ import {
   ApplicationStatus,
   CommunityStatus,
   PostType,
+  TeamApplication,
   TeamRole,
 } from "@prisma/client";
 import { CustomError } from "../middleware/error-handing-middleware";
+
+type ApplicationWithPostInfo = TeamApplication & {
+  post: {
+    postId: number;
+    title: string;
+  };
+};
+
 
 export class ApplicationService {
   private applicationRepository: ApplicationRepository;
@@ -23,6 +32,15 @@ export class ApplicationService {
     this.communityRepository = new CommunityRepository();
     this.postRepository = new PostRepository();
     this.teamMemberRepository = new TeamMemberRepository();
+  }
+
+  public async getMyApplications(
+    userId: number
+  ): Promise<ApplicationWithPostInfo[]> {
+    const applications = await this.applicationRepository.findManyByUserId(
+      userId
+    );
+    return applications;
   }
 
   /**

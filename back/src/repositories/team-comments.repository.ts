@@ -11,6 +11,22 @@ type TeamCommentWithRelations = TeamComment & {
 };
 
 export class TeamCommentRepository {
+
+  public async findByUserId(userId: number): Promise<TeamComment[]> {
+    return prisma.teamComment.findMany({
+      where: { userId: userId },
+      include: {
+        teamPost: {
+          select: {
+            teamPostId: true,
+            title: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
   /**
    * 특정 팀 게시물 ID에 해당하는 댓글 목록 조회
    * @param teamPostId

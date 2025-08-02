@@ -198,7 +198,7 @@ class UserService {
         const leaderMembership = await this.teamMemberRepository.findLeaderMembershipByUserId(userId);
 
         if (leaderMembership) {
-            throw new Error('LeaderCannotWithdraw: 팀을 위임하거나 해산한 후 탈퇴할 수 있습니다.');
+            throw new Error('LeaderCannotWithdraw');
         }
 
         await userRepository.deleteUser(userId);

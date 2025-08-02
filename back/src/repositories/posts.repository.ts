@@ -1,9 +1,34 @@
 // src/repositories/posts.repository.ts
-
 import prisma from "../utils/prisma";
 import { Post, PostType, RecruitmentStatus, Prisma } from "@prisma/client";
 
 export class PostRepository {
+
+  public async findByUserId(
+    userId: number,
+    type?: PostType
+  ): Promise<Post[]> {
+    const where: Prisma.PostWhereInput = {
+      userId: userId,
+    };
+
+    if (type) {
+      where.type = type;
+    }
+
+    return prisma.post.findMany({
+      where,
+      include: {
+        user: { select: { nickname: true, profileImage: true } },
+        _count: { select: { comments: true } },
+        book: {
+          select: { title: true, author: true, cover: true, isbn13: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
   /**
    * 모든 게시물 조회 (전체 게시판 일반 게시물 및 모집 중인 모집글 포함)
    * @param query
