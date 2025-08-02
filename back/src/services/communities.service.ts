@@ -44,13 +44,19 @@ export class CommunityService {
       hostId
     );
 
-    if (!communities || communities.length === 0) {
-      throw new CustomError(404, "모집 중인 커뮤니티가 없습니다.");
-    }
-
     return communities;
   }
 
+  public async getMyParticipatingCommunities(
+    userId: number
+  ): Promise<TeamCommunity[]> {
+    const communities = await this.communityRepository.findActiveByMemberId(
+      userId
+    );
+
+    return communities;
+  }
+  
   /**
    * 커뮤니티 목록 조회
    * @param query

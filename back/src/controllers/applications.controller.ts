@@ -12,6 +12,25 @@ export class ApplicationController {
     this.applicationService = new ApplicationService();
   }
 
+  public getMyApplications = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.user!;
+
+      const applications = await this.applicationService.getMyApplications(userId);
+
+      res.status(200).json({
+        message: "나의 지원 목록 조회 성공",
+        data: applications,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   /**
    * POST /communities/:communityId/apply - 커뮤니티 가입 신청
    */
