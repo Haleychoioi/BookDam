@@ -1,3 +1,4 @@
+// src/components/mypage/RecruitingCommunityCard.tsx
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
@@ -7,11 +8,13 @@ import type { Community } from "../../types";
 interface RecruitingCommunityCardProps {
   community: Community;
   onEndRecruitment: (communityId: string) => void;
+  onEditCommunity: (community: Community) => void; // <-- 이 줄을 추가합니다.
 }
 
 const RecruitingCommunityCard: React.FC<RecruitingCommunityCardProps> = ({
   community,
   onEndRecruitment,
+  onEditCommunity,
 }) => {
   const isRecruitmentEnded = community.status === "모집종료";
   const isFull = community.currentMembers >= community.maxMembers;
@@ -32,7 +35,12 @@ const RecruitingCommunityCard: React.FC<RecruitingCommunityCardProps> = ({
     onEndRecruitment(community.id);
   };
 
-  // 자동 모집 종료 로직
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onEditCommunity(community);
+  };
+
   useEffect(() => {
     if (isFull && community.status === "모집중") {
       onEndRecruitment(community.id);
@@ -68,7 +76,6 @@ const RecruitingCommunityCard: React.FC<RecruitingCommunityCardProps> = ({
       </div>
 
       <div className="flex flex-col items-end mt-auto w-full space-y-2">
-        {/* 신청 내역 보기 버튼 */}
         <div className="w-full">
           <Link
             to={`/mypage/communities/recruiting/${community.id}/applicants`}
@@ -87,7 +94,19 @@ const RecruitingCommunityCard: React.FC<RecruitingCommunityCardProps> = ({
           </Link>
         </div>
 
-        {/* 모집 종료 버튼 */}
+        <div className="w-full">
+          <Button
+            onClick={handleEditClick}
+            bgColor="bg-blue-400"
+            textColor="text-white"
+            hoverBgColor="hover:bg-blue-500"
+            className="w-full px-2 py-2 text-sm"
+            disabled={isRecruitmentEnded}
+          >
+            수정
+          </Button>
+        </div>
+
         <div className="w-full">
           <Button
             onClick={handleEndRecruitmentClick}
