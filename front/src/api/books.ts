@@ -14,50 +14,51 @@ interface BookSearchResponse {
 }
 
 // 백엔드에서 받은 AladinApiResponse<AladinBookItem>를 프론트엔드의 BookDetail 타입으로 변환하는 헬퍼 함수
+// 이 함수는 'coverImage' 대신 'cover'와 'publicationDate' 대신 'pubDate'를 사용하도록 이미 수정되었습니다.
 const mapAladinItemToBookDetail = (aladinItem: AladinBookItem): BookDetail => {
   return {
     isbn13: aladinItem.isbn13,
-    coverImage: aladinItem.cover,
+    cover: aladinItem.cover,
     title: aladinItem.title,
     author: aladinItem.author,
     publisher: aladinItem.publisher,
-    publicationDate: aladinItem.pubDate || null,
+    pubDate: aladinItem.pubDate || null, // 'publicationDate' 대신 'pubDate'
     description: aladinItem.description || null,
-    genre: aladinItem.categoryName || null,
-    summary: aladinItem.description || null,
-    tableOfContents: aladinItem.subInfo?.toc
+    category: aladinItem.categoryName || null,
+    toc: aladinItem.subInfo?.toc // 'tableOfContents'를 'toc'로 변경합니다.
       ? aladinItem.subInfo.toc.split("\n")
       : null,
-    commentaryContent:
+    fullDescription:
       aladinItem.subInfo?.fullDescription ||
       aladinItem.subInfo?.fullDescription2 ||
       null,
-    averageRating: null,
-    communityCount: 0,
-    isWished: false,
-    recommendedBooks: [],
     pageCount: aladinItem.subInfo?.itemPage || null,
+    bestRank: aladinItem.bestRank || null, // 이 줄을 추가합니다.
+    seriesInfo: aladinItem.seriesInfo || null, // 이 줄을 추가합니다.
+    isWished: false, // 이 줄을 추가합니다.
   };
 };
 
+// 백엔드 BookEntity를 프론트엔드의 BookDetail 타입으로 변환하는 헬퍼 함수
+// 이 함수는 'coverImage' 대신 'cover'와 'publicationDate' 대신 'pubDate'를 사용하도록 수정합니다.
 const mapBackendBookToBookDetail = (backendBook: BookEntity): BookDetail => {
   return {
     isbn13: backendBook.isbn13,
-    coverImage: backendBook.cover,
+    cover: backendBook.cover, // 'coverImage'를 'cover'로 변경합니다.
     title: backendBook.title,
     author: backendBook.author,
     publisher: backendBook.publisher,
-    publicationDate: backendBook.pubDate || null,
+    pubDate: backendBook.pubDate || null, // 'publicationDate'를 'pubDate'로 변경합니다.
     description: backendBook.description || null,
-    genre: backendBook.category || null,
-    summary: backendBook.description || null,
-    tableOfContents: backendBook.toc ? backendBook.toc.split("\n") : null,
-    commentaryContent: backendBook.story || null,
-    averageRating: null,
-    communityCount: 0,
-    isWished: false,
-    recommendedBooks: [],
+    category: backendBook.category || null,
+    toc: backendBook.toc // 'tableOfContents'를 'toc'로 변경합니다.
+      ? backendBook.toc.split("\n")
+      : null,
+    fullDescription: backendBook.story || null,
     pageCount: backendBook.pageCount || null,
+    bestRank: backendBook.bestRank || null, // 이 줄을 추가합니다.
+    seriesInfo: backendBook.seriesInfo || null, // 이 줄을 추가합니다.
+    isWished: false, // 이 줄을 추가합니다.
   };
 };
 
@@ -75,16 +76,13 @@ export const searchBooks = async (
     url += `&category=${encodeURIComponent(category)}`;
   }
 
-  // Axios의 제네릭 타입을 백엔드 실제 응답 구조에 맞춰 지정
-  // 백엔드는 { status, message, data: AladinApiResponse } 형태로 응답합니다.
   const response = await apiClient.get<{
     status: string;
     message: string;
-    data: AladinApiResponse<AladinBookItem>; // 백엔드 data 필드에 AladinApiResponse가 담김
+    data: AladinApiResponse<AladinBookItem>;
   }>(url);
 
-  // 백엔드 응답에서 필요한 AladinApiResponse 데이터를 추출
-  const aladinResponse = response.data.data; // response.data 안에 또 data 필드가 있음
+  const aladinResponse = response.data.data;
 
   return {
     books: aladinResponse.item.map((item) => mapAladinItemToBookDetail(item)),
@@ -98,16 +96,13 @@ export const getBookDetail = async (itemId: string): Promise<BookDetail> => {
     const response = await apiClient.get<{
       status: string;
       message: string;
-      data: BookEntity; // 백엔드가 'data' 필드에 BookEntity를 직접 담아 보냄
+      data: BookEntity;
     }>(`/books/${itemId}`);
 
-    // response.data가 바로 백엔드에서 보낸 응답 객체입니다.
-    // 그 안에 BookEntity를 담고 있는 'data' 필드가 있습니다.
-    const actualBackendResponseData = response.data.data; // response.data.data에서 BookEntity 추출
+    const actualBackendResponseData = response.data.data;
 
     if (actualBackendResponseData) {
-      // 실제 책 데이터가 actualBackendResponseData에 담겨있음
-      return mapBackendBookToBookDetail(actualBackendResponseData); // BookEntity를 BookDetail로 매핑
+      return mapBackendBookToBookDetail(actualBackendResponseData);
     } else {
       throw new Error("도서 상세 정보를 찾을 수 없습니다.");
     }
@@ -127,13 +122,12 @@ export const fetchBestsellers = async (
     const response = await apiClient.get<{
       status: string;
       message: string;
-      data: AladinApiResponse<AladinBookItem>; // 백엔드 data 필드에 AladinApiResponse가 담김
+      data: AladinApiResponse<AladinBookItem>;
     }>(
       `/books/bestsellers?page=${page}&size=${size}${
         categoryId ? `&categoryId=${categoryId}` : ""
       }`
     );
-    // 백엔드는 AladinApiResponse를 data 필드에 담아 주므로, response.data.data에서 추출
     return response.data.data.item.map((item) =>
       mapAladinItemToBookDetail(item)
     );
@@ -153,13 +147,12 @@ export const fetchNewBooks = async (
     const response = await apiClient.get<{
       status: string;
       message: string;
-      data: AladinApiResponse<AladinBookItem>; // 백엔드 data 필드에 AladinApiResponse가 담김
+      data: AladinApiResponse<AladinBookItem>;
     }>(
       `/books/newBooks?page=${page}&size=${size}${
         categoryId ? `&categoryId=${categoryId}` : ""
       }`
     );
-    // 백엔드는 AladinApiResponse를 data 필드에 담아 주므로, response.data.data에서 추출
     return response.data.data.item.map((item) =>
       mapAladinItemToBookDetail(item)
     );
@@ -179,13 +172,12 @@ export const fetchSpecialNewBooks = async (
     const response = await apiClient.get<{
       status: string;
       message: string;
-      data: AladinApiResponse<AladinBookItem>; // 백엔드 data 필드에 AladinApiResponse가 담김
+      data: AladinApiResponse<AladinBookItem>;
     }>(
       `/books/specialNewBooks?page=${page}&size=${size}${
         categoryId ? `&categoryId=${categoryId}` : ""
       }`
     );
-    // 백엔드는 AladinApiResponse를 data 필드에 담아 주므로, response.data.data에서 추출
     return response.data.data.item.map((item) =>
       mapAladinItemToBookDetail(item)
     );

@@ -1,62 +1,61 @@
+// src/components/posts/BoardTemplate.tsx
+
+import React from "react";
+import PostList from "./PostList";
 import Button from "../common/Button";
 import Pagination from "../common/Pagination";
-import PostList from "../posts/PostList";
-import type { Post } from "../../types";
+
+import type { Post, TeamPost } from "../../types";
 
 interface BoardTemplateProps {
-  bookTitle?: string;
-  communityTopic?: string;
-  posts: Post[];
+  posts: (Post | TeamPost)[];
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
   onWritePostClick: () => void;
+  onPostClick: (postId: number) => void;
   boardTitle: string;
-  headerContent?: React.ReactNode;
+  isLoading: boolean;
 }
 
 const BoardTemplate: React.FC<BoardTemplateProps> = ({
-  bookTitle,
-  communityTopic,
   posts,
   currentPage,
   totalPages,
   onPageChange,
   onWritePostClick,
+  onPostClick,
   boardTitle,
-  headerContent,
+  isLoading,
 }) => {
   return (
     <div className="min-h-full py-10">
-      <div className="container mx-auto px-4 lg:px-20 xl:px-32">
-        {headerContent ? (
-          <div className="mb-36 mt-24">{headerContent}</div>
-        ) : (
-          <h1 className="text-4xl md:text-4xl font-bold text-gray-800 mb-36 mt-24">
-            {communityTopic && bookTitle
-              ? `${communityTopic} | ${bookTitle}`
-              : communityTopic || bookTitle}
-          </h1>
-        )}
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center mb-8 mt-10">
+          <h1 className="text-3xl font-bold text-gray-800">{boardTitle}</h1>
+          <Button
+            onClick={onWritePostClick}
+            // 기존 Button 컴포넌트의 기본 스타일을 사용하도록 bgColor, textColor, hoverBgColor 제거
+            // bgColor="bg-black"
+            // textColor="text-white"
+            // hoverBgColor="hover:bg-gray-800"
+            className="px-4 py-2 rounded text-base"
+          >
+            게시물 작성
+          </Button>
+        </div>
 
-        {/* 게시글 목록 및 작성 버튼 */}
-        <div className="relative mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            {boardTitle}
-          </h2>
-          <div className="absolute top-0 right-0">
-            <Button
-              onClick={onWritePostClick}
-              bgColor="bg-main"
-              textColor="text-white"
-              hoverBgColor="hover:bg-apply"
-              className="px-5 py-2 rounded-lg text-base"
-            >
-              게시물 작성
-            </Button>
-          </div>
-
-          <PostList posts={posts} />
+        {/* 게시글 목록 */}
+        <div className="mb-8">
+          {isLoading ? (
+            <div className="text-center text-gray-600">
+              게시물을 불러오는 중...
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="text-center text-gray-600">게시물이 없습니다.</div>
+          ) : (
+            <PostList posts={posts} onPostClick={onPostClick} />
+          )}
         </div>
 
         <Pagination

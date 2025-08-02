@@ -1,14 +1,19 @@
+// src/components/comments/CommentItem.tsx
+
 import { Link } from "react-router-dom";
-import type { Comment } from "../../types";
+import type { Comment, TeamComment } from "../../types";
 import { useState } from "react";
 import CommentInput from "./CommentInput";
-import CommentList from "./CommentList";
+import CommentList from "./CommentList"; // 재귀적으로 CommentList 사용
+import { formatKoreanDateTime } from "../../utils/dateFormatter"; // ✨ 추가: formatKoreanDateTime 임포트 ✨
 
 interface CommentItemProps {
-  comment: Comment;
+  comment: Comment | TeamComment;
   postLink?: string;
-  onAddReply: (parentId: string, content: string) => void;
+  onAddReply: (parentId: number, content: string) => Promise<void>;
   currentUserId: number;
+  onEditComment: (commentId: number, newContent: string) => Promise<void>;
+  onDeleteComment: (commentId: number) => Promise<void>;
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({
@@ -16,28 +21,24 @@ const CommentItem: React.FC<CommentItemProps> = ({
   postLink,
   onAddReply,
   currentUserId,
+  onEditComment,
+  onDeleteComment,
 }) => {
-  console.log(
-    `[CommentItem] Rendering comment: ${comment.id}, depth: ${
-      comment.depth
-    }, parentId: ${comment.parentId || "none"}, has replies: ${
-      comment.replies && comment.replies.length > 0
-    }`
-  );
-
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [isEditingComment, setIsEditingComment] = useState(false);
   const [editedCommentContent, setEditedCommentContent] = useState(
     comment.content
   );
-  const isAuthor = comment.authorId === currentUserId;
+  const isAuthor = comment.userId === currentUserId;
 
   const handleReplyClick = () => {
     setShowReplyInput(!showReplyInput);
   };
 
-  const handleReplySubmit = (content: string) => {
-    onAddReply(comment.id, content);
+  const handleReplySubmit = async (content: string) => {
+    const commentActualId =
+      "commentId" in comment ? comment.commentId : comment.teamCommentId;
+    await onAddReply(commentActualId, content);
     setShowReplyInput(false);
   };
 
@@ -45,8 +46,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
     setShowReplyInput(false);
   };
 
-  const handleEditComment = () => {
-    if (comment.authorId !== currentUserId) {
+  const handleEditCommentClick = () => {
+    if (comment.userId !== currentUserId) {
       alert("댓글 작성자만 수정할 수 있습니다.");
       return;
     }
@@ -54,7 +55,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
     setEditedCommentContent(comment.content);
   };
 
-  const handleSaveEditedComment = () => {
+  const handleSaveEditedComment = async () => {
     const trimmedContent = editedCommentContent.trim();
     if (!trimmedContent) {
       alert("댓글 내용을 입력해주세요.");
@@ -66,19 +67,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
       return;
     }
 
-    console.log(`댓글 ${comment.id} 수정 완료:`, trimmedContent);
-
-    comment.content = trimmedContent;
-    comment.isEdited = true;
-    comment.updatedAt = new Date().toLocaleString("ko-KR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-
+    const commentActualId =
+      "commentId" in comment ? comment.commentId : comment.teamCommentId;
+    await onEditComment(commentActualId, trimmedContent);
     setIsEditingComment(false);
   };
 
@@ -87,15 +78,16 @@ const CommentItem: React.FC<CommentItemProps> = ({
     setEditedCommentContent(comment.content);
   };
 
-  const handleDeleteComment = () => {
-    if (comment.authorId !== currentUserId) {
+  const handleDeleteCommentClick = async () => {
+    if (comment.userId !== currentUserId) {
       alert("댓글 작성자만 삭제할 수 있습니다.");
       return;
     }
 
     if (window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) {
-      console.log(`Delete comment ${comment.id}`);
-      alert("댓글이 삭제되었습니다. (새로고침 시 반영)");
+      const commentActualId =
+        "commentId" in comment ? comment.commentId : comment.teamCommentId;
+      await onDeleteComment(commentActualId);
     }
   };
 
@@ -109,36 +101,41 @@ const CommentItem: React.FC<CommentItemProps> = ({
         </Link>
       );
     }
-
     return <div className="block rounded-lg">{children}</div>;
   };
 
-  const paddingLeft = comment.depth ? `${comment.depth * 20}px` : "0px";
+  // 들여쓰기를 위한 margin-left와 padding-left를 조합
+  // depth가 0일 때 (최상위)는 ml-0, p-4. depth가 1일 때 (대댓글)는 ml-8, p-4
+  const indentationClass = comment.depth ? `ml-${comment.depth * 8}` : "ml-0"; // Tailwind ml-8, ml-16 등
+  const basePadding = "p-4"; // 기본 패딩은 유지
 
-  const canReply = (comment.depth || 0) < 1;
+  const canReply = (comment.depth || 0) < 1; // ✨ 추가: canReply 변수 정의 ✨
 
   const DEFAULT_AVATAR_URL = "https://via.placeholder.com/40?text=User";
 
   return (
     <OuterWrapper>
-      <div
-        className="mb-2 border-t border-gray-300 last:border-b-0 p-8"
-        style={{ paddingLeft }}
-      >
+      <div className={`mb-2 ${basePadding} ${indentationClass}`}>
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center">
             <img
-              src={comment.authorProfileImage || DEFAULT_AVATAR_URL}
-              alt={comment.author}
+              src={comment.user?.profileImage || DEFAULT_AVATAR_URL}
+              alt={comment.user?.nickname || "작성자"}
               className="w-8 h-8 rounded-full mr-3 object-cover border border-gray-200"
             />
             <span className="font-semibold text-gray-700">
-              {comment.author}
+              {comment.user?.nickname || "작성자"}
             </span>
           </div>
           <span className="text-gray-500 text-sm">
-            {comment.createdAt}
-            {comment.isEdited && " (수정됨)"}
+            {comment.updatedAt && comment.updatedAt !== comment.createdAt
+              ? "수정일: "
+              : "게시일: "}
+            {formatKoreanDateTime(
+              comment.updatedAt && comment.updatedAt !== comment.createdAt
+                ? comment.updatedAt
+                : comment.createdAt
+            )}
           </span>
         </div>
 
@@ -179,10 +176,16 @@ const CommentItem: React.FC<CommentItemProps> = ({
           )}
           {!isEditingComment && isAuthor && (
             <>
-              <button onClick={handleEditComment} className="hover:text-main">
+              <button
+                onClick={handleEditCommentClick}
+                className="hover:text-main"
+              >
                 수정
               </button>
-              <button onClick={handleDeleteComment} className="hover:text-main">
+              <button
+                onClick={handleDeleteCommentClick}
+                className="hover:text-main"
+              >
                 삭제
               </button>
             </>
@@ -190,7 +193,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
         </div>
 
         {showReplyInput && (
-          <div className="mt-4 ml-6">
+          <div className="mt-4">
             <CommentInput
               onAddComment={handleReplySubmit}
               placeholder="답글을 작성하세요..."
@@ -207,18 +210,21 @@ const CommentItem: React.FC<CommentItemProps> = ({
           </div>
         )}
 
+        {/* 대댓글 목록은 CommentList가 받도록 유지 */}
         {Array.isArray(comment.replies) && comment.replies.length > 0 && (
           <div className="mt-4">
             <CommentList
-              comments={comment.replies}
+              comments={comment.replies as (Comment | TeamComment)[]}
               depth={(comment.depth || 0) + 1}
               onAddReply={onAddReply}
               currentUserId={currentUserId}
+              onEditComment={onEditComment}
+              onDeleteComment={onDeleteComment}
             />
           </div>
         )}
 
-        {postLink && (
+        {postLink && comment.postTitle && (
           <p className="text-sm text-main mt-2">
             <span className="font-medium">원문:</span> {comment.postTitle}
           </p>
