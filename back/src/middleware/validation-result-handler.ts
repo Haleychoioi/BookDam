@@ -33,7 +33,7 @@ export const temporaryPassword: ValidationChain[] = [
     body('email')
         .notEmpty().withMessage("이메일을 작성해주세요.")
         .isEmail().withMessage("이메일 형식으로 작성해주세요."),
-    body('nickname')
+    body('name')
         .notEmpty().withMessage('성함을 작성해주세요.')
 ];
 

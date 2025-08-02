@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 import { UserRole } from '@prisma/client';
 import userRepository from '../repositories/user.repository';
 import { TeamMemberRepository } from '../repositories/team-members.repository';
@@ -8,9 +9,52 @@ import { SignupRequest, SignupResponse, LoginRequest, LoginResponse, JWTPayload,
 class UserService {
 
     private teamMemberRepository: TeamMemberRepository;
+    private transporter: nodemailer.Transporter;
 
     constructor() {
         this.teamMemberRepository = new TeamMemberRepository();
+
+        // 이메일 transporter 설정
+        this.transporter = nodemailer.createTransport({
+            host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+            port: parseInt(process.env.EMAIL_PORT || '587'),
+            secure: false,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+    }
+
+    // 임시 비밀번호 생성 (8자리 영문+숫자)
+    generateTemporaryPassword(): string {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < 8; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    // 임시 비밀번호 이메일 전송
+    async sendTemporaryPasswordEmail(email: string, temporaryPassword: string, userName: string): Promise<void> {
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: '임시 비밀번호 안내',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #333;">임시 비밀번호 안내</h2>
+                    <p>안녕하세요, <strong>${userName}</strong>님.</p>
+                    <p>요청하신 임시 비밀번호는 다음과 같습니다. 로그인 후 반드시 비밀번호를 변경해주세요.</p>
+                    <p style="font-size: 18px; font-weight: bold; background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
+                        <strong>${temporaryPassword}</strong>
+                    </p>
+                </div>
+            `
+        };
+
+        await this.transporter.sendMail(mailOptions);
     }
 
     // 회원가입
@@ -88,6 +132,31 @@ class UserService {
         };
     }
 
+    // 비밀번호 찾기 - 임시 비밀번호 발급
+    async findPassword(email: string, name: string): Promise<{ message: string }> {
+        // 이메일과 이름으로 사용자 확인
+        const user = await userRepository.findByEmailAndName(email, name);
+        if (!user) {
+            throw new Error('UserNotFound');
+        }
+
+        // 임시 비밀번호 생성
+        const temporaryPassword = this.generateTemporaryPassword();
+
+        // 임시 비밀번호 해싱
+        const saltRounds = parseInt(process.env.SALT_ROUNDS || '10');
+        const hashedTemporaryPassword = await bcrypt.hash(temporaryPassword, saltRounds);
+
+        // DB에 임시 비밀번호 저장
+        await userRepository.updateUserPassword(user.userId, { password: hashedTemporaryPassword });
+
+        // 이메일로 임시 비밀번호 전송 (사용자 이름 포함)
+        await this.sendTemporaryPasswordEmail(email, temporaryPassword, user.name);
+
+        return {
+            message: '임시 비밀번호가 이메일로 전송되었습니다. 로그인 후 비밀번호를 변경해주세요.'
+        };
+    }
 
     // 내 정보 조회
     async getMyProfile(userId: number) {
@@ -146,7 +215,6 @@ class UserService {
         return userWithoutPassword;
     }
 
-
     // 비밀번호 변경
     async changePassword(userId: number, passwordData: ChangePasswordRequest): Promise<ChangePasswordResponse> {
         const { currentPassword, newPassword, confirmNewPassword } = passwordData;
@@ -186,7 +254,6 @@ class UserService {
         };
     }
 
-
     // 유저 삭제
     async deleteUser(userId: number) {
         const existingUser = await userRepository.findById(userId);
@@ -207,7 +274,6 @@ class UserService {
             message: "유저 삭제가 완료되었습니다."
         };
     }
-
 }
 
 export default new UserService();
