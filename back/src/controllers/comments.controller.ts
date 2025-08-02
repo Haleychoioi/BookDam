@@ -11,30 +11,27 @@ export class CommentController {
     this.commentService = new CommentService();
   }
 
-  public getMyComments = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  public getMyComments = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user!;
-      const comments = await this.commentService.getMyComments(userId);
+      // 쿼리 파라미터로 page, size, sort, type('GENERAL', 'RECRUITMENT', 'TEAM')을 받을 수 있습니다.
+      const { page, size, sort, type } = req.query;
+
+      const result = await this.commentService.getMyComments(userId, {
+        page: page ? Number(page) : undefined,
+        pageSize: size ? Number(size) : undefined,
+        sort: sort ? String(sort) : undefined,
+        type: type ? String(type).toUpperCase() : undefined,
+      });
+
       res.status(200).json({
         message: "내가 작성한 댓글 목록 조회 성공",
-        data: comments,
+        data: result,
       });
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === "Post not found") {
-          next(new CustomError(404, error.message));
-        } else {
-          next(error);
-        }
-      } else {
-        next(error);
-      }
+      next(error);
     }
-  }
+  };
 
   /**
    * GET /posts/:postId/comments - 특정 게시물의 댓글 목록 조회

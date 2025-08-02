@@ -1,7 +1,7 @@
 // src/repositories/comments.repository.ts
 
 import prisma from "../utils/prisma";
-import { Comment, Prisma } from "@prisma/client";
+import { Comment, Prisma, PostType } from "@prisma/client";
 
 // Prisma의 findUnique/findMany 타입
 // Comment 모델에 user (nickname만 포함), replies (Comment와 user 포함) 관계가 포함된 형태
@@ -17,23 +17,36 @@ type CommentWithPostTitle = Comment & {
 
 export class CommentRepository {
 
-  public async findByUserId(userId: number): Promise<CommentWithPostTitle[]> {
-    const comments = await prisma.comment.findMany({
-      where: {
-        userId: userId,
-      },
+  public async findByUserId(
+    userId: number,
+    type?: PostType
+  ): Promise<Comment[]> {
+    const where: Prisma.CommentWhereInput = {
+      userId: userId,
+    };
+
+    // type 파라미터가 있으면, 연결된 post의 type을 조건으로 추가합니다.
+    if (type) {
+      where.post = {
+        type: type,
+      };
+    }
+
+    return prisma.comment.findMany({
+      where,
       include: {
         post: {
           select: {
+            postId: true,
             title: true,
+            type: true,
           },
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
-    return comments as CommentWithPostTitle[];
   }
 
 
