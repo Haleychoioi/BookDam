@@ -11,6 +11,31 @@ export class CommentController {
     this.commentService = new CommentService();
   }
 
+  public getMyComments = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.user!;
+      const comments = await this.commentService.getMyComments(userId);
+      res.status(200).json({
+        message: "내가 작성한 댓글 목록 조회 성공",
+        data: comments,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "Post not found") {
+          next(new CustomError(404, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
+    }
+  }
+
   /**
    * GET /posts/:postId/comments - 특정 게시물의 댓글 목록 조회
    */

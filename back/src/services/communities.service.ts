@@ -10,14 +10,20 @@ import {
   PostType,
   TeamRole,
   RecruitmentStatus,
+  TeamApplication,
 } from "@prisma/client";
 import { CustomError } from "../middleware/error-handing-middleware";
 
-// 커뮤니티 목록 조회 시 필요한 추가 정보를 포함하는 인터페이스 정의
-interface CommunityWithMemberInfo extends TeamCommunity {
-  maxMembers: number;
-  currentMembers: number;
-}
+type CommunityWithRecruitingInfo = TeamCommunity & {
+  recruitmentPost: {
+    applications: (TeamApplication & {
+      user: {
+        userId: number;
+        nickname: string;
+      };
+    })[];
+  };
+};
 
 export class CommunityService {
   private communityRepository: CommunityRepository;
@@ -29,6 +35,20 @@ export class CommunityService {
     this.communityRepository = new CommunityRepository();
     this.postRepository = new PostRepository();
     this.teamMemberRepository = new TeamMemberRepository();
+  }
+
+  public async getMyRecruitingCommunities(
+    hostId: number
+  ): Promise<CommunityWithRecruitingInfo[]> {
+    const communities = await this.communityRepository.findRecruitingByHostId(
+      hostId
+    );
+
+    if (!communities || communities.length === 0) {
+      throw new CustomError(404, "모집 중인 커뮤니티가 없습니다.");
+    }
+
+    return communities;
   }
 
   /**

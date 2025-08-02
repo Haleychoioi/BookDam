@@ -10,7 +10,33 @@ type CommentWithRelations = Comment & {
   replies: (Comment & { user: { nickname: string } | null })[];
 };
 
+// 사용자가 작성한 댓글 조회 시 게시물 제목을 포함하기 위한 타입
+type CommentWithPostTitle = Comment & {
+  post: { title: string } | null;
+};
+
 export class CommentRepository {
+
+  public async findByUserId(userId: number): Promise<CommentWithPostTitle[]> {
+    const comments = await prisma.comment.findMany({
+      where: {
+        userId: userId,
+      },
+      include: {
+        post: {
+          select: {
+            title: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    return comments as CommentWithPostTitle[];
+  }
+
+
   /**
    * 특정 게시물 ID에 해당하는 댓글 목록 조회
    * 최상위 댓글, 1단계 대댓글

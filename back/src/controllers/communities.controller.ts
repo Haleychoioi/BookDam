@@ -12,6 +12,26 @@ export class CommunityController {
   constructor() {
     this.communityService = new CommunityService();
   }
+
+  public getMyRecruitingCommunities = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.user!
+
+      const communities = await this.communityService.getMyRecruitingCommunities(userId);
+
+      res.status(200).json({
+        message: "내가 모집 중인 커뮤니티 목록 조회 성공",
+        data: communities,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   /**
    * GET /communities - 커뮤니티 목록 조회
    */
