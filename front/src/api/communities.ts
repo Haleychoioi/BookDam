@@ -374,6 +374,25 @@ export const cancelRecruitment = async (communityId: string): Promise<void> => {
   }
 };
 
+/**
+ * 내가 신청한 커뮤니티에 대한 신청을 취소합니다.
+ * DELETE /api/mypage/communities/applications/:applicationId
+ * @param applicationId - 취소할 신청서의 ID
+ */
+export const cancelApplication = async (
+  applicationId: string
+): Promise<void> => {
+  try {
+    await apiClient.delete(`/mypage/communities/applications/${applicationId}`); // 백엔드 라우트와 매칭
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error("Failed to cancel application:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred while canceling application.");
+  }
+};
+
 // =========================================================
 // 4. 마이페이지 커뮤니티 참여 현황
 // =========================================================
@@ -444,7 +463,7 @@ export const fetchAppliedCommunities = async (): Promise<
         // 아래 필드들은 TeamCommunity 응답에 직접 포함되지 않거나 기본값/유추가 필요합니다.
         currentMembers: 0, // 백엔드에서 제공되지 않으므로 임시 기본값. 정확한 값을 원한다면 백엔드 API 개선 필요.
         maxMembers: backendComm.maxMembers || 0, // TeamCommunity에 optional maxMembers가 있으므로 사용, 없으면 0.
-        role: "member", // 이 API는 사용자 역할을 제공하지 않으므로 'member'로 기본값 설정.
+        role: "member", // 이 API는 사용자 역할을 제공하지 않므로 'member'로 기본값 설정.
 
         // AppliedCommunity 고유 필드
         // myApplicationStatus는 백엔드 `GET /mypage/communities/applied` API 응답에 직접 포함되지 않으므로,
@@ -456,6 +475,28 @@ export const fetchAppliedCommunities = async (): Promise<
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error("Failed to fetch applied communities:", err);
+      throw err;
+    }
+    throw new Error("Unknown error occurred");
+  }
+};
+
+/**
+ * 내가 모집 중인 커뮤니티 목록을 조회합니다.
+ * GET /api/mypage/communities/recruiting
+ * @returns Community 목록 배열 (role 포함)
+ */
+export const fetchMyRecruitingCommunities = async (): Promise<Community[]> => {
+  try {
+    const response = await apiClient.get<{ data: TeamCommunity[] }>(
+      `/mypage/communities/recruiting`
+    );
+    // mapBackendCommunityToFrontendCommunity 함수는 role과 currentMembers, maxMembers를 기본값으로 매핑합니다.
+    // 백엔드에서 이 정보를 직접 제공하도록 업데이트하면 더 정확해집니다.
+    return response.data.data.map(mapBackendCommunityToFrontendCommunity);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error("Failed to fetch my recruiting communities:", err);
       throw err;
     }
     throw new Error("Unknown error occurred");

@@ -8,9 +8,17 @@ import {
   ApplicationStatus,
   CommunityStatus,
   PostType,
+  TeamApplication,
   TeamRole,
 } from "@prisma/client";
 import { CustomError } from "../middleware/error-handing-middleware";
+
+type ApplicationWithPostInfo = TeamApplication & {
+  post: {
+    postId: number;
+    title: string;
+  };
+};
 
 export class ApplicationService {
   private applicationRepository: ApplicationRepository;
@@ -23,6 +31,37 @@ export class ApplicationService {
     this.communityRepository = new CommunityRepository();
     this.postRepository = new PostRepository();
     this.teamMemberRepository = new TeamMemberRepository();
+  }
+
+
+  public async getMyApplications(
+    userId: number
+  ): Promise<ApplicationWithPostInfo[]> {
+    const applications = await this.applicationRepository.findManyByUserId(
+      userId
+    );
+    return applications;
+  }
+
+  public async cancelApplication(applicationId: number, userId: number) {
+    const application = await this.applicationRepository.findById(
+      applicationId
+    );
+
+    if (!application) {
+      throw new CustomError(404, "지원 내역을 찾을 수 없습니다.");
+    }
+    if (application.userId !== userId) {
+      throw new CustomError(403, "자신의 지원만 취소할 수 있습니다.");
+    }
+    if (application.status !== ApplicationStatus.PENDING) {
+      throw new CustomError(
+        400,
+        "대기 중인 지원서만 취소할 수 있습니다."
+      );
+    }
+
+    await this.applicationRepository.deleteById(applicationId);
   }
 
   /**

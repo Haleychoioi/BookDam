@@ -1,3 +1,4 @@
+// src/App.tsx
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import MainLayout from "./layouts/MainLayout";
@@ -17,6 +18,7 @@ import WishlistPage from "./pages/mypage/WishlistPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import FindPasswordPage from "./pages/auth/FindPasswordPage"; // ✨ FindPasswordPage 임포트 ✨
 import ErrorPage from "./pages/ErrorPage";
 import MyPageLayout from "./layouts/MyPageLayout";
 import PostDetailPage from "./pages/posts/PostDetailPage";
@@ -84,29 +86,17 @@ function App() {
               element={<MyCommunitiesAppliedPage />}
             />
             {/* 계정관리 페이지 */}
-            <Route
-              path="account-security"
-              element={<AccountSecurityPage />}
-            />
+            <Route path="account-security" element={<AccountSecurityPage />} />
             {/* 회원탈퇴 페이지 */}
-            <Route 
-              path="user-leave"
-              element={<UserLeavePage />}
-            />
+            <Route path="user-leave" element={<UserLeavePage />} />
           </Route>
 
           {/* 회원가입/로그인 페이지 */}
-          <Route
-            path="/auth/register"
-            element={<RegisterPage />}
-          />
-          <Route 
-            path="/auth/login"
-            element={<LoginPage />}
-          />
+          <Route path="/auth/register" element={<RegisterPage />} />
+          <Route path="/auth/login" element={<LoginPage />} />
+          {/* ✨ 비밀번호 찾기 페이지 라우트 추가 ✨ */}
+          <Route path="/auth/find-password" element={<FindPasswordPage />} />
         </Route>
-
-
 
         {/* 전체 게시판에 게시물 작성 */}
         <Route path="posts/write" element={<PostWritePage />} />

@@ -1,5 +1,3 @@
-// src/controllers/posts.controller.ts
-
 import { Request, Response, NextFunction } from "express";
 import { PostService } from "../services/posts.service";
 import { CustomError } from "../middleware/error-handing-middleware";
@@ -10,6 +8,32 @@ export class PostController {
   constructor() {
     this.postService = new PostService();
   }
+  
+  public getMyPosts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.user!;
+      const { page, size, sort, type } = req.query;
+
+      const result = await this.postService.getUserPosts(userId, {
+        page: page ? Number(page) : undefined,
+        pageSize: size ? Number(size) : undefined,
+        sort: sort ? String(sort) : undefined,
+        type: type ? String(type).toUpperCase() : undefined,
+      });
+
+      res.status(200).json({
+        message: "내가 작성한 게시물 조회 성공",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
 
   /**
    * GET /posts - 전체 게시판 게시물 목록 조회
