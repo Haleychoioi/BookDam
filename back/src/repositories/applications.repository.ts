@@ -12,6 +12,12 @@ type ApplicationWithPostInfo = TeamApplication & {
 
 export class ApplicationRepository {
 
+  public async deleteById(applicationId: number): Promise<void> {
+    await prisma.teamApplication.delete({
+      where: { applicationId: applicationId }
+    })
+  }
+
    public async findManyByUserId(
     userId: number
   ): Promise<ApplicationWithPostInfo[]> {

@@ -8,7 +8,6 @@ import errorHandlingMiddleware, {
   CustomError,
 } from "./middleware/error-handing-middleware";
 import authRouter from "./routes/auth.routes";
-import userRouter from "./routes/user.routes";
 import bookRouter from "./routes/book.routes";
 import myPageRouter from "./routes/myPage.routes"
 
@@ -40,7 +39,6 @@ app.get("/", (req: Request, res: Response) => {
 
 // 기존 라우터들 (유저/도서/마이페이지)
 app.use("/api/auth", authRouter);
-app.use("/api/users", userRouter);
 app.use("/api/books", bookRouter);
 app.use('/api/mypage', myPageRouter);
 

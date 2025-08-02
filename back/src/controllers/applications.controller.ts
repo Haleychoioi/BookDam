@@ -31,6 +31,26 @@ export class ApplicationController {
     }
   };
 
+    public cancelApplication = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const applicationId = Number(req.params.applicationId);
+      const userId = req.user!;
+      
+      if (isNaN(applicationId)) {
+        throw new CustomError(400, "유효하지 않은 지원서 ID입니다.");
+      }
+
+      await this.applicationService.cancelApplication(applicationId, userId);
+      res.status(200).json({ message: "지원이 취소되었습니다." });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   /**
    * POST /communities/:communityId/apply - 커뮤니티 가입 신청
    */
