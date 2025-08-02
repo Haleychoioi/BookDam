@@ -5,8 +5,10 @@ import myLibraryController from "../controllers/myLibrary.controller";
 import authenticate from '../middleware/authenticate-middleware'
 import { PostController } from "../controllers/posts.controller";
 import { CommentController } from '../controllers/comments.controller';
+import { CommunityController } from '../controllers/communities.controller';
 const postController = new PostController();
 const commentController = new CommentController();
+const communityController = new CommunityController();
 
 const router = express.Router();
 
@@ -36,5 +38,8 @@ router.get("/my-post", authenticate, postController.getMyPosts);
 
 // 내가 작성한 댓글
 router.get("/my-comments", authenticate, commentController.getMyComments);
+
+// 내가 모집중인
+router.get("/communities/recruiting", authenticate, communityController.getMyRecruitingCommunities);
 
 export default router;

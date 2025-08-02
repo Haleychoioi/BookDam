@@ -1,9 +1,56 @@
 // src/repositories/communities.repository.ts
 
 import prisma from "../utils/prisma";
-import { TeamCommunity, CommunityStatus, Prisma } from "@prisma/client";
+import { TeamApplication , TeamCommunity, CommunityStatus, Prisma } from "@prisma/client";
+
+type CommunityWithRecruitingInfo = TeamCommunity & {
+  recruitmentPost: {
+    applications: (TeamApplication & {
+      user: {
+        userId: number;
+        nickname: string;
+      };
+    })[];
+  };
+};
 
 export class CommunityRepository {
+
+
+    public async findRecruitingByHostId(
+    hostId: number
+  ): Promise<CommunityWithRecruitingInfo[]> {
+    const communities = await prisma.teamCommunity.findMany({
+      where: {
+        recruitmentPost: {
+          userId: hostId,
+        },
+        status: CommunityStatus.RECRUITING,
+      },
+      include: {
+        recruitmentPost: {
+          include: {
+            applications: {
+              include: {
+                user: {
+                  select: {
+                    userId: true,
+                    nickname: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return communities as CommunityWithRecruitingInfo[];
+  }
+
   /**
    * 모든 커뮤니티 조회
    * @param query
