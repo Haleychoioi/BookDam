@@ -1,58 +1,78 @@
 // src/services/posts.service.ts
 
 import { PostRepository } from "../repositories/posts.repository";
-import { Post, PostType, RecruitmentStatus } from "@prisma/client";
+import { TeamPostRepository } from "../repositories/team-posts.repository";
+import { Post, PostType, RecruitmentStatus, TeamPost } from "@prisma/client";
 import { CustomError } from "../middleware/error-handing-middleware";
 
 export class PostService {
   private postRepository: PostRepository;
+  private teamPostRepository: TeamPostRepository;
 
   constructor() {
     this.postRepository = new PostRepository();
+    this.teamPostRepository = new TeamPostRepository();
   }
 
-  public async getUserPosts(userId: number, 
+  public async getUserPosts(
+    userId: number,
     query: {
       page?: number;
       pageSize?: number;
       sort?: string;
+      type?: string; // 'GENERAL', 'RECRUITMENT' 또는 'TEAM'
     }
   ) {
-    try {
-      // 입력값 검증
-      const page = Math.max(1, Number(query.page) || 1);
-      const pageSize = Math.min(50, Math.max(1, Number(query.pageSize) || 10)); // 최대 50개로 제한
+    const { page = 1, pageSize = 10, sort = "latest", type } = query;
 
-      const posts = await this.postRepository.findByUserId(userId, {
-        page,
-        pageSize,
-        sort: query.sort || "latest",
-      });
+    let combinedPosts: any[] = [];
 
-      const totalCount = await this.postRepository.countByUserId(userId);
-      const totalPages = Math.ceil(totalCount / pageSize);
+    // 1. 쿼리 타입에 따라 데이터 조회 로직을 명확하게 분리합니다.
+    if (type === "TEAM") {
+      // 'TEAM' 타입일 경우: 팀 게시글만 조회
+      const teamPosts = await this.teamPostRepository.findByUserId(userId);
+      combinedPosts = teamPosts.map((p) => ({ ...p, type: "TEAM", source: "TEAM" }));
 
-      return {
-        success: true,
-        data: {
-          posts,
-          pagination: {
-            currentPage: page,
-            pageSize,
-            totalCount,
-            totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1
-          }
-        }
-      };
-    } catch (error) {
-      console.error('유저 게시물 조회 중 오류:', error);
-      throw new Error('게시물을 조회하는 중 오류가 발생했습니다.');
+    } else if (type === "GENERAL" || type === "RECRUITMENT") {
+      // 'GENERAL' 또는 'RECRUITMENT' 타입일 경우: 해당 퍼블릭 게시글만 조회
+      const postType = type as PostType;
+      const publicPosts = await this.postRepository.findByUserId(userId, postType);
+      combinedPosts = publicPosts.map((p) => ({ ...p, source: "PUBLIC" }));
+
+    } else {
+      // type이 없거나 유효하지 않은 경우: 전체 조회 (안전한 기본값)
+      const publicPosts = await this.postRepository.findByUserId(userId);
+      const teamPosts = await this.teamPostRepository.findByUserId(userId);
+      
+      combinedPosts.push(...publicPosts.map((p) => ({ ...p, source: "PUBLIC" })));
+      combinedPosts.push(...teamPosts.map((p) => ({ ...p, type: "TEAM", source: "TEAM" })));
     }
+
+    // 2. 합쳐진 배열을 생성 날짜 기준으로 정렬합니다.
+    combinedPosts.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return sort === "oldest" ? dateA - dateB : dateB - dateA;
+    });
+
+    // 3. 정렬된 배열에 대해 페이지네이션을 적용합니다.
+    const totalCount = combinedPosts.length;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const skip = (page - 1) * pageSize;
+    const paginatedPosts = combinedPosts.slice(skip, skip + pageSize);
+
+    return {
+      posts: paginatedPosts,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        totalCount,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
   }
-
-
 
   /**
    * 전체 게시판 게시물 목록 조회 (일반글 및 공개된 모집글 포함)

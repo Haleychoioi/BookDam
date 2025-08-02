@@ -1,5 +1,4 @@
 // src/repositories/posts.repository.ts
-
 import prisma from "../utils/prisma";
 import { Post, PostType, RecruitmentStatus, Prisma } from "@prisma/client";
 
@@ -7,80 +6,28 @@ export class PostRepository {
 
   public async findByUserId(
     userId: number,
-    query: {
-      page?: number;
-      pageSize?: number;
-      sort?: string;
-      type?: PostType;
-    } = {}
+    type?: PostType
   ): Promise<Post[]> {
-    const { page = 1, pageSize = 10, sort = "latest", type } = query;
-    const skip = (page - 1) * pageSize;
-
-    const whereCondition: Prisma.PostWhereInput = {
+    const where: Prisma.PostWhereInput = {
       userId: userId,
-      team: null,
     };
 
     if (type) {
-      whereCondition.type = type;
+      where.type = type;
     }
 
-    const findManyOptions: Prisma.PostFindManyArgs = {
-      where: whereCondition,
-      skip,
-      take: pageSize,
+    return prisma.post.findMany({
+      where,
       include: {
-        user: {
-          select: {
-            nickname: true,
-            profileImage: true,
-          },
-        },
-        _count: {
-          select: { comments: true },
-        },
+        user: { select: { nickname: true, profileImage: true } },
+        _count: { select: { comments: true } },
         book: {
-          select: {
-            title: true,
-            author: true,
-            cover: true,
-            isbn13: true,
-          },
+          select: { title: true, author: true, cover: true, isbn13: true },
         },
       },
-    };
-
-    if (sort === "oldest") {
-      findManyOptions.orderBy = { createdAt: "asc" };
-    } else {
-      findManyOptions.orderBy = { createdAt: "desc" };
-    }
-
-    const posts = await prisma.post.findMany(findManyOptions);
-    return posts;
-  }
-
-  public async countByUserId(
-    userId: number,
-    type?: PostType
-  ): Promise<number> {
-    const whereCondition: Prisma.PostWhereInput = {
-      userId: userId,
-      team: null,
-    };
-
-    if (type) {
-      whereCondition.type = type;
-    }
-
-    const count = await prisma.post.count({
-      where: whereCondition,
+      orderBy: { createdAt: "desc" },
     });
-
-    return count;
   }
-
 
   /**
    * 모든 게시물 조회 (전체 게시판 일반 게시물 및 모집 중인 모집글 포함)
