@@ -11,6 +11,49 @@ export class PostService {
     this.postRepository = new PostRepository();
   }
 
+  public async getUserPosts(userId: number, 
+    query: {
+      page?: number;
+      pageSize?: number;
+      sort?: string;
+    }
+  ) {
+    try {
+      // 입력값 검증
+      const page = Math.max(1, Number(query.page) || 1);
+      const pageSize = Math.min(50, Math.max(1, Number(query.pageSize) || 10)); // 최대 50개로 제한
+
+      const posts = await this.postRepository.findByUserId(userId, {
+        page,
+        pageSize,
+        sort: query.sort || "latest",
+      });
+
+      const totalCount = await this.postRepository.countByUserId(userId);
+      const totalPages = Math.ceil(totalCount / pageSize);
+
+      return {
+        success: true,
+        data: {
+          posts,
+          pagination: {
+            currentPage: page,
+            pageSize,
+            totalCount,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1
+          }
+        }
+      };
+    } catch (error) {
+      console.error('유저 게시물 조회 중 오류:', error);
+      throw new Error('게시물을 조회하는 중 오류가 발생했습니다.');
+    }
+  }
+
+
+
   /**
    * 전체 게시판 게시물 목록 조회 (일반글 및 공개된 모집글 포함)
    * @param query

@@ -8,9 +8,7 @@ import errorHandlingMiddleware, { CustomError } from "./middleware/error-handing
 import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
 import bookRouter from "./routes/book.routes";
-import wishRouter from './routes/wishList.route';
-import myLibraryRouter from './routes/myLibrary.routes';
-import tasteAnalysisRouter from './routes/tasteAnalysis.routes';
+import myPageRouter from "./routes/myPage.routes"
 
 import routes from "./routes";
 import prisma from "./utils/prisma";
@@ -41,9 +39,7 @@ app.get("/", (req: Request, res: Response) => {
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/books", bookRouter);
-app.use('/api/mypage/wishlist', wishRouter);
-app.use('/api/mypage/taste-analysis', tasteAnalysisRouter);
-app.use('/api/mypage/my-library', myLibraryRouter);
+app.use('/api/mypage', myPageRouter);
 
 // 새로운 커뮤니티 관련 라우터들
 app.use("/api", routes);
