@@ -47,6 +47,8 @@ const PostWritePage: React.FC = () => {
             type: formData.type as TeamPostType,
           });
           alert("팀 게시물이 성공적으로 작성되었습니다.");
+          // ✨ 추가: 생성된 게시물 ID 로깅 ✨
+          console.log(`팀 게시물 생성 성공. 게시물 ID: ${postId}`);
           navigate(`/communities/${communityId}/posts/${postId}`);
         } else {
           postId = await createPost({
@@ -54,6 +56,8 @@ const PostWritePage: React.FC = () => {
             content: formData.content, // formData에서 내용 가져오기
           });
           alert("게시물이 성공적으로 작성되었습니다.");
+          // ✨ 추가: 생성된 게시물 ID 로깅 ✨
+          console.log(`일반 게시물 생성 성공. 게시물 ID: ${postId}`);
           navigate(`/posts/${postId}`);
         }
       } catch (err: unknown) {

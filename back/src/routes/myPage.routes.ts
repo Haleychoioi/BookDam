@@ -1,75 +1,254 @@
-import express from 'express';
-import wishListController from '../controllers/wishList.controller';
-import tasteAnalysisController from '../controllers/tasteAnalysis.controller';
+// src/routes/myPage.routes.ts
+
+import { Router } from "express";
+import authenticate from "../middleware/authenticate-middleware";
+import upload from "../middleware/multer";
+import {
+  handleValidationResult,
+  updateProfileValidator,
+} from "../middleware/validation-result-handler";
+
+// ✨ 모든 필요한 컨트롤러 임포트 및 인스턴스 생성 ✨
+import userController from "../controllers/user.controller";
+import wishListController from "../controllers/wishList.controller";
+import tasteAnalysisController from "../controllers/tasteAnalysis.controller";
 import myLibraryController from "../controllers/myLibrary.controller";
-import authenticate from '../middleware/authenticate-middleware'
 import { PostController } from "../controllers/posts.controller";
-import { CommentController } from '../controllers/comments.controller';
-import { CommunityController } from '../controllers/communities.controller';
-import { ApplicationController } from '../controllers/applications.controller';
-import userController from '../controllers/user.controller';
-import { handleValidationResult, updateProfileValidator } from '../middleware/validation-result-handler';
-import upload from '../middleware/multer';
+import { CommentController } from "../controllers/comments.controller";
+import { CommunityController } from "../controllers/communities.controller";
+import { ApplicationController } from "../controllers/applications.controller";
+import { TeamPostController } from "../controllers/team-posts.controller";
+import { TeamCommentController } from "../controllers/team-comments.controller";
 
 const postController = new PostController();
 const commentController = new CommentController();
 const communityController = new CommunityController();
 const applicationController = new ApplicationController();
+const teamPostController = new TeamPostController();
+const teamCommentController = new TeamCommentController();
 
-const router = express.Router();
+const router = Router(); // 기존 myPageRouter (최상위)
+const communitiesRouter = Router(); // ✨ 새로 생성된 communities 전용 서브 라우터 ✨
 
-// 내 정보 조회(백엔드 확인)
-router.get('/getProfile', authenticate, userController.getProfile);
+// =========================================================
+// 사용자 계정 관련 라우트
+// =========================================================
+router.get("/getProfile", authenticate, userController.getProfile);
+router.put(
+  "/profile-edit",
+  authenticate,
+  upload.single("profileImage"),
+  updateProfileValidator,
+  handleValidationResult,
+  userController.updateProfile
+);
+router.put("/change-password", authenticate, userController.changePassword);
+router.delete(
+  "/delete",
+  authenticate,
+  handleValidationResult,
+  userController.deleteUser
+);
 
-// 회원정보 수정
-router.put('/profile-edit',authenticate,upload.single('profileImage'),updateProfileValidator,handleValidationResult,userController.updateProfile);
+// =========================================================
+// 위시리스트 관련 라우트
+// =========================================================
+router.post("/wishlist", authenticate, wishListController.addWish);
+router.delete("/wishlist/:isbn13", authenticate, wishListController.removeWish);
+router.get("/wishlist", authenticate, wishListController.getWishList);
 
-// 비밀번호 수정
-router.put('/change-password', authenticate, userController.changePassword);
+// =========================================================
+// 독서 취향 분석 관련 라우트
+// =========================================================
+router.get(
+  "/taste-analysis",
+  authenticate,
+  tasteAnalysisController.getTasteAnalysis
+);
 
-// 유저 삭제
-router.delete('/delete', authenticate, handleValidationResult, userController.deleteUser);
+// =========================================================
+// 내 서재 관련 라우트
+// =========================================================
+router.post(
+  "/my-library",
+  authenticate,
+  myLibraryController.upsertBookInLibrary
+);
+router.get("/my-library", authenticate, myLibraryController.getBooksInLibrary);
+router.delete("/my-library/:isbn13", authenticate, (req, res, next) =>
+  myLibraryController.deleteBookFromLibrary(req, res, next)
+);
 
-// 위시리스트 추가
-router.post('/', authenticate, wishListController.addWish);
-
-// 위시 삭제
-router.delete('/:isbn13', authenticate, wishListController.removeWish);
-
-// 전체 위시리스트
-router.get('/', authenticate, wishListController.getWishList);
-
-// 사용자 도서 통계
-router.get("/", authenticate, tasteAnalysisController.getTasteAnalysis);
-
-// 서재에 없으면 추가, 있으면 상태변경
-router.post('/', authenticate, myLibraryController.upsertBookInLibrary);
-
-// 서재 목록 보기
-router.get("/", authenticate, myLibraryController.getBooksInLibrary);
-
-// 서재 도서 삭제
-router.delete("/:isbn13", authenticate, myLibraryController.deleteBookFromLibrary);
-
-// 내가 작성한 글
-router.get("/my-post", authenticate, postController.getMyPosts);
-
-// 내가 작성한 댓글
+// =========================================================
+// 내 활동 기록 관련 라우트 (글, 댓글)
+// =========================================================
+router.get("/my-posts", authenticate, postController.getMyPosts);
 router.get("/my-comments", authenticate, commentController.getMyComments);
 
-// 내가 모집중인
-router.get("/communities/recruiting", authenticate, communityController.getMyRecruitingCommunities);
+// =========================================================
+// ✨ 커뮤니티 관련 라우트들을 communitiesRouter 안으로 이동합니다. ✨
+// myPageRouter는 /communities 접두사를 사용하여 communitiesRouter를 마운트합니다.
+// =========================================================
 
-// 내가 신청한
-router.get("/communities/applied", authenticate, applicationController.getMyApplications);
+// POST /mypage/communities - 도서 기반 커뮤니티 생성
+communitiesRouter.post("/", authenticate, communityController.createCommunity);
 
-// 지원서 모집 신청 취소
-router.delete("/communities/applications/:applicationId", authenticate, applicationController.cancelApplication);
+// GET /mypage/communities/books/:itemId - 특정 도서 관련 커뮤니티 목록 조회
+communitiesRouter.get(
+  "/books/:itemId",
+  communityController.getCommunitiesByBook
+);
 
-// 참여중인 커뮤
-router.get("/communities/participating", authenticate, communityController.getMyParticipatingCommunities);
+// POST /mypage/communities/:communityId/apply - 커뮤니티 가입 신청
+communitiesRouter.post(
+  "/:communityId/apply",
+  authenticate,
+  applicationController.createApplication
+);
 
-// 커뮤 탈퇴, 삭제(멤버-삭제/팀장-삭제)
-router.delete("/communities/participating/:communityId", authenticate, communityController.leaveOrDeleteCommunity);
+// GET /mypage/communities/recruiting - 내가 모집 중인 커뮤니티 목록 조회
+communitiesRouter.get(
+  "/recruiting",
+  authenticate,
+  communityController.getMyRecruitingCommunities
+);
+
+// GET /mypage/communities/applied - 내가 신청한 커뮤니티 목록 조회
+communitiesRouter.get(
+  "/applied",
+  authenticate,
+  applicationController.getMyApplications
+);
+
+// GET /mypage/communities/participating - 현재 참여 중인 커뮤니티 목록 조회
+communitiesRouter.get(
+  "/participating",
+  authenticate,
+  communityController.getMyParticipatingCommunities
+);
+
+// GET /api/mypage/communities/ended - 모집 종료된 커뮤니티 목록 조회
+communitiesRouter.get(
+  "/ended",
+  authenticate,
+  communityController.getMyEndedCommunities
+);
+
+// GET /mypage/communities/recruiting/:communityId/applicants - 특정 모집 커뮤니티의 신청자 목록 상세 조회
+communitiesRouter.get(
+  "/recruiting/:communityId/applicants",
+  authenticate,
+  applicationController.getCommunityApplicants
+);
+
+// DELETE /mypage/communities/applications/:applicationId - 지원서 모집 신청 취소
+communitiesRouter.delete(
+  "/applications/:applicationId",
+  authenticate,
+  applicationController.cancelApplication
+);
+
+// PUT /mypage/communities/:communityId - 특정 커뮤니티 상세 정보 업데이트
+communitiesRouter.put(
+  "/:communityId",
+  authenticate,
+  communityController.updateCommunityDetails
+);
+
+// PUT /mypage/communities/:communityId/status - 커뮤니티 상태 업데이트
+communitiesRouter.put("/:communityId/status", authenticate, (req, res, next) =>
+  communityController.updateCommunityStatus(req, res, next)
+);
+
+// PATCH /api/mypage/communities/:communityId/end-recruitment - 커뮤니티 모집 종료
+communitiesRouter.patch(
+  "/:communityId/end-recruitment",
+  authenticate,
+  communityController.endRecruitment
+);
+
+// DELETE /mypage/communities/:communityId - 커뮤니티 삭제
+communitiesRouter.delete(
+  "/:communityId",
+  authenticate,
+  communityController.deleteCommunity
+);
+
+// GET /mypage/communities/:communityId - 특정 커뮤니티 상세 조회
+communitiesRouter.get("/:communityId", communityController.getCommunityById);
+
+// =========================================================
+// ✨ 팀 게시물 관련 라우트들을 communitiesRouter 안으로 이동합니다. ✨
+// =========================================================
+
+// POST /mypage/communities/:communityId/posts/write - 새로운 팀 게시물 생성
+communitiesRouter.post(
+  "/:communityId/posts/write",
+  authenticate,
+  teamPostController.createTeamPost
+);
+
+// GET /mypage/communities/:communityId/posts - 특정 커뮤니티의 모든 팀 게시물 조회
+communitiesRouter.get(
+  "/:communityId/posts",
+  authenticate,
+  teamPostController.getTeamPosts
+);
+
+// GET /mypage/communities/:communityId/posts/:teamPostId - 특정 팀 게시물 상세 조회
+communitiesRouter.get(
+  "/:communityId/posts/:teamPostId",
+  authenticate,
+  teamPostController.getTeamPostById
+);
+
+// PUT /mypage/communities/:communityId/posts/:teamPostId - 특정 팀 게시물 수정
+communitiesRouter.put(
+  "/:communityId/posts/:teamPostId",
+  authenticate,
+  teamPostController.updateTeamPost
+);
+
+// DELETE /mypage/communities/:communityId/posts/:teamPostId - 특정 팀 게시물 삭제
+communitiesRouter.delete(
+  "/:communityId/posts/:teamPostId",
+  authenticate,
+  teamPostController.deleteTeamPost
+);
+
+// =========================================================
+// ✨ 팀 댓글 관련 라우트들을 communitiesRouter 안으로 이동합니다. ✨
+// =========================================================
+
+// GET /api/mypage/team-posts/:teamPostId/comments - 특정 팀 게시물의 댓글 목록 조회
+communitiesRouter.get(
+  "/team-posts/:teamPostId/comments", // 이 경로는 /communities/team-posts/... 가 됩니다.
+  authenticate,
+  teamCommentController.getTeamCommentsByTeamPost
+);
+
+// POST /api/mypage/team-posts/:teamPostId/comments - 특정 팀 게시물에 댓글 작성
+communitiesRouter.post(
+  "/team-posts/:teamPostId/comments", // 이 경로는 /communities/team-posts/... 가 됩니다.
+  authenticate,
+  teamCommentController.createTeamComment
+);
+
+// PUT /api/mypage/team-comments/:id - 특정 팀 댓글 수정
+communitiesRouter.put(
+  "/team-comments/:id", // 이 경로는 /communities/team-comments/... 가 됩니다.
+  authenticate,
+  teamCommentController.updateTeamComment
+);
+
+// DELETE /api/mypage/team-comments/:id - 특정 팀 댓글 삭제
+communitiesRouter.delete(
+  "/team-comments/:id", // 이 경로는 /communities/team-comments/... 가 됩니다.
+  authenticate,
+  teamCommentController.deleteTeamComment
+);
+
+// ✨ myPageRouter에 communitiesRouter를 마운트합니다. ✨
+router.use("/communities", communitiesRouter);
 
 export default router;

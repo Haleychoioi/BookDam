@@ -20,7 +20,9 @@ export class ApplicationController {
     try {
       const userId = req.user!;
 
-      const applications = await this.applicationService.getMyApplications(userId);
+      const applications = await this.applicationService.getMyApplications(
+        userId
+      );
 
       res.status(200).json({
         message: "나의 지원 목록 조회 성공",
@@ -31,7 +33,7 @@ export class ApplicationController {
     }
   };
 
-    public cancelApplication = async (
+  public cancelApplication = async (
     req: Request,
     res: Response,
     next: NextFunction
@@ -39,7 +41,7 @@ export class ApplicationController {
     try {
       const applicationId = Number(req.params.applicationId);
       const userId = req.user!;
-      
+
       if (isNaN(applicationId)) {
         throw new CustomError(400, "유효하지 않은 지원서 ID입니다.");
       }
@@ -101,7 +103,9 @@ export class ApplicationController {
     next: NextFunction
   ) => {
     try {
+      console.log("DEBUG: getCommunityApplicants 컨트롤러가 호출되었습니다.");
       const { communityId: rawCommunityId } = req.params;
+      console.log("DEBUG: rawCommunityId:", rawCommunityId);
       const requestingUserId = req.user;
 
       // 인증된 사용자 ID가 없는 경우

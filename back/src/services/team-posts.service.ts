@@ -52,8 +52,9 @@ export class TeamPostService {
       query
     );
 
+    // ✨ 수정: 게시물이 없을 때 404 에러를 던지는 대신 빈 배열을 반환합니다. ✨
     if (!teamPosts || teamPosts.length === 0) {
-      throw new CustomError(404, "No team posts found for this community.");
+      return []; // 빈 배열 반환
     }
 
     return teamPosts;

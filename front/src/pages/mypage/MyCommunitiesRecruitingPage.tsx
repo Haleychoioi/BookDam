@@ -1,60 +1,24 @@
 // src/pages/mypage/MyCommunitiesRecruitingPage.tsx
-import { useState, useEffect, useMemo } from "react"; // useCallback 제거
-import MyPageHeader from "../../components/mypage/MyPageHeader";
+
+import { useState, useEffect, useMemo } from "react";
+import MyPageHeader from "../../components/mypage/MyPageHeader"; // ✨ 수정: MyPageHeader로 경로 통일 ✨
 import RecruitingCommunityCard from "../../components/mypage/RecruitingCommunityCard";
 import Pagination from "../../components/common/Pagination";
 import type { Community } from "../../types";
 import {
-  fetchCommunities,
-  cancelRecruitment,
+  fetchMyRecruitingCommunities, // 내가 모집 중인 커뮤니티 API
   updateCommunityDetails,
+  endRecruitment, // ✨ 추가: endRecruitment API 임포트 ✨
+  fetchMyEndedCommunities, // ✨ 추가: fetchMyEndedCommunities API 임포트 ✨
 } from "../../api/communities";
 import EditCommunityModal from "../../components/modals/EditCommunityModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-// 더미 데이터 (백엔드 연결 전 임시 사용)
-const dummyParticipatingCommunities = [
-  {
-    communityId: 1,
-    bookTitle: "클린 코드",
-    communityName: "클린 코드 스터디",
-    imageUrl:
-      "https://image.aladin.co.kr/product/100/66/coversum/8992206611_1.jpg",
-    leaderName: "김철수",
-    role: "host", // 'LEADER' 대신 'host'
-    status: "모집중", // 'RECRUITING' 대신 '모집중'
-    memberCount: 5,
-    id: "1", // Community 타입에 필요한 id 추가
-    title: "클린 코드 스터디", // Community 타입에 필요한 title 추가
-    description: "클린 코드를 위한 스터디", // Community 타입에 필요한 description 추가
-    hostName: "김철수", // Community 타입에 필요한 hostName 추가
-    currentMembers: 5, // Community 타입에 필요한 currentMembers 추가
-    maxMembers: 10, // Community 타입에 필요한 maxMembers 추가
-  },
-  {
-    communityId: 2,
-    bookTitle: "데미안",
-    communityName: "데미안 독서 모임",
-    imageUrl:
-      "https://image.aladin.co.kr/product/100/66/coversum/8992206611_1.jpg",
-    leaderName: "박영희",
-    role: "member", // 'MEMBER' 대신 'member'
-    status: "모집종료", // 'ACTIVE' 대신 '모집종료'
-    memberCount: 8,
-    id: "2",
-    title: "데미안 독서 모임",
-    description: "데미안을 읽고 토론하는 모임",
-    hostName: "박영희",
-    currentMembers: 8,
-    maxMembers: 8,
-  },
-];
+import { useAuth } from "../../hooks/useAuth";
 
 const MyCommunitiesRecruitingPage: React.FC = () => {
+  const { currentUserProfile, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
 
-  const [communities, setCommunities] = useState<Community[]>([]);
-  // loading, error 상태는 useQuery의 isLoading, isError, error로 대체
   const [activeTab, setActiveTab] = useState<"모집중" | "모집종료" | "전체">(
     "전체"
   );
@@ -66,33 +30,61 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
     useState<Community | null>(null);
 
   const {
-    data: fetchedCommunitiesData,
+    data: fetchedCommunities,
     isLoading: isLoadingCommunities,
     isError: isErrorCommunities,
     error: communitiesError,
+    // refetch, // ✨ 제거: 이제 직접 refetch를 사용하지 않고 queryClient.invalidateQueries를 사용합니다. ✨
   } = useQuery<Community[], Error>({
-    // 타입 명시
-    queryKey: ["myRecruitingCommunities"],
+    queryKey: [
+      "myRecruitingCommunities",
+      activeTab,
+      currentUserProfile?.userId,
+    ],
     queryFn: async () => {
-      // TODO: 백엔드에 `GET /mypage/communities/recruiting` API 구현 후 교체
-      // 현재는 fetchCommunities가 모든 커뮤니티를 가져오므로, 임시로 'host' 역할로 필터링합니다.
-      const response = await fetchCommunities(1, 100);
-      return response.communities.filter((comm) => comm.role === "host");
+      if (!currentUserProfile) {
+        throw new Error("로그인이 필요합니다.");
+      }
+      let communities: Community[] = [];
+      if (activeTab === "모집중" || activeTab === "전체") {
+        const recruiting = await fetchMyRecruitingCommunities();
+        communities = [...communities, ...recruiting];
+      }
+      if (activeTab === "모집종료" || activeTab === "전체") {
+        const ended = await fetchMyEndedCommunities();
+        communities = [...communities, ...ended];
+      }
+
+      // '전체' 탭일 때는 중복 제거 (만약 같은 커뮤니티가 여러 상태에 걸쳐 조회될 경우)
+      if (activeTab === "전체") {
+        const uniqueCommunities = Array.from(
+          new Map(communities.map((item) => [item.id, item])).values()
+        );
+        // createdAt 기준으로 정렬
+        uniqueCommunities.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        return uniqueCommunities;
+      }
+
+      // 각 탭에 맞게 필터링 (api에서 이미 필터링되어 오지만, 혹시 모를 경우를 대비)
+      if (activeTab === "모집중") {
+        return communities.filter((comm) => comm.status === "모집중");
+      } else if (activeTab === "모집종료") {
+        return communities.filter((comm) => comm.status === "모집종료");
+      }
+      return communities;
     },
     staleTime: 1000 * 60,
-    // 초기 데이터 설정을 통해 `isLoading` 상태에서도 UI 렌더링 가능
-    placeholderData: (previousData) =>
-      previousData || dummyParticipatingCommunities,
+    retry: 1,
+    enabled: !authLoading && !!currentUserProfile,
   });
 
-  // useEffect를 useQuery의 onSuccess 등으로 대체 가능
   useEffect(() => {
-    if (fetchedCommunitiesData) {
-      setCommunities(fetchedCommunitiesData);
-    }
-  }, [fetchedCommunitiesData]);
+    setCurrentPage(1);
+  }, [activeTab]);
 
-  // 커뮤니티 상세 정보 업데이트 뮤테이션
   const updateCommunityMutation = useMutation<
     Community,
     Error,
@@ -106,7 +98,6 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
       };
     }
   >({
-    // 타입 명시
     mutationFn: ({ communityId, updateData }) =>
       updateCommunityDetails(communityId, updateData),
     onSuccess: () => {
@@ -114,59 +105,56 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["myRecruitingCommunities"] });
     },
     onError: (err: Error) => {
-      // err: any -> err: Error 로 변경
       const errorMessage =
         err.message || "커뮤니티 정보 업데이트 중 오류가 발생했습니다.";
       alert(errorMessage);
     },
   });
 
-  // 모집 종료 뮤테이션
-  const cancelRecruitmentMutation = useMutation<void, Error, string>({
-    // 타입 명시
-    mutationFn: cancelRecruitment,
-    onSuccess: () => {
-      alert("모집이 성공적으로 종료되었습니다.");
-      queryClient.invalidateQueries({ queryKey: ["myRecruitingCommunities"] });
-    },
-    onError: (err: Error) => {
-      // err: any -> err: Error 로 변경
-      const errorMessage = err.message || "모집 종료 중 오류가 발생했습니다.";
-      alert(errorMessage);
-    },
-  });
+  // const cancelRecruitmentMutation = useMutation<void, Error, string>({ // ✨ 제거: 이 뮤테이션은 더 이상 직접 사용되지 않습니다. ✨
+  //   mutationFn: cancelRecruitment,
+  //   onSuccess: () => {
+  //     alert("모집이 성공적으로 종료되었습니다.");
+  //     queryClient.invalidateQueries({ queryKey: ["myRecruitingCommunities"] });
+  //   },
+  //   onError: (err: Error) => {
+  //     const errorMessage = err.message || "모집 종료 중 오류가 발생했습니다.";
+  //     alert(errorMessage);
+  //   },
+  // });
 
   const handleEndRecruitment = async (communityId: string) => {
-    if (window.confirm("정말로 모집을 종료하시겠습니까?")) {
-      cancelRecruitmentMutation.mutate(communityId);
+    if (
+      window.confirm(
+        "정말로 이 커뮤니티 모집을 종료하시겠습니까? (모집 종료 시 모집중인 커뮤니티 목록에서 사라집니다.)"
+      )
+    ) {
+      try {
+        await endRecruitment(communityId); // 새로운 API 함수 호출
+        alert("커뮤니티 모집이 성공적으로 종료되었습니다.");
+        queryClient.invalidateQueries({
+          queryKey: ["myRecruitingCommunities"],
+        }); // 쿼리 무효화하여 목록 새로고침
+      } catch (err: unknown) {
+        console.error("모집 종료 중 오류 발생:", err);
+        let errorMessage =
+          "모집 종료 중 오류가 발생했습니다. 다시 시도해주세요.";
+        if (err instanceof Error) {
+          errorMessage = err.message;
+        }
+        alert(errorMessage);
+      }
     }
   };
 
-  const filteredCommunities = useMemo(() => {
-    // fetchedCommunitiesData가 로드되기 전에는 빈 배열 반환
-    const sourceCommunities =
-      fetchedCommunitiesData || dummyParticipatingCommunities;
-
-    // 탭 변경 시 페이지 1로 초기화는 useMemo 외부에서 처리
-    let filtered = sourceCommunities;
-    if (activeTab === "모집중") {
-      filtered = sourceCommunities.filter((comm) => comm.status === "모집중");
-    } else if (activeTab === "모집종료") {
-      filtered = sourceCommunities.filter((comm) => comm.status === "모집종료");
-    }
-    // activeTab이 변경될 때 currentPage를 1로 재설정
-    setCurrentPage(1);
-    return filtered;
-  }, [fetchedCommunitiesData, activeTab]);
-
-  const totalFilteredItems = filteredCommunities.length;
+  const totalFilteredItems = fetchedCommunities?.length || 0;
   const totalPages = Math.ceil(totalFilteredItems / itemsPerPage);
 
   const paginatedCommunities = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return filteredCommunities.slice(startIndex, endIndex);
-  }, [filteredCommunities, currentPage, itemsPerPage]);
+    return fetchedCommunities?.slice(startIndex, endIndex) || [];
+  }, [fetchedCommunities, currentPage, itemsPerPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -175,7 +163,6 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
 
   const handleTabChange = (tab: "모집중" | "모집종료" | "전체") => {
     setActiveTab(tab);
-    // 탭 변경 시 useMemo에서 currentPage를 1로 재설정하도록 로직 변경
   };
 
   const handleEditCommunityClick = (community: Community) => {
@@ -200,7 +187,7 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
     await updateCommunityMutation.mutateAsync({ communityId, updateData });
   };
 
-  if (isLoadingCommunities) {
+  if (isLoadingCommunities || authLoading) {
     return (
       <div className="text-center py-12">
         모집 중인 커뮤니티 목록을 불러오는 중...
@@ -212,6 +199,11 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
       <div className="text-center py-12 text-red-500">
         오류: {communitiesError?.message || "데이터를 불러오지 못했습니다."}
       </div>
+    );
+  }
+  if (!currentUserProfile) {
+    return (
+      <div className="text-center py-12 text-red-500">로그인이 필요합니다.</div>
     );
   }
 

@@ -1,11 +1,12 @@
 // src/pages/auth/RegisterPage.tsx
-import React, { useState } from "react";
+
+import React, { useState, useRef } from "react";
 import Button from "../../components/common/Button";
 import { useAuth } from "../../hooks/useAuth";
-import { FaEye, FaEyeSlash } from "react-icons/fa"; // 눈 아이콘 임포트
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const RegisterPage: React.FC = () => {
-  const { register, loading } = useAuth();
+  const { register, loading, error: authError } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -19,7 +20,6 @@ const RegisterPage: React.FC = () => {
 
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // 에러 메시지 상태 추가
   const [errors, setErrors] = useState({
     name: "",
     nickname: "",
@@ -29,17 +29,35 @@ const RegisterPage: React.FC = () => {
     confirmPassword: "",
     introduction: "",
     agreement: "",
-    general: "", // 일반적인 제출 오류
   });
 
-  // 비밀번호 보이기/숨기기 상태 추가
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // 실시간 유효성 검사
-  const validateField = (name: string, value: string | boolean) => {
+  // useRef 훅의 타입 지정은 HTMLInputElement 또는 HTMLTextAreaElement로 유지
+  const nameRef = useRef<HTMLInputElement>(null);
+  const nicknameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
+  const introductionRef = useRef<HTMLTextAreaElement>(null); // textarea용
+  const agreementRef = useRef<HTMLInputElement>(null);
+
+  const validateField = (name: string, value: string | boolean): string => {
     let message = "";
     switch (name) {
+      case "name":
+        if (!value) message = "이름을 입력해주세요.";
+        break;
+      case "nickname":
+        if (!value) message = "닉네임을 입력해주세요.";
+        else if ((value as string).length < 1 || (value as string).length > 10)
+          message = "닉네임은 1자 이상 10자 이하로 입력해주세요.";
+        break;
+      case "phone":
+        if (!value) message = "전화번호를 입력해주세요.";
+        break;
       case "email":
         if (!value) message = "이메일을 입력해주세요.";
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string))
@@ -55,19 +73,9 @@ const RegisterPage: React.FC = () => {
         else if (value !== form.password)
           message = "비밀번호가 일치하지 않습니다.";
         break;
-      case "nickname":
-        if (!value) message = "닉네임을 입력해주세요.";
-        else if ((value as string).length < 1 || (value as string).length > 10)
-          message = "닉네임은 1자 이상 10자 이하로 입력해주세요.";
-        break;
-      case "phone":
-        if (!value) message = "전화번호를 입력해주세요.";
-        break;
-      case "name":
-        if (!value) message = "이름을 입력해주세요.";
-        break;
       case "introduction":
-        // maxLength로 입력 제한하므로 여기서는 초과 검사 불필요
+        if ((value as string).length > 100)
+          message = "한 줄 소개는 100자 이내로 입력해주세요.";
         break;
       case "agreement":
         if (!value) message = "이용약관에 동의해야 회원가입을 할 수 있습니다.";
@@ -75,7 +83,7 @@ const RegisterPage: React.FC = () => {
       default:
         break;
     }
-    setErrors((prev) => ({ ...prev, [name]: message }));
+    return message;
   };
 
   const handleChange = (
@@ -83,22 +91,36 @@ const RegisterPage: React.FC = () => {
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
-
     const newValue = type === "checkbox" ? checked : value;
 
     if (name === "confirmPassword") {
       setConfirmPassword(newValue as string);
-      validateField("confirmPassword", newValue);
     } else {
       setForm((prev) => ({
         ...prev,
         [name]: newValue,
       }));
-      validateField(name, newValue);
-      if (name === "password") {
-        validateField("confirmPassword", confirmPassword);
-      }
     }
+
+    setErrors((prev) => {
+      const updatedErrors = { ...prev };
+      updatedErrors[name as keyof typeof errors] = validateField(
+        name,
+        newValue
+      );
+      if (name === "password") {
+        updatedErrors.confirmPassword = validateField(
+          "confirmPassword",
+          confirmPassword
+        );
+      } else if (name === "confirmPassword") {
+        updatedErrors.confirmPassword = validateField(
+          "confirmPassword",
+          newValue
+        );
+      }
+      return updatedErrors;
+    });
   };
 
   const handleCopyPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
@@ -113,43 +135,78 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 전체 폼 유효성 검사 (필수 필드 및 형식 검사)
-    let isValid = true;
+    const newErrorsState = { ...errors };
+    // ✨ firstErrorElement의 타입을 HTMLElement | null로 명시하고, 초기값을 null로 설정 ✨
+    let firstErrorElement: HTMLElement | null = null;
 
-    // 각 필드의 초기 유효성 검사 수행 (실시간 검사가 이미 발생했더라도 제출 시 최종 확인)
-    const fieldsToValidate: Array<keyof typeof form> = [
+    const fieldsToValidate: Array<
+      keyof typeof form | "confirmPassword" | "agreement"
+    > = [
       "name",
       "nickname",
       "phone",
       "email",
       "password",
+      "confirmPassword",
       "introduction",
+      "agreement",
     ];
-    fieldsToValidate.forEach((field) => {
-      validateField(field, form[field]);
-      if (errors[field]) isValid = false; // validateField가 errors 상태를 직접 업데이트하므로, 여기서 바로 체크
-    });
-    // confirmPassword 별도 검사
-    validateField("confirmPassword", confirmPassword);
-    if (errors.confirmPassword) isValid = false;
-    // agreement 별도 검사
-    validateField("agreement", form.agreement);
-    if (errors.agreement) isValid = false;
 
-    // 만약 하나라도 에러가 있다면 제출 방지 및 일반 에러 메시지 표시
-    if (
-      !isValid ||
-      !form.agreement ||
-      Object.values(errors).some((msg) => msg !== "")
-    ) {
-      setErrors((prev) => ({
-        ...prev,
-        general: "모든 필수 정보를 올바르게 입력해주세요.",
-      }));
-      return;
+    for (const field of fieldsToValidate) {
+      // forEach 대신 for...of 루프 사용
+      let valueToCheck: string | boolean;
+      if (field === "confirmPassword") valueToCheck = confirmPassword;
+      else if (field === "agreement") valueToCheck = form.agreement;
+      else valueToCheck = form[field as keyof typeof form];
+
+      const errorMessage = validateField(field, valueToCheck);
+      newErrorsState[field as keyof typeof errors] = errorMessage;
+
+      if (errorMessage && !firstErrorElement) {
+        // 에러가 있고 아직 첫 에러 요소가 설정되지 않았다면 설정
+        switch (field) {
+          case "name":
+            firstErrorElement = nameRef.current;
+            break;
+          case "nickname":
+            firstErrorElement = nicknameRef.current;
+            break;
+          case "phone":
+            firstErrorElement = phoneRef.current;
+            break;
+          case "email":
+            firstErrorElement = emailRef.current;
+            break;
+          case "password":
+            firstErrorElement = passwordRef.current;
+            break;
+          case "confirmPassword":
+            firstErrorElement = confirmPasswordRef.current;
+            break;
+          case "introduction":
+            firstErrorElement = introductionRef.current;
+            break;
+          case "agreement":
+            firstErrorElement = agreementRef.current;
+            break;
+        }
+      }
     }
 
-    setErrors((prev) => ({ ...prev, general: "" })); // 일반 오류 메시지 초기화
+    setErrors(newErrorsState); // 모든 에러를 한 번에 업데이트
+
+    // 에러가 있다면 제출 방지 및 첫 에러 필드로 포커스 이동
+    if (Object.values(newErrorsState).some((msg) => msg !== "")) {
+      if (firstErrorElement) {
+        // ✨ firstErrorElement가 null이 아닐 때만 focus/scrollIntoView 호출 ✨
+        firstErrorElement.focus(); // ?. 대신 직접 focus 호출
+        firstErrorElement.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        }); // 직접 scrollIntoView 호출
+      }
+      return;
+    }
 
     const dataToSend = {
       name: form.name,
@@ -162,8 +219,27 @@ const RegisterPage: React.FC = () => {
     };
 
     const success = await register(dataToSend);
-    if (!success) {
-      // useAuth 훅에서 이미 alert 처리되므로 여기서는 추가 작업 없음.
+
+    if (!success && authError) {
+      setErrors((prev) => ({ ...prev, general: "" }));
+
+      if (authError.includes("사용중인 닉네임")) {
+        setErrors((prev) => ({ ...prev, nickname: authError }));
+        nicknameRef.current?.focus();
+        nicknameRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      } else if (authError.includes("가입된 이메일 존재")) {
+        setErrors((prev) => ({ ...prev, email: authError }));
+        emailRef.current?.focus();
+        emailRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      } else {
+        console.error("회원가입 중 백엔드 오류:", authError);
+      }
     }
   };
 
@@ -178,11 +254,6 @@ const RegisterPage: React.FC = () => {
           </h2>
         </div>
         <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-4">
-          {errors.general && (
-            <div className="bg-red-100 border border-red text-red-700 px-4 py-3 rounded relative mb-4">
-              {errors.general}
-            </div>
-          )}
           <div>
             <label htmlFor="name" className="block text-sm font-semibold mb-1">
               이름
@@ -193,12 +264,18 @@ const RegisterPage: React.FC = () => {
               name="name"
               value={form.name}
               onChange={handleChange}
-              onBlur={() => validateField("name", form.name)}
+              onBlur={() =>
+                setErrors((prev) => ({
+                  ...prev,
+                  name: validateField("name", form.name),
+                }))
+              }
               required
               placeholder="이름을 입력하세요"
               className={`w-full border ${
                 errors.name ? "border-red-500" : "border-gray-300"
               } rounded px-4 py-2`}
+              ref={nameRef}
             />
             {errors.name && (
               <p className="text-red-500 text-xs mt-1">{errors.name}</p>
@@ -217,13 +294,19 @@ const RegisterPage: React.FC = () => {
               name="nickname"
               value={form.nickname}
               onChange={handleChange}
-              onBlur={() => validateField("nickname", form.nickname)}
+              onBlur={() =>
+                setErrors((prev) => ({
+                  ...prev,
+                  nickname: validateField("nickname", form.nickname),
+                }))
+              }
               placeholder="닉네임을 입력하세요 (1자 이상 10자 이하)"
-              maxLength={10} // ✨ 닉네임 글자 수 제한 추가 ✨
+              maxLength={10}
               required
               className={`w-full border ${
                 errors.nickname ? "border-red-500" : "border-gray-300"
               } rounded px-4 py-2`}
+              ref={nicknameRef}
             />
             {errors.nickname && (
               <p className="text-red-500 text-xs mt-1">{errors.nickname}</p>
@@ -239,12 +322,18 @@ const RegisterPage: React.FC = () => {
               name="phone"
               value={form.phone}
               onChange={handleChange}
-              onBlur={() => validateField("phone", form.phone)}
+              onBlur={() =>
+                setErrors((prev) => ({
+                  ...prev,
+                  phone: validateField("phone", form.phone),
+                }))
+              }
               required
               placeholder="전화번호를 입력하세요 (예: 010-1234-5678)"
               className={`w-full border ${
                 errors.phone ? "border-red-500" : "border-gray-300"
               } rounded px-4 py-2`}
+              ref={phoneRef}
             />
             {errors.phone && (
               <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
@@ -260,12 +349,18 @@ const RegisterPage: React.FC = () => {
               name="email"
               value={form.email}
               onChange={handleChange}
-              onBlur={() => validateField("email", form.email)}
+              onBlur={() =>
+                setErrors((prev) => ({
+                  ...prev,
+                  email: validateField("email", form.email),
+                }))
+              }
               required
               placeholder="이메일 주소를 입력하세요"
               className={`w-full border ${
                 errors.email ? "border-red-500" : "border-gray-300"
               } rounded px-4 py-2`}
+              ref={emailRef}
             />
             {errors.email && (
               <p className="text-red-500 text-xs mt-1">{errors.email}</p>
@@ -285,7 +380,12 @@ const RegisterPage: React.FC = () => {
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                onBlur={() => validateField("password", form.password)}
+                onBlur={() =>
+                  setErrors((prev) => ({
+                    ...prev,
+                    password: validateField("password", form.password),
+                  }))
+                }
                 onCopy={handleCopyPaste}
                 onPaste={handleCopyPaste}
                 required
@@ -293,6 +393,7 @@ const RegisterPage: React.FC = () => {
                 className={`w-full border ${
                   errors.password ? "border-red-500" : "border-gray-300"
                 } rounded px-4 py-2 pr-10`}
+                ref={passwordRef}
               />
               <button
                 type="button"
@@ -320,7 +421,15 @@ const RegisterPage: React.FC = () => {
                 name="confirmPassword"
                 value={confirmPassword}
                 onChange={handleChange}
-                onBlur={() => validateField("confirmPassword", confirmPassword)}
+                onBlur={() =>
+                  setErrors((prev) => ({
+                    ...prev,
+                    confirmPassword: validateField(
+                      "confirmPassword",
+                      confirmPassword
+                    ),
+                  }))
+                }
                 onCopy={handleCopyPaste}
                 onPaste={handleCopyPaste}
                 required
@@ -328,6 +437,7 @@ const RegisterPage: React.FC = () => {
                 className={`w-full border ${
                   errors.confirmPassword ? "border-red-500" : "border-gray-300"
                 } rounded px-4 py-2 pr-10`}
+                ref={confirmPasswordRef}
               />
               <button
                 type="button"
@@ -355,13 +465,22 @@ const RegisterPage: React.FC = () => {
               name="introduction"
               value={form.introduction}
               onChange={handleChange}
-              onBlur={() => validateField("introduction", form.introduction)}
+              onBlur={() =>
+                setErrors((prev) => ({
+                  ...prev,
+                  introduction: validateField(
+                    "introduction",
+                    form.introduction
+                  ),
+                }))
+              }
               placeholder="자신을 한 줄로 소개해보세요 (100자 이내, 선택사항)"
               rows={3}
-              maxLength={100} // ✨ 자기소개 글자 수 제한 추가 ✨
+              maxLength={100}
               className={`w-full border ${
                 errors.introduction ? "border-red-500" : "border-gray-300"
               } rounded px-4 py-2 resize-none`}
+              ref={introductionRef}
             />
             {errors.introduction && (
               <p className="text-red-500 text-xs mt-1">{errors.introduction}</p>
@@ -374,11 +493,17 @@ const RegisterPage: React.FC = () => {
               name="agreement"
               checked={form.agreement}
               onChange={handleChange}
-              onBlur={() => validateField("agreement", form.agreement)}
+              onBlur={() =>
+                setErrors((prev) => ({
+                  ...prev,
+                  agreement: validateField("agreement", form.agreement),
+                }))
+              }
               required
               className={`w-4 h-4 ${
                 errors.agreement ? "border-red-500" : "border-gray-300"
               }`}
+              ref={agreementRef}
             />
             <label htmlFor="agreement" className="text-sm text-gray-700">
               이용약관에 동의합니다

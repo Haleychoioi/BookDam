@@ -14,7 +14,7 @@ interface EditCommunityModalProps {
       title?: string;
       content?: string;
       maxMembers?: number;
-      recruiting?: boolean;
+      // recruiting?: boolean; // ✨ 제거: 모집 상태는 이 모달에서 수정하지 않습니다. ✨
     }
   ) => Promise<void>;
 }
@@ -28,7 +28,7 @@ const EditCommunityModal: React.FC<EditCommunityModalProps> = ({
   const [title, setTitle] = useState(community.title);
   const [description, setDescription] = useState(community.description);
   const [maxMembers, setMaxMembers] = useState(community.maxMembers.toString());
-  const [recruiting, setRecruiting] = useState(community.status === "모집중");
+  // const [recruiting, setRecruiting] = useState(community.status === "모집중"); // ✨ 제거: 모집 상태는 이 모달에서 관리하지 않습니다. ✨
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -36,7 +36,7 @@ const EditCommunityModal: React.FC<EditCommunityModalProps> = ({
       setTitle(community.title);
       setDescription(community.description);
       setMaxMembers(community.maxMembers.toString());
-      setRecruiting(community.status === "모집중");
+      // setRecruiting(community.status === "모집중"); // ✨ 제거: 모집 상태는 이 모달에서 관리하지 않습니다. ✨
     }
   }, [isOpen, community]);
 
@@ -69,7 +69,7 @@ const EditCommunityModal: React.FC<EditCommunityModalProps> = ({
         title: title.trim(),
         content: description.trim(), // 백엔드 필드명에 맞춤
         maxMembers: parsedMaxMembers,
-        recruiting: recruiting,
+        // recruiting: recruiting, // ✨ 제거: 모집 상태는 이 모달에서 수정하지 않습니다. ✨
       });
       onClose();
     } catch (error) {
@@ -142,6 +142,7 @@ const EditCommunityModal: React.FC<EditCommunityModalProps> = ({
           />
         </div>
 
+        {/* ✨ 제거: 모집 중 체크박스 섹션 ✨
         <div className="mb-6 flex items-center">
           <input
             id="recruiting"
@@ -157,6 +158,7 @@ const EditCommunityModal: React.FC<EditCommunityModalProps> = ({
             모집 중
           </label>
         </div>
+        */}
 
         <div className="flex justify-end space-x-4">
           <Button

@@ -42,9 +42,12 @@ apiClient.interceptors.response.use(
       ) {
         return Promise.reject(new AuthRequiredError());
       } else if (status === 404) {
-        // ✨ 404 에러에 대한 alert를 제거합니다. ✨
-        // alert(data.message || "요청한 리소스를 찾을 수 없습니다."); // 이 줄을 삭제
+        // 404 에러에 대한 alert는 이미 제거됨
         // Promise.reject만 하여 useQuery가 에러를 잡도록 합니다.
+      } else if (status === 400) {
+        // ✨ 400 Bad Request에 대한 alert 제거 ✨
+        // alert(data.message || "잘못된 요청입니다."); // 이 줄을 삭제
+        // 400 오류는 이제 useAuth 훅이나 개별 컴포넌트에서 에러 메시지를 직접 표시하도록 합니다.
       } else {
         // 그 외의 다른 에러는 서버 응답 메시지를 우선 표시하거나 일반 오류 메시지를 표시
         alert(data.message || "알 수 없는 오류가 발생했습니다.");

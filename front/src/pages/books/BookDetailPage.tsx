@@ -164,7 +164,7 @@ const BookDetailPage: React.FC = () => {
 
     try {
       await createCommunity({
-        bookIsbn13: bookIdentifier,
+        isbn13: bookIdentifier, // ✨ bookIsbn13 -> isbn13으로 필드 이름 변경 ✨
         title: communityName,
         content: description,
         maxMembers: maxMembers,
@@ -174,6 +174,7 @@ const BookDetailPage: React.FC = () => {
       queryClient.invalidateQueries({
         queryKey: ["bookDetailPageData", bookIdentifier],
       });
+      alert("커뮤니티가 성공적으로 생성되었습니다!"); // 성공 알림 추가
     } catch (error) {
       console.error("커뮤니티 생성 중 오류 발생:", error);
       alert("커뮤니티 생성 중 오류가 발생했습니다. 다시 시도해주세요.");

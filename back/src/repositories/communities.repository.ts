@@ -1,7 +1,12 @@
 // src/repositories/communities.repository.ts
 
 import prisma from "../utils/prisma";
-import { TeamApplication, TeamCommunity, CommunityStatus, Prisma } from "@prisma/client";
+import {
+  TeamApplication,
+  TeamCommunity,
+  CommunityStatus,
+  Prisma,
+} from "@prisma/client";
 
 type CommunityWithRecruitingInfo = TeamCommunity & {
   recruitmentPost: {
@@ -15,7 +20,6 @@ type CommunityWithRecruitingInfo = TeamCommunity & {
 };
 
 export class CommunityRepository {
-
   public async findRecruitingByHostId(
     hostId: number
   ): Promise<CommunityWithRecruitingInfo[]> {
@@ -125,6 +129,7 @@ export class CommunityRepository {
    * @remarks
    */
   public async update(
+    // 기존 update 메서드를 활용하여 status도 업데이트 가능하게
     teamId: number,
     updateData: Partial<TeamCommunity>
   ): Promise<TeamCommunity> {
@@ -184,5 +189,23 @@ export class CommunityRepository {
       console.error(`Error deleting community ${teamId}:`, error);
       throw error;
     }
+  }
+
+  public async findEndedByHostId(hostId: number): Promise<TeamCommunity[]> {
+    return prisma.teamCommunity.findMany({
+      where: {
+        recruitmentPost: {
+          // 모집글의 userId가 hostId와 일치하는 조건
+          userId: hostId,
+        },
+        status: CommunityStatus.CLOSED, // 모집 종료 상태인 커뮤니티만 조회
+      },
+      // 필요한 경우 include를 추가하여 관련 데이터를 함께 가져옵니다.
+      // include: {
+      //   recruitmentPost: true,
+      //   members: true,
+      // },
+      orderBy: { createdAt: "desc" },
+    });
   }
 }
