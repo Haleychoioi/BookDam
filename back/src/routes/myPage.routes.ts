@@ -52,5 +52,6 @@ router.get("/communities/applied", authenticate, applicationController.getMyAppl
 router.get("/communities/participating", authenticate, communityController.getMyParticipatingCommunities);
 
 // 커뮤 탈퇴, 삭제(멤버-삭제/팀장-삭제)
+router.delete("/communities/participating/:communityId", authenticate, communityController.leaveOrDeleteCommunity);
 
 export default router;

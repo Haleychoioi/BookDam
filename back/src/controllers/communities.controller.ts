@@ -51,6 +51,27 @@ export class CommunityController {
     }
   };
 
+  public leaveOrDeleteCommunity = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.user!;
+      const communityId = Number(req.params.communityId);
+
+      if (isNaN(communityId)) {
+        throw new CustomError(400, "유효하지 않은 커뮤니티 ID입니다.");
+      }
+
+      const message = await this.communityService.leaveOrDeleteCommunity(userId, communityId);
+
+      res.status(200).json({ message });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   /**
    * GET /communities - 커뮤니티 목록 조회
    */
