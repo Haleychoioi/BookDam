@@ -30,7 +30,7 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const questionRef = useRef<HTMLDivElement>(null);
 
-  const [isBookWishlisted, setIsBookWishlisted] = useState(book.isWished);
+  const [isBookWishlisted, setIsBookWishlisted] = useState(book.isWished); // isWished 속성 사용
 
   useEffect(() => {
     const loadBookMyLibraryStatus = async () => {
@@ -80,7 +80,6 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
       } catch (error: unknown) {
         if (error instanceof AuthRequiredError) {
           alert(error.message);
-          // ✨ 인증 실패 시 평점 초기화 ✨
           setSelectedRating(0);
         } else {
           console.error("내 서재 추가/수정 실패:", error);
@@ -114,8 +113,6 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
       } catch (error: unknown) {
         if (error instanceof AuthRequiredError) {
           alert(error.message);
-          // ✨ 찜하기/찜 취소에서도 인증 실패 시 평점 초기화 (선택 사항) ✨
-          // setSelectedRating(0);
         } else {
           console.error("찜 목록 추가/삭제 실패:", error);
           let errorMessage = "찜 목록 처리 중 오류가 발생했습니다.";
@@ -153,7 +150,7 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
         <div className="flex-shrink-0 mr-10">
           <img
             src={
-              book.coverImage ||
+              book.cover || // 'book.coverImage'를 'book.cover'로 변경합니다.
               "https://via.placeholder.com/200x450/F0F0F0/B0B0B0?text=Book+Cover"
             }
             alt={book.title}
@@ -166,11 +163,12 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
             {book.title}
           </h1>
           <span className="inline-block bg-category text-categoryText text-sm px-3 py-1 rounded-full mb-6">
-            {book.genre}
+            {book.category} {/* 'book.genre'를 'book.category'로 변경합니다. */}
           </span>
 
           <p className="text-gray-700 text-sm mb-10 leading-relaxed">
-            {book.summary}
+            {book.description}{" "}
+            {/* 'book.summary'를 'book.description'으로 변경합니다. */}
           </p>
 
           <div className="flex items-center justify-center mb-8">
