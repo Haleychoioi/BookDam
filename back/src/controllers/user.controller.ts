@@ -3,7 +3,7 @@ import userService from '../services/user.service';
 import { SignupRequest, LoginRequest } from '../types/user.type';
 
 class UserController {
-    
+
     // 회원가입
     signup = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -84,6 +84,24 @@ class UserController {
             next(error);
         }
     }
+
+
+    // 비밀번호 찾기 - 임시 비밀번호 발급
+    findPassword = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email, name } = req.body;
+
+            const result = await userService.findPassword(email, name);
+
+            res.status(200).json({
+                success: true,
+                message: result.message
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
 
 
     // 유저 삭제

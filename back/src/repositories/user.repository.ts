@@ -88,6 +88,15 @@ class UserRepository {
     })
   }
 
+  async findByEmailAndName(email: string, name: string) {
+    return await prisma.user.findFirst({  // findUnique 대신 findFirst 사용
+      where: {
+        email: email,
+        name: name
+      }
+    });
+  }
+
   // 사용자 삭제
   async deleteUser(userId: number) {
     return await prisma.user.delete({

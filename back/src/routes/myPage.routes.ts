@@ -7,6 +7,9 @@ import { PostController } from "../controllers/posts.controller";
 import { CommentController } from '../controllers/comments.controller';
 import { CommunityController } from '../controllers/communities.controller';
 import { ApplicationController } from '../controllers/applications.controller';
+import userController from '../controllers/user.controller';
+import { handleValidationResult, updateProfileValidator } from '../middleware/validation-result-handler';
+import upload from '../middleware/multer';
 
 const postController = new PostController();
 const commentController = new CommentController();
@@ -15,10 +18,22 @@ const applicationController = new ApplicationController();
 
 const router = express.Router();
 
+// 내 정보 조회(백엔드 확인)
+router.get('/getProfile', authenticate, userController.getProfile);
+
+// 회원정보 수정
+router.put('/profile-edit',authenticate,upload.single('profileImage'),updateProfileValidator,handleValidationResult,userController.updateProfile);
+
+// 비밀번호 수정
+router.put('/change-password', authenticate, userController.changePassword);
+
+// 유저 삭제
+router.delete('/delete', authenticate, handleValidationResult, userController.deleteUser);
+
 // 위시리스트 추가
 router.post('/', authenticate, wishListController.addWish);
 
-// 삭제
+// 위시 삭제
 router.delete('/:isbn13', authenticate, wishListController.removeWish);
 
 // 전체 위시리스트
@@ -47,6 +62,9 @@ router.get("/communities/recruiting", authenticate, communityController.getMyRec
 
 // 내가 신청한
 router.get("/communities/applied", authenticate, applicationController.getMyApplications);
+
+// 지원서 모집 신청 취소
+router.delete("/communities/applications/:applicationId", authenticate, applicationController.cancelApplication);
 
 // 참여중인 커뮤
 router.get("/communities/participating", authenticate, communityController.getMyParticipatingCommunities);
