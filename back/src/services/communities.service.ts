@@ -56,6 +56,26 @@ export class CommunityService {
 
     return communities;
   }
+
+  public async leaveOrDeleteCommunity(userId: number, teamId: number): Promise<string> {
+    const membership = await this.teamMemberRepository.findByUserIdAndTeamId(
+      userId,
+      teamId
+    );
+
+    if (!membership) {
+      throw new CustomError(404, "가입되지 않은 커뮤니티입니다.");
+    }
+
+    if (membership.role === TeamRole.LEADER) {
+      await this.communityRepository.delete(teamId);
+      return "커뮤니티가 성공적으로 삭제되었습니다.";
+
+    } else { 
+      await this.teamMemberRepository.delete(userId, teamId);
+      return "커뮤니티에서 성공적으로 탈퇴했습니다.";
+    }
+  }
   
   /**
    * 커뮤니티 목록 조회
