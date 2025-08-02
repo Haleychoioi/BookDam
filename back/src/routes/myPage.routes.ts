@@ -4,11 +4,11 @@ import tasteAnalysisController from '../controllers/tasteAnalysis.controller';
 import myLibraryController from "../controllers/myLibrary.controller";
 import authenticate from '../middleware/authenticate-middleware'
 import { PostController } from "../controllers/posts.controller";
+import { CommentController } from '../controllers/comments.controller';
 const postController = new PostController();
-
+const commentController = new CommentController();
 
 const router = express.Router();
-
 
 // 위시리스트 추가
 router.post('/', authenticate, wishListController.addWish);
@@ -34,6 +34,7 @@ router.delete("/:isbn13", authenticate, myLibraryController.deleteBookFromLibrar
 // 내가 작성한 글
 router.get("/my-post", authenticate, postController.getMyPosts);
 
-
+// 내가 작성한 댓글
+router.get("/my-comments", authenticate, commentController.getMyComments);
 
 export default router;
