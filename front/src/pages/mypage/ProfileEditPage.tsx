@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import MyPageHeader from "../../components/mypage/MyPageHeader"; // MyPageHeader로 수정 (대소문자 일치)
+import MyPageHeader from "../../components/mypage/myPageHeader.tsx"; // MyPageHeader로 수정 (대소문자 일치)
 import Button from "../../components/common/Button";
 // import type { UserProfile } from "../../types"; // UserProfile 임포트 제거 (훅에서 타입 제공)
 import { useAuth } from "../../hooks/useAuth";
