@@ -42,13 +42,7 @@ app.get("/", (req: Request, res: Response) => {
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/books", bookRouter);
-<<<<<<< HEAD
-app.use("/api/mypage/wishlist", wishRouter);
-app.use("/api/mypage/taste-analysis", tasteAnalysisRouter);
-app.use("/api/mypage/my-library", myLibraryRouter);
-=======
 app.use('/api/mypage', myPageRouter);
->>>>>>> minjae-sandbox
 
 // 새로운 커뮤니티 관련 라우터들
 app.use("/api", routes);
