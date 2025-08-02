@@ -27,10 +27,6 @@ export class CommentService {
   public async getMyComments(userId: number): Promise<CommentWithPostTitle[]> {
     const comments = await this.commentRepository.findByUserId(userId);
 
-    if (!comments || comments.length === 0) {
-      throw new CustomError(404, "작성한 댓글이 없습니다.");
-    }
-
     return comments;
   }
 

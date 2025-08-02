@@ -44,10 +44,6 @@ export class CommunityService {
       hostId
     );
 
-    if (!communities || communities.length === 0) {
-      throw new CustomError(404, "모집 중인 커뮤니티가 없습니다.");
-    }
-
     return communities;
   }
 
