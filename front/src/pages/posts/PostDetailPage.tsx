@@ -395,7 +395,6 @@ const PostDetailPage: React.FC = () => {
         }
 
         await refetchComments(); // 댓글 목록 새로고침
-        alert("댓글이 성공적으로 작성되었습니다.");
       } catch (err: unknown) {
         if (err instanceof Error) {
           console.error("댓글 작성 실패:", err);

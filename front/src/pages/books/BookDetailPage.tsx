@@ -16,18 +16,19 @@ import CreateCommunityModal from "../../components/modals/CreateCommunityModal";
 import type { BookDetail, Community, BookSummary } from "../../types";
 import {
   getBookDetail,
-  fetchBestsellers,
-  fetchNewBooks,
-  fetchSpecialNewBooks,
+  fetchBestsellers, // fetchBestsellers는 장르 추천에 사용되므로 유지
 } from "../../api/books";
-import { createCommunity, fetchCommunitiesByBook } from "../../api/communities";
+
+import { fetchCommunitiesByBook, createCommunity } from "../../api/communities";
+import { getCategoryId } from "../../constants/categories";
 
 interface BookDetailPageData {
   book: BookDetail;
   bestsellers: BookSummary[];
   newBooks: BookSummary[];
   specialNewBooks: BookSummary[];
-  communities: Community[]; // 커뮤니티 데이터 추가
+  communities: Community[];
+  genreSpecificRecommendations?: BookSummary[];
 }
 
 const BookDetailPage: React.FC = () => {
@@ -47,19 +48,18 @@ const BookDetailPage: React.FC = () => {
 
       const fetchedBookDetail = await getBookDetail(itemId);
 
-      const [fetchedBestsellers, fetchedNewBooks, fetchedSpecialNewBooks] =
+      // 캐러셀 제거에 따라 fetchNewBooks, fetchSpecialNewBooks 호출 제거
+      const [fetchedBestsellers] = // fetchBestsellers는 장르 추천에 필요
         await Promise.all([
           fetchBestsellers(1, 10),
-          fetchNewBooks(1, 10),
-          fetchSpecialNewBooks(1, 10),
+          // fetchNewBooks(1, 10), // 제거
+          // fetchSpecialNewBooks(1, 10), // 제거
         ]);
 
       let fetchedCommunities: Community[] = [];
       try {
         fetchedCommunities = await fetchCommunitiesByBook(itemId);
       } catch (communityError: unknown) {
-        // ✨ 여기를 'unknown'으로 수정합니다. ✨
-        // axios.isAxiosError는 'unknown' 타입의 에러가 AxiosError 인지 확인하는 타입 가드 역할을 합니다.
         if (
           axios.isAxiosError(communityError) &&
           communityError.response &&
@@ -72,29 +72,29 @@ const BookDetailPage: React.FC = () => {
           );
           fetchedCommunities = [];
         } else {
-          throw communityError; // 그 외의 에러는 다시 던집니다.
+          throw communityError;
         }
       }
 
       return {
         book: fetchedBookDetail,
-        bestsellers: fetchedBestsellers,
-        newBooks: fetchedNewBooks,
-        specialNewBooks: fetchedSpecialNewBooks,
+        bestsellers: fetchedBestsellers, // 장르 추천에 사용되므로 유지 (데이터 자체는 가져옴)
+        newBooks: [], // 빈 배열로 설정 또는 제거
+        specialNewBooks: [], // 빈 배열로 설정 또는 제거
         communities: fetchedCommunities,
       };
     },
-
     enabled: !!itemId,
     staleTime: 1000 * 60 * 5,
-    retry: 1, // 재시도 횟수를 줄입니다.
+    retry: 1,
   });
 
   const book = data?.book || null;
-  const bestsellers = data?.bestsellers || [];
-  const newBooks = data?.newBooks || [];
-  const specialNewBooks = data?.specialNewBooks || [];
   const communities = data?.communities || [];
+  // bestsellers, newBooks, specialNewBooks는 렌더링에서 제거되므로 변수 사용을 줄임
+  // const bestsellers = data?.bestsellers || [];
+  // const newBooks = data?.newBooks || [];
+  // const specialNewBooks = data?.specialNewBooks || [];
 
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(
@@ -103,6 +103,28 @@ const BookDetailPage: React.FC = () => {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [, setItemIdForCreate] = useState<string | null>(null);
+
+  const categoryIdForRecommendations = book?.category
+    ? getCategoryId(book.category)
+    : 0;
+
+  const {
+    data: genreRecommendations,
+    isLoading: isLoadingGenreRecommendations,
+    isError: isErrorGenreRecommendations,
+    error: errorGenreRecommendations,
+  } = useQuery<BookSummary[], Error>({
+    queryKey: ["genreRecommendations", categoryIdForRecommendations],
+    queryFn: async () => {
+      if (categoryIdForRecommendations === 0) {
+        return [];
+      }
+      return fetchBestsellers(1, 10, categoryIdForRecommendations);
+    },
+    enabled: !!book && categoryIdForRecommendations !== 0,
+    staleTime: 1000 * 60 * 5,
+    retry: 1,
+  });
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -188,7 +210,7 @@ const BookDetailPage: React.FC = () => {
 
         <BookDetailDescription book={book} />
 
-        <h2 className="text-2xl text-gray-800 text-center mb-4 mt-20">
+        <h2 className="text-2xl text-gray-800 text-center mb-4 mt-16">
           모집 중인 커뮤니티
         </h2>
         {communities.length > 0 && (
@@ -206,19 +228,27 @@ const BookDetailPage: React.FC = () => {
           </div>
         )}
 
-        {bestsellers.length > 0 && (
-          <div className="p-6 mt-8">
-            <BookCarousel title="베스트셀러" books={bestsellers} />
+        {/* 장르별 추천 도서 캐러셀 (유지) */}
+        {isLoadingGenreRecommendations ? (
+          <p className="text-center text-gray-600">
+            장르별 추천 도서 로딩 중...
+          </p>
+        ) : isErrorGenreRecommendations ? (
+          <p className="text-center text-red-600">
+            오류:{" "}
+            {errorGenreRecommendations?.message ||
+              "장르별 추천 도서를 불러오는 데 실패했습니다."}
+          </p>
+        ) : genreRecommendations && genreRecommendations.length > 0 ? (
+          <div className="p-6 mt-16">
+            <BookCarousel
+              title={`"${book.category}" 장르에서 당신이 좋아할 만한 책`}
+              books={genreRecommendations}
+            />
           </div>
-        )}
-        {newBooks.length > 0 && (
-          <div className="p-6 mt-8">
-            <BookCarousel title="신간 도서" books={newBooks} />
-          </div>
-        )}
-        {specialNewBooks.length > 0 && (
-          <div className="p-6 mt-8">
-            <BookCarousel title="주목할 신간" books={specialNewBooks} />
+        ) : (
+          <div className="p-6 mt-8 text-center text-gray-600">
+            이 장르에 대한 추천 도서를 찾을 수 없습니다.
           </div>
         )}
 

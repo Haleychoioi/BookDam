@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import type { Book } from "../../types";
+import type { BookSummary } from "../../types"; // 'Book' 대신 'BookSummary'를 임포트합니다.
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 interface BookCarouselProps {
   title: string;
-  books: Book[];
+  books: BookSummary[]; // 'Book' 대신 'BookSummary'를 사용합니다.
 }
 
 const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
@@ -45,7 +45,7 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
         </button>
 
         {/* 책 목록 */}
-        <div className="flex flex-grow justify-center space-x-8 ">
+        <div className="flex justify-center space-x-8 ">
           {visibleBooks.map((book, index) => (
             <Link
               key={book.isbn13 || index}
@@ -54,7 +54,7 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
             >
               <img
                 src={
-                  book.coverImage ||
+                  book.cover ||
                   "https://via.placeholder.com/160x256/E0E0E0/909090?text=No+Cover"
                 }
                 alt={book.title}
