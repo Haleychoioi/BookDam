@@ -10,9 +10,12 @@ type CommentWithRelations = Comment & {
   replies: (Comment & { user: { nickname: string } | null })[];
 };
 
-// 사용자가 작성한 댓글 조회 시 게시물 제목을 포함하기 위한 타입
-type CommentWithPostTitle = Comment & {
-  post: { title: string } | null;
+type CommentWithPost = Comment & {
+  post: {
+    postId: number;
+    title: string;
+    type: PostType;
+  } | null;
 };
 
 export class CommentRepository {
@@ -20,19 +23,18 @@ export class CommentRepository {
   public async findByUserId(
     userId: number,
     type?: PostType
-  ): Promise<Comment[]> {
+  ): Promise<CommentWithPost[]> {
     const where: Prisma.CommentWhereInput = {
       userId: userId,
     };
 
-    // type 파라미터가 있으면, 연결된 post의 type을 조건으로 추가합니다.
     if (type) {
       where.post = {
         type: type,
       };
     }
 
-    return prisma.comment.findMany({
+    const comments = await prisma.comment.findMany({
       where,
       include: {
         post: {
@@ -47,8 +49,9 @@ export class CommentRepository {
         createdAt: "desc",
       },
     });
-  }
 
+    return comments as CommentWithPost[];
+  }
 
   /**
    * 특정 게시물 ID에 해당하는 댓글 목록 조회

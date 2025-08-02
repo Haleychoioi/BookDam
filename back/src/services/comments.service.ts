@@ -12,10 +12,6 @@ type CommentWithRelations = Comment & {
   replies: (Comment & { user: { nickname: string } | null })[];
 };
 
-type CommentWithPostTitle = Comment & {
-  post: { title: string } | null;
-};
-
 export class CommentService {
   private commentRepository: CommentRepository;
   private postRepository: PostRepository;
@@ -47,13 +43,13 @@ export class CommentService {
     } else if (type === "GENERAL" || type === "RECRUITMENT") {
       const postType = type as PostType;
       const publicComments = await this.commentRepository.findByUserId(userId, postType);
-      combinedComments = publicComments.map((c) => ({ ...c, source: "PUBLIC" }));
+      combinedComments = publicComments.map((c) => ({ ...c, type: c.post!.type, source: "PUBLIC" }));
 
     } else {
       const publicComments = await this.commentRepository.findByUserId(userId);
       const teamComments = await this.teamCommentRepository.findByUserId(userId);
 
-      combinedComments.push(...publicComments.map((c) => ({ ...c, source: "PUBLIC" })));
+      combinedComments.push(...publicComments.map((c) => ({ ...c, type: c.post!.type, source: "PUBLIC" })));
       combinedComments.push(...teamComments.map((c) => ({ ...c, type: "TEAM", source: "TEAM" })));
     }
 

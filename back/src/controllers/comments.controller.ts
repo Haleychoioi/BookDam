@@ -14,7 +14,6 @@ export class CommentController {
   public getMyComments = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user!;
-      // 쿼리 파라미터로 page, size, sort, type('GENERAL', 'RECRUITMENT', 'TEAM')을 받을 수 있습니다.
       const { page, size, sort, type } = req.query;
 
       const result = await this.commentService.getMyComments(userId, {

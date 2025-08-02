@@ -16,7 +16,6 @@ export class TeamCommentRepository {
     return prisma.teamComment.findMany({
       where: { userId: userId },
       include: {
-        // 댓글이 달린 팀 게시물의 정보를 포함합니다.
         teamPost: {
           select: {
             teamPostId: true,
