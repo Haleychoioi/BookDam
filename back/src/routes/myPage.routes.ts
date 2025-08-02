@@ -46,6 +46,11 @@ router.get("/my-comments", authenticate, commentController.getMyComments);
 router.get("/communities/recruiting", authenticate, communityController.getMyRecruitingCommunities);
 
 // 내가 신청한
-router.get("/communities/applied", authenticate, applicationController.getMyApplications)
+router.get("/communities/applied", authenticate, applicationController.getMyApplications);
+
+// 참여중인 커뮤
+router.get("/communities/participating", authenticate, communityController.getMyParticipatingCommunities);
+
+// 커뮤 탈퇴, 삭제(멤버-삭제/팀장-삭제)
 
 export default router;

@@ -47,6 +47,16 @@ export class CommunityService {
     return communities;
   }
 
+  public async getMyParticipatingCommunities(
+    userId: number
+  ): Promise<TeamCommunity[]> {
+    const communities = await this.communityRepository.findActiveByMemberId(
+      userId
+    );
+
+    return communities;
+  }
+  
   /**
    * 커뮤니티 목록 조회
    * @param query
