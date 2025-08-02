@@ -84,61 +84,15 @@ export class CommentController {
         throw new CustomError(400, "유효한 게시물 ID가 아닙니다.");
       }
 
-      //     const parentId = rawParentId ? Number(rawParentId) : undefined;
-      //     if (rawParentId !== undefined && isNaN(parentId as number)) {
-      //       throw new CustomError(400, "유효한 부모 댓글 ID가 아닙니다.");
-      //     }
-
-      //     const newComment = await this.commentService.createComment(postId, {
-      //       userId,
-      //       content,
-      //       parentId,
-      //     });
-
-      //     res.status(201).json({
-      //       status: "success",
-      //       message: "댓글 작성 완료",
-      //       commentId: newComment.commentId,
-      //     });
-      //   } catch (error) {
-      //     if (error instanceof Error) {
-      //       if (error.message === "Post not found") {
-      //         next(new CustomError(404, error.message));
-      //       } else if (
-      //         error.message ===
-      //         "Invalid parent comment: Parent comment not found, does not belong to this post, or is already a reply."
-      //       ) {
-      //         next(new CustomError(400, error.message));
-      //       } else {
-      //         next(error);
-      //       }
-      //     } else {
-      //       next(error);
-      //     }
-      //   }
-      // };
-
-      // ✨ ✨ ✨ 가장 중요한 수정 부분: parentId 처리 ✨ ✨ ✨
-      let parentId: number | undefined = undefined; // 기본값은 undefined
-      if (rawParentId !== undefined && rawParentId !== null) {
-        // rawParentId가 실제로 값이 있는 경우에만 숫자로 변환
-        const parsedParentId = Number(rawParentId);
-        if (isNaN(parsedParentId)) {
-          // 숫자로 변환 불가능하고 null도 아니면 오류
-          throw new CustomError(400, "유효한 부모 댓글 ID가 아닙니다.");
-        }
-        parentId = parsedParentId; // 유효한 숫자면 할당
+      const parentId = rawParentId ? Number(rawParentId) : undefined;
+      if (rawParentId !== undefined && isNaN(parentId as number)) {
+        throw new CustomError(400, "유효한 부모 댓글 ID가 아닙니다.");
       }
-      // 이 로직 덕분에:
-      // - rawParentId가 undefined (필드 없음) -> parentId는 undefined
-      // - rawParentId가 null (명시적 null) -> parentId는 undefined (이전과 동일하게 null을 보낼 때 0이 되지 않도록)
-      // - rawParentId가 숫자 (유효한 부모 ID) -> parentId는 해당 숫자
-      // - rawParentId가 숫자가 아닌 문자열 (예: 'abc') -> 오류 발생 ("유효한 부모 댓글 ID가 아닙니다.")
 
       const newComment = await this.commentService.createComment(postId, {
         userId,
         content,
-        parentId, // parentId는 이제 number | undefined로 서비스로 전달됨
+        parentId,
       });
 
       res.status(201).json({
@@ -152,8 +106,7 @@ export class CommentController {
           next(new CustomError(404, error.message));
         } else if (
           error.message ===
-            "Invalid parent comment: Parent comment not found, does not belong to this post, or is already a reply." ||
-          error.message === "유효한 부모 댓글 ID가 아닙니다."
+          "Invalid parent comment: Parent comment not found, does not belong to this post, or is already a reply."
         ) {
           next(new CustomError(400, error.message));
         } else {

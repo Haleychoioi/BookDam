@@ -1,15 +1,12 @@
 // src/api/communities.ts
 
 import apiClient from "./apiClient";
-// Community, AppliedCommunity, TeamCommunity, ApplicantWithStatus 타입을 types/index.ts에서 임포트
 import type {
   Community,
   AppliedCommunity,
   TeamCommunity,
   ApplicantWithStatus,
 } from "../types";
-
-// 백엔드에서 반환하는 TeamCommunity 스키마의 타입은 이미 src/types/index.ts에 TeamCommunity로 정의되어 있습니다.
 
 /**
  * 백엔드 TeamCommunity 응답을 프론트엔드 Community 타입으로 매핑합니다.
@@ -164,32 +161,48 @@ export const createCommunity = async (communityData: {
  * 특정 커뮤니티 상세 정보를 업데이트합니다 (recruiting, title, content, maxMembers 등).
  * PUT /api/communities/:communityId
  * @param communityId - 업데이트할 커뮤니티 ID
- * @param updateData - 업데이트할 데이터
+ * @param updateData - 업데이트할 데이터 { title?, content?, maxMembers?, recruiting? }
  * @returns 업데이트된 Community 객체
  */
 export const updateCommunityDetails = async (
   communityId: string,
   updateData: {
     title?: string;
-    content?: string;
+    content?: string; // 백엔드에서는 description 대신 content로 받습니다.
     maxMembers?: number;
-    recruiting?: boolean; // 모집 여부
+    recruiting?: boolean; // 모집 여부 (true/false)
   }
 ): Promise<Community> => {
-  // 반환 타입은 Community
   try {
     const response = await apiClient.put<{
       message: string;
-      data: TeamCommunity; // 백엔드는 TeamCommunity를 반환
+      data: TeamCommunity; // 백엔드는 업데이트된 TeamCommunity 객체를 반환합니다.
     }>(`/communities/${communityId}`, updateData);
-    return mapBackendCommunityToFrontendCommunity(response.data.data); // 업데이트된 단일 객체 매핑
+
+    const backendComm = response.data.data;
+
+    // TeamCommunity 응답을 Community 타입에 맞게 변환합니다.
+    // 'currentMembers'는 이 API 응답에 없으므로 기본값 0을 사용합니다.
+    // 'role'과 'status'는 정확한 리터럴 타입으로 명시적 캐스팅합니다.
+    const mappedCommunity: Community = {
+      id: backendComm.teamId.toString(),
+      title: backendComm.postTitle,
+      description: backendComm.postContent,
+      hostName: backendComm.postAuthor,
+      currentMembers: 0, // 이 API 응답에 현재 멤버 수는 포함되지 않으므로 0으로 가정
+      maxMembers: backendComm.maxMembers || 0, // TeamCommunity에 maxMembers가 있을 수 있음 (Post에서 유래)
+      role: "host" as "host" | "member", // 'host' 리터럴을 명시적 캐스팅
+      status: (backendComm.status === "RECRUITING" ? "모집중" : "모집종료") as
+        | "모집중"
+        | "모집종료", // 조건부 결과도 명시적 캐스팅
+    };
+    return mappedCommunity;
   } catch (err: unknown) {
-    // 'error' 대신 'err: unknown' 사용, = { 제거
     if (err instanceof Error) {
       console.error("Failed to update community details:", err);
       throw err;
     }
-    throw new Error("Unknown error occurred");
+    throw new Error("Unknown error occurred while updating community details.");
   }
 };
 
@@ -226,16 +239,14 @@ export const updateCommunityStatus = async (
  * DELETE /api/communities/:communityId
  * @param communityId - 삭제할 커뮤니티 ID
  */
-export const deleteCommunity = async (communityId: string): Promise<void> => {
+// 커뮤니티 삭제 (팀장용) API
+export const deleteCommunity = async (communityId: number): Promise<void> => {
   try {
-    await apiClient.delete(`/communities/${communityId}`);
-  } catch (err: unknown) {
-    // 'error' 대신 'err: unknown' 사용
-    if (err instanceof Error) {
-      console.error("Failed to delete community:", err);
-      throw err;
-    }
-    throw new Error("Unknown error occurred");
+    const response = await apiClient.delete(`/communities/${communityId}`);
+    console.log(response.data.message); // 성공 메시지 로깅
+  } catch (error) {
+    console.error(`Failed to delete community ${communityId}:`, error);
+    throw error;
   }
 };
 
