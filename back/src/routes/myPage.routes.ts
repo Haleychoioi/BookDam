@@ -25,7 +25,7 @@ router.delete('/:isbn13', authenticate, wishListController.removeWish);
 router.get('/', authenticate, wishListController.getWishList);
 
 // 사용자 도서 통계
-router.get("/", authenticate, tasteAnalysisController.getTasteAnalysis);
+router.get("/taste-analysis", authenticate, tasteAnalysisController.getTasteAnalysis);
 
 // 서재에 없으면 추가, 있으면 상태변경
 router.post('/', authenticate, myLibraryController.upsertBookInLibrary);
