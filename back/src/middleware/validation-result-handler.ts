@@ -29,6 +29,14 @@ export const loginValidator: ValidationChain[] = [
         .notEmpty().withMessage('비밀번호가 없습니다.')
 ];
 
+export const temporaryPassword: ValidationChain[] = [
+    body('email')
+        .notEmpty().withMessage("이메일을 작성해주세요.")
+        .isEmail().withMessage("이메일 형식으로 작성해주세요."),
+    body('nickname')
+        .notEmpty().withMessage('성함을 작성해주세요.')
+];
+
 export const updateProfileValidator: ValidationChain[] = [
     body('nickname')
         .optional()
