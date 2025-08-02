@@ -18,7 +18,7 @@ import WishlistPage from "./pages/mypage/WishlistPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
-import FindPasswordPage from "./pages/auth/FindPasswordPage"; // ✨ FindPasswordPage 임포트 ✨
+import FindPasswordPage from "./pages/auth/FindPasswordPage";
 import ErrorPage from "./pages/ErrorPage";
 import MyPageLayout from "./layouts/MyPageLayout";
 import PostDetailPage from "./pages/posts/PostDetailPage";
@@ -46,7 +46,13 @@ function App() {
             element={<CommunityBoardPage />}
           />
 
-          {/* 특정 게시물 상세 */}
+          {/* ✨ 추가: 특정 팀 게시물 상세 조회 라우트 ✨ */}
+          <Route
+            path="communities/:communityId/posts/:postId" // postId는 teamPostId를 의미
+            element={<PostDetailPage />}
+          />
+
+          {/* 특정 일반 게시물 상세 조회 */}
           <Route path="posts/:postId" element={<PostDetailPage />} />
 
           {/* 전체 게시판 */}
@@ -94,7 +100,7 @@ function App() {
           {/* 회원가입/로그인 페이지 */}
           <Route path="/auth/register" element={<RegisterPage />} />
           <Route path="/auth/login" element={<LoginPage />} />
-          {/* ✨ 비밀번호 찾기 페이지 라우트 추가 ✨ */}
+          {/* 비밀번호 찾기 페이지 라우트 추가 */}
           <Route path="/auth/find-password" element={<FindPasswordPage />} />
         </Route>
 

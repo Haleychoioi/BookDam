@@ -21,7 +21,7 @@ import {
   fetchCommentsByPost,
   updateComment,
   deleteComment,
-} from "../../api/comments";
+} from "../../api/comments"; // ✨ 이 줄의 문법 오류 수정 완료: 'from' 키워드와 구문이 올바릅니다. ✨
 import {
   createTeamComment,
   fetchTeamComments,
@@ -29,41 +29,11 @@ import {
   deleteTeamComment,
 } from "../../api/teamComments";
 
-// CommentTree 빌드 함수 (API에서 이미 중첩된 형태로 받으므로, 이 함수는 이제 필요 없습니다.
-// 하지만 이전의 논의와 코드 의존성을 고려하여 주석 처리로 남겨둡니다.
-// 실제 사용 시에는 이 함수를 제거하고 API 응답을 직접 comments 상태에 할당해야 합니다.)
-/*
-const buildCommentTree = (
-  flatComments: (Comment | TeamComment)[],
-  parentId: number | null = null,
-  currentDepth: number = 0
-): (Comment | TeamComment)[] => {
-  const nestedComments: (Comment | TeamComment)[] = [];
-
-  flatComments
-    .filter((comment) => (comment.parentId || null) === parentId)
-    .sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    )
-    .forEach((comment) => {
-      const commentId = 'commentId' in comment ? comment.commentId : comment.teamCommentId;
-      const newComment = { ...comment, depth: currentDepth };
-
-      newComment.replies = buildCommentTree(
-        flatComments,
-        commentId,
-        currentDepth + 1
-      ) as (Comment | TeamComment)[];
-
-      nestedComments.push(newComment);
-    });
-  return nestedComments;
-};
-*/
-
 const PostDetailPage: React.FC = () => {
-  const { postId } = useParams<{ postId: string }>();
+  const { postId, communityId } = useParams<{
+    postId: string;
+    communityId?: string;
+  }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUserProfile, loading: authLoading } = useAuth();
@@ -79,19 +49,18 @@ const PostDetailPage: React.FC = () => {
   const [loadingComments, setLoadingComments] = useState(false);
   const [errorComments, setErrorComments] = useState<string | null>(null);
 
-  // 게시물 ID 파싱 (number 타입)
   const parsedPostId = postId ? Number(postId) : NaN;
 
-  // 게시물 타입 (일반 게시물인지 팀 게시물인지)을 URL 경로를 통해 추정
   const isTeamPostPageCalculated = useMemo(() => {
     return location.pathname.startsWith("/communities/");
   }, [location.pathname]);
 
-  // 게시판 경로 설정 (useMemo로 최적화)
   const backToBoardPath = useMemo(() => {
     if (isTeamPostPageCalculated) {
-      const communityId = location.pathname.split("/")[2];
-      return communityId ? `/communities/${communityId}/posts` : "/posts";
+      const communityIdFromPath = location.pathname.split("/")[2];
+      return communityIdFromPath
+        ? `/communities/${communityIdFromPath}/posts`
+        : "/posts";
     }
     return "/posts";
   }, [isTeamPostPageCalculated, location.pathname]);
@@ -100,45 +69,59 @@ const PostDetailPage: React.FC = () => {
     return isTeamPostPageCalculated ? "커뮤니티 게시판으로" : "전체 게시판으로";
   }, [isTeamPostPageCalculated]);
 
-  // 🚨 모든 useCallback 함수들을 여기, useState/useMemo 다음에 정의합니다. 🚨
-
-  // 댓글 목록을 새로 불러오는 헬퍼 함수
   const refetchComments = useCallback(async () => {
     setLoadingComments(true);
     setErrorComments(null);
     try {
       let fetchedComments: (Comment | TeamComment)[];
       if (isTeamPostPageCalculated) {
-        const communityId = location.pathname.split("/")[2];
-        if (!communityId) throw new Error("커뮤니티 ID가 유효하지 않습니다.");
-        fetchedComments = await fetchTeamComments(communityId, parsedPostId);
+        const communityIdFromPath = location.pathname.split("/")[2];
+        if (!communityIdFromPath)
+          throw new Error("커뮤니티 ID가 유효하지 않습니다.");
+        fetchedComments = await fetchTeamComments(
+          communityIdFromPath,
+          parsedPostId
+        );
       } else {
         fetchedComments = await fetchCommentsByPost(parsedPostId);
       }
-      // ✨ 수정: buildCommentTree 함수 제거, API 응답 데이터를 직접 할당 ✨
-      // API 응답은 이미 { data: [...nested_comments...] } 형태이므로, data 안의 배열만 필요.
       setComments(fetchedComments);
     } catch (err: unknown) {
+      console.error("댓글 목록 새로고침 실패:", err);
       if (err instanceof Error) {
-        console.error("댓글 목록 새로고침 실패:", err);
         setErrorComments(err.message || "댓글을 불러오는데 실패했습니다.");
       } else {
         setErrorComments("알 수 없는 오류가 발생했습니다.");
       }
+      setComments([]); // 오류 발생 시 comments 상태를 빈 배열로 설정
     } finally {
       setLoadingComments(false);
     }
   }, [parsedPostId, isTeamPostPageCalculated, location.pathname]);
 
-  // 1. 게시물 상세 정보 불러오기 (useCallback으로 감싸기)
+  // 1. 게시물 상세 정보 불러오기
   const fetchPostData = useCallback(async () => {
+    console.log("DEBUG PostDetailPage: fetchPostData 호출됨.");
+    console.log("DEBUG PostDetailPage: useParams에서 받은 postId:", postId);
+    console.log(
+      "DEBUG PostDetailPage: useParams에서 받은 communityId:",
+      communityId
+    );
+    console.log(
+      "DEBUG PostDetailPage: isTeamPostPageCalculated:",
+      isTeamPostPageCalculated
+    );
+    console.log("DEBUG PostDetailPage: parsedPostId (숫자):", parsedPostId);
+
     setLoadingPost(true);
     setErrorPost(null);
 
-    // currentUserProfile이 null일 가능성 체크를 여기서 다시 수행하여 TypeScript 경고 해결
+    // fetchPostData 내부에 여전히 인증된 사용자 확인 로직이 있습니다.
     if (!currentUserProfile) {
       if (!authLoading) {
-        // 로딩 중이 아니라면 로그인 필요
+        console.log(
+          "DEBUG PostDetailPage: fetchPostData - 로그인된 사용자 없음. 로그인 필요."
+        );
         setErrorPost("로그인이 필요합니다.");
         setLoadingPost(false);
       }
@@ -146,6 +129,9 @@ const PostDetailPage: React.FC = () => {
     }
 
     if (isNaN(parsedPostId)) {
+      console.log(
+        "DEBUG PostDetailPage: fetchPostData - 유효하지 않은 parsedPostId (NaN)."
+      );
       setErrorPost("유효하지 않은 게시물 ID입니다.");
       setLoadingPost(false);
       return;
@@ -155,26 +141,44 @@ const PostDetailPage: React.FC = () => {
 
     try {
       if (isTeamPostPageCalculated) {
-        const communityId = location.pathname.split("/")[2];
         if (!communityId) {
+          console.log(
+            "DEBUG PostDetailPage: fetchPostData - 팀 게시물이나 communityId가 누락됨."
+          );
           setErrorPost("커뮤니티 ID가 유효하지 않습니다.");
           setLoadingPost(false);
           return;
         }
+        console.log(
+          `DEBUG PostDetailPage: fetchTeamPostById 호출. communityId: ${communityId}, parsedPostId: ${parsedPostId}`
+        );
         fetchedPost = await fetchTeamPostById(communityId, parsedPostId);
       } else {
+        console.log(
+          `DEBUG PostDetailPage: fetchPostById 호출. parsedPostId: ${parsedPostId}`
+        );
         fetchedPost = await fetchPostById(parsedPostId);
       }
 
       if (fetchedPost) {
+        console.log(
+          "DEBUG PostDetailPage: 게시물 성공적으로 불러옴.",
+          fetchedPost
+        );
         setPost(fetchedPost);
         setEditedContent(fetchedPost.content);
       } else {
+        console.log(
+          "DEBUG PostDetailPage: fetchPostData - API 호출 후 게시물을 찾을 수 없음 (null 또는 undefined)."
+        );
         setErrorPost("게시물을 찾을 수 없습니다.");
       }
     } catch (err: unknown) {
+      console.error(
+        "DEBUG PostDetailPage: fetchPostData - 게시물 불러오기 중 오류 발생:",
+        err
+      );
       if (err instanceof Error) {
-        console.error("게시물 불러오기 실패:", err);
         setErrorPost(err.message || "게시물을 불러오는데 실패했습니다.");
       } else {
         setErrorPost("알 수 없는 오류가 발생했습니다.");
@@ -184,33 +188,67 @@ const PostDetailPage: React.FC = () => {
     }
   }, [
     parsedPostId,
+    communityId,
     currentUserProfile,
     authLoading,
     isTeamPostPageCalculated,
-    location.pathname,
+    postId,
   ]);
 
   // useEffect: 컴포넌트 마운트 및 주요 의존성 변경 시 데이터 로드
   useEffect(() => {
-    if (!authLoading && currentUserProfile) {
-      // authLoading 완료 & currentUserProfile 존재 시
+    console.log("DEBUG PostDetailPage: useEffect 트리거됨.");
+
+    console.log("DEBUG Condition Check: parsedPostId:", parsedPostId);
+    console.log(
+      "DEBUG Condition Check: isNaN(parsedPostId):",
+      isNaN(parsedPostId)
+    );
+    console.log("DEBUG Condition Check: communityId:", communityId);
+    console.log(
+      "DEBUG Condition Check: isTeamPostPageCalculated:",
+      isTeamPostPageCalculated
+    );
+    console.log(
+      "DEBUG Condition Check: isTeamPostPageCalculated ? communityId : true ->",
+      isTeamPostPageCalculated ? communityId : true
+    );
+    console.log(
+      "DEBUG Condition Check: Full condition result:",
+      !isNaN(parsedPostId) && (isTeamPostPageCalculated ? communityId : true)
+    );
+
+    if (
+      !isNaN(parsedPostId) &&
+      (isTeamPostPageCalculated ? communityId : true)
+    ) {
+      console.log(
+        "DEBUG PostDetailPage: useEffect - fetchPostData 강제 호출 조건 충족."
+      );
       fetchPostData();
       refetchComments();
-    } else if (!authLoading && !currentUserProfile) {
-      // authLoading 완료 & currentUserProfile 없음 = 로그인 필요
+    } else {
+      console.log(
+        "DEBUG PostDetailPage: useEffect - fetchPostData 호출 조건 불충족 (ID 문제)."
+      );
       setLoadingPost(false);
-      setErrorPost("로그인이 필요합니다.");
+      if (isNaN(parsedPostId)) {
+        setErrorPost("유효하지 않은 게시물 ID입니다.");
+      } else if (isTeamPostPageCalculated && !communityId) {
+        setErrorPost("커뮤니티 ID가 누락되었습니다.");
+      } else {
+        setErrorPost("게시물을 불러올 수 없습니다 (ID 문제).");
+      }
     }
+
     window.scrollTo(0, 0);
     setIsEditing(false);
   }, [
     parsedPostId,
-    currentUserProfile,
-    authLoading,
+    communityId,
     isTeamPostPageCalculated,
-    location.pathname,
-    refetchComments,
     fetchPostData,
+    refetchComments,
   ]);
 
   // 게시물 작성자 여부 확인
@@ -261,9 +299,9 @@ const PostDetailPage: React.FC = () => {
 
       try {
         if (isTeamPostPageCalculated) {
-          const communityId = location.pathname.split("/")[2];
-          if (!communityId) throw new Error("커뮤니티 ID가 없습니다.");
-          await updateTeamPost(communityId, parsedPostId, {
+          const communityIdFromPath = location.pathname.split("/")[2];
+          if (!communityIdFromPath) throw new Error("커뮤니티 ID가 없습니다.");
+          await updateTeamPost(communityIdFromPath, parsedPostId, {
             title: finalTitle,
             content: trimmedEditedContent,
           });
@@ -294,7 +332,7 @@ const PostDetailPage: React.FC = () => {
             }`
           );
         } else {
-          alert("게시물 수정 중 알 수 없는 오류가 발생했습니다.");
+          alert("알 수 없는 오류가 발생했습니다.");
         }
       } finally {
         setIsEditing(false);
@@ -333,9 +371,9 @@ const PostDetailPage: React.FC = () => {
     if (window.confirm("정말로 이 게시물을 삭제하시겠습니까?")) {
       try {
         if (isTeamPostPageCalculated) {
-          const communityId = location.pathname.split("/")[2];
-          if (!communityId) throw new Error("커뮤니티 ID가 없습니다.");
-          await deleteTeamPost(communityId, parsedPostId);
+          const communityIdFromPath = location.pathname.split("/")[2];
+          if (!communityIdFromPath) throw new Error("커뮤니티 ID가 없습니다.");
+          await deleteTeamPost(communityIdFromPath, parsedPostId);
         } else {
           await deletePost(parsedPostId, currentUserProfile.userId);
         }
@@ -350,7 +388,7 @@ const PostDetailPage: React.FC = () => {
             }`
           );
         } else {
-          alert("게시물 삭제 중 알 수 없는 오류가 발생했습니다.");
+          alert("알 수 없는 오류가 발생했습니다.");
         }
       }
     }
@@ -377,10 +415,11 @@ const PostDetailPage: React.FC = () => {
 
       try {
         if (isTeamPostPageCalculated) {
-          const communityId = location.pathname.split("/")[2];
-          if (!communityId) throw new Error("커뮤니티 ID가 유효하지 않습니다.");
+          const communityIdFromPath = location.pathname.split("/")[2];
+          if (!communityIdFromPath)
+            throw new Error("커뮤니티 ID가 유효하지 않습니다.");
           await createTeamComment(
-            communityId,
+            communityIdFromPath,
             parsedPostId,
             currentUserProfile.userId,
             content,
@@ -404,7 +443,7 @@ const PostDetailPage: React.FC = () => {
             }`
           );
         } else {
-          alert("댓글 작성 중 알 수 없는 오류가 발생했습니다.");
+          alert("알 수 없는 오류가 발생했습니다.");
         }
       }
     },
@@ -433,9 +472,9 @@ const PostDetailPage: React.FC = () => {
       if (!post || !currentUserProfile) return;
       try {
         if (isTeamPostPageCalculated) {
-          const communityId = location.pathname.split("/")[2];
-          if (!communityId) throw new Error("커뮤니티 ID가 없습니다.");
-          await updateTeamComment(communityId, commentId, newContent);
+          const communityIdFromPath = location.pathname.split("/")[2];
+          if (!communityIdFromPath) throw new Error("커뮤니티 ID가 없습니다.");
+          await updateTeamComment(communityIdFromPath, commentId, newContent);
         } else {
           await updateComment(commentId, {
             content: newContent,
@@ -453,7 +492,7 @@ const PostDetailPage: React.FC = () => {
             }`
           );
         } else {
-          alert("댓글 수정 중 알 수 없는 오류가 발생했습니다.");
+          alert("알 수 없는 오류가 발생했습니다.");
         }
       }
     },
@@ -473,11 +512,12 @@ const PostDetailPage: React.FC = () => {
       if (window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) {
         try {
           if (isTeamPostPageCalculated) {
-            const communityId = location.pathname.split("/")[2];
-            if (!communityId) throw new Error("커뮤니티 ID가 없습니다.");
+            const communityIdFromPath = location.pathname.split("/")[2];
+            if (!communityIdFromPath)
+              throw new Error("커뮤니티 ID가 없습니다.");
             // deleteTeamComment는 communityId, teamPostId, teamCommentId, userId를 받음
             await deleteTeamComment(
-              communityId,
+              communityIdFromPath,
               parsedPostId,
               commentId,
               currentUserProfile.userId
@@ -496,7 +536,7 @@ const PostDetailPage: React.FC = () => {
               }`
             );
           } else {
-            alert("댓글 삭제 중 알 수 없는 오류가 발생했습니다.");
+            alert("알 수 없는 오류가 발생했습니다.");
           }
         }
       }
@@ -538,8 +578,8 @@ const PostDetailPage: React.FC = () => {
       isEditing={isEditing}
       editedContent={editedContent}
       onEditedContentChange={setEditedContent}
-      onSavePost={handleSavePost}
-      onCancelEdit={handleCancelEdit}
+      onSavePost={onSavePost}
+      onCancelEdit={onCancelEdit}
       backToBoardText={backToBoardText}
       isPostAuthor={isPostAuthor}
     >

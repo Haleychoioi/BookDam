@@ -6,21 +6,21 @@ import type { TeamComment } from "../types";
 // =========================================================
 // 팀 게시물 댓글 관련 API
 // =========================================================
-
 export const fetchTeamComments = async (
-  // ✨ export 추가 ✨
   communityId: string,
   teamPostId: number
-): Promise<TeamComment[]> => {
+) => {
   try {
-    const response = await apiClient.get<{
-      status: string;
-      message: string;
-      data: TeamComment[];
-    }>(`/team-posts/${teamPostId}/comments?communityId=${communityId}`);
-    return response.data.data;
+    // 백엔드 라우트 형식에 맞춰 URL 변경: communityId와 teamPostId를 경로 파라미터로 사용
+    const response = await apiClient.get(
+      `/mypage/communities/team-posts/${teamPostId}/comments?communityId=${communityId}`
+    );
+    return response.data;
   } catch (error) {
-    console.error("Failed to fetch team comments:", error);
+    console.error(
+      `Error fetching team comments for community ${communityId}, post ${teamPostId}:`,
+      error
+    );
     throw error;
   }
 };

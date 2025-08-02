@@ -10,10 +10,12 @@ export interface Community {
   title: string; // 커뮤니티 제목 (백엔드의 postTitle)
   description: string; // 커뮤니티 설명 (백엔드의 postContent)
   hostName: string; // 커뮤니티 호스트 닉네임 (백엔드의 postAuthor)
-  currentMembers: number; // 현재 멤버 수 (백엔드에서 직접 제공하지 않으면 프론트엔드에서 계산 또는 임시값)
-  maxMembers: number; // 최대 멤버 수 (백엔드에서 직접 제공하지 않으면 프론트엔드에서 임시값)
+  hostId: number; // ✨ 새로 추가: 커뮤니티 호스트(팀장)의 userId ✨
+  currentMembers: number; // 현재 멤버 수
+  maxMembers: number; // 최대 멤버 수
   role: "host" | "member"; // 현재 사용자의 커뮤니티 내 역할 (로그인된 사용자 기준)
-  status: "모집중" | "모집종료"; // 프론트엔드에서 표시할 모집 상태 (백엔드의 status 매핑)
+  status: "모집중" | "모집종료"; // 프론트엔드에서 표시할 모집 상태
+  createdAt: string; // ✨ 추가: 생성일시 ✨
 }
 
 export interface UserProfile {
@@ -85,6 +87,11 @@ export interface TeamCommunity {
   createdAt: string;
   updatedAt: string; // 통일된 string 타입
   maxMembers?: number; // Post에서 가져오는 최대 인원수
+}
+
+export interface CommunityWithMemberInfo extends TeamCommunity {
+  currentMembers: number; // 현재 멤버 수 (필수)
+  maxMembers: number; // 최대 멤버 수 (필수)
 }
 
 // 1.6 PostType Enum (일반 게시물 타입)
