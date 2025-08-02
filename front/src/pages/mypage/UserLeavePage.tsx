@@ -1,143 +1,91 @@
 // src/pages/mypage/UserLeavePage.tsx
-import { useState } from "react"; // useEffect 임포트 제거
-// import { useNavigate } from "react-router-dom"; // useNavigate 임포트 제거
-import MyPageHeader from "../../components/mypage/MyPageHeader"; // MyPageHeader로 수정 (대소문자 일치)
+import { useState } from "react";
+import MyPageHeader from "../../components/mypage/myPageHeader.tsx";
 import Button from "../../components/common/Button";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth"; // useAuth 훅 임포트
 
 const UserLeavePage: React.FC = () => {
-  // const navigate = useNavigate(); // navigate 선언 제거
-  const [agreed, setAgreed] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [password, setPassword] = useState("");
+  const { deleteUser, loading } = useAuth(); // useAuth 훅에서 deleteUser와 loading 가져오기
+  const [confirmText, setConfirmText] = useState("");
 
-  // useAuth 훅에서 회원 탈퇴 관련 상태와 함수를 가져옵니다.
-  // error는 훅에서 alert 처리하므로 여기서는 가져오지 않습니다.
-  const { deleteUser, loading } = useAuth();
-
-  // 약관에 동의해야 버튼 활성화
-  const handleLeaveClick = () => {
-    if (!password.trim()) {
-      alert("비밀번호를 입력해주세요.");
+  const handleDeleteAccount = async () => {
+    if (confirmText !== "회원 탈퇴") {
+      alert("회원 탈퇴를 진행하려면 '회원 탈퇴'를 정확히 입력해주세요.");
       return;
     }
-    if (agreed) setIsModalOpen(true);
-  };
 
-  // 모달창에서 탈퇴 버튼 클릭 -> 실제 탈퇴 로직 호출
-  const handleConfirmLeave = async () => {
-    setIsModalOpen(false);
+    if (
+      !window.confirm(
+        "정말로 회원 탈퇴를 하시겠습니까? 모든 데이터가 삭제되며 복구할 수 없습니다."
+      )
+    ) {
+      return;
+    }
 
     // useAuth 훅의 deleteUser 함수 호출
-    // 현재 훅의 deleteUser는 비밀번호 인자 없음. 백엔드에서 비밀번호 검증이 필요하다면 훅 수정 필요
     const success = await deleteUser();
 
     if (success) {
-      // 훅 내부에서 alert와 navigate 처리되므로 여기서는 추가 작업 없음
-    } else {
-      // 훅에서 에러 alert 처리하므로 여기서는 추가 작업 없음
+      // deleteUser 함수 내부에서 이미 로그아웃 처리 및 메시지, 페이지 이동을 담당합니다.
+      // 여기서는 추가적인 UI 초기화만 진행합니다.
+      setConfirmText("");
     }
-  };
-
-  const handleCancelLeave = () => {
-    setIsModalOpen(false);
+    // 실패 메시지는 useAuth 훅에서 alert로 처리합니다.
   };
 
   return (
     <div>
-      {/*모달 */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-md shadow-md max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">정말 탈퇴하시겠습니까?</h2>
-            <p className="mb-6 text-gray-700">
-              탈퇴하면 모든 정보가 삭제되며 복구할 수 없습니다.
-            </p>
-            <div className="flex justify-end gap-4">
-              <Button
-                onClick={handleCancelLeave}
-                bgColor="bg-gray-300"
-                textColor="text-white"
-                hoverBgColor="hover:bg-gray-400"
-                className="px-4 py-2 rounded"
-              >
-                취소
-              </Button>
-              <Button
-                onClick={handleConfirmLeave}
-                className="px-4 py-2 rounded"
-                disabled={loading}
-              >
-                {loading ? "탈퇴 처리 중..." : "탈퇴하기"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <section id="userLeave" className="container mx-auto p-6">
         <MyPageHeader
           title="회원 탈퇴"
-          description="탈퇴 시 모든 정보가 삭제되며 복구할 수 없습니다."
+          description="더 이상 서비스를 이용하지 않으시려면 회원 탈퇴를 진행할 수 있습니다."
         />
         <div className="p-8">
-          <label
-            htmlFor="password"
-            className="block text-gray-700 text-lg font-medium mb-2"
-          >
-            비밀번호
-          </label>
-          <p className="text-gray-600 text-md mb-4">
-            회원 탈퇴를 위하여 비밀번호를 입력하여주시길 바랍니다.
-          </p>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder="현재 비밀번호 입력"
-            className="w-full max-w-md px-4 py-3 mb-5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-main text-gray-800"
-          />
-          <h2 className="block text-gray-700 text-lg font-medium mt-5 mb-4">
-            회원 탈퇴 약관
-          </h2>
-          <div className="border border-gray-300 rounded-md p-7">
-            <ul className="list-disc pl-6 space-y-2 text-gray-800">
+          <div className="space-y-4">
+            <p className="text-red-600 font-semibold text-lg">
+              회원 탈퇴 전 꼭 확인해주세요!
+            </p>
+            <ul className="list-disc list-inside text-gray-700 space-y-2">
               <li>
-                회원 탈퇴 시, 계정 정보 및 활동 내역 (게시물, 댓글, 좋아요 등)은
-                모두 삭제되며 복구 되지 않습니다.
+                회원 탈퇴 시 모든 개인 정보 및 활동 기록이 즉시 삭제되며, 복구할
+                수 없습니다.
               </li>
               <li>
-                탈퇴 후에는 동일 이메일 또는 닉네임으로의 재가입이 제한될 수
-                있습니다.
+                작성하신 게시물, 댓글 등은 삭제되지 않고 유지될 수 있습니다.
               </li>
               <li>
-                커뮤니티 활동 이력은 시스템상 통계 데이터에 반영될 수 있습니다.
-              </li>
-              <li>
-                탈퇴 요청 시, 즉시 탈퇴 처리되며 취소가 불가능하니 신중히
-                결정해주세요.
+                참여 중이거나 모집 중인 커뮤니티가 있다면, 먼저 커뮤니티를
+                탈퇴하거나 삭제해야 탈퇴가 가능합니다.
               </li>
             </ul>
           </div>
-          <label className="flex items-center mt-4">
-            <input
-              type="checkbox"
-              className="mr-2"
-              checked={agreed}
-              onChange={(e) => setAgreed(e.target.checked)}
-              required
-            />
-            위 내용을 확인하였으며, 이에 동의합니다.
-          </label>
-          <div className="flex justify-end gap-4">
-            <Button
-              onClick={handleLeaveClick}
-              disabled={loading || !agreed || !password.trim()} // 로딩 중에도 비활성화
+
+          <div className="mt-8">
+            <label
+              htmlFor="confirmText"
+              className="block text-gray-700 text-lg font-medium mb-2"
             >
-              탈퇴하기
+              회원 탈퇴를 원하시면 아래 입력창에 "회원 탈퇴"라고 정확히
+              입력해주세요.
+            </label>
+            <input
+              type="text"
+              id="confirmText"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="회원 탈퇴"
+              className="w-full p-3 border border-gray-300 rounded-md text-gray-800"
+            />
+          </div>
+
+          <div className="flex justify-end gap-4 mt-8">
+            <Button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={loading || confirmText !== "회원 탈퇴"} // 로딩 중이거나 텍스트 불일치 시 버튼 비활성화
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {loading ? "탈퇴 처리 중..." : "회원 탈퇴하기"}
             </Button>
           </div>
         </div>

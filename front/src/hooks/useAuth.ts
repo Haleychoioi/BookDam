@@ -1,6 +1,7 @@
 // src/hooks/useAuth.ts
+
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom"; // useNavigate 훅 임포트 확인
+import { useNavigate } from "react-router-dom";
 import apiClient from "../api/apiClient";
 import axios from "axios";
 import type { UserProfile, SignupRequest } from "../types";
@@ -17,10 +18,16 @@ interface AuthResult {
   fetchUserProfile: () => Promise<void>;
   updateProfile: (updateData: FormData) => Promise<boolean>;
   deleteUser: () => Promise<boolean>;
+  changePassword: (passwordData: {
+    currentPassword: string;
+    newPassword: string;
+    confirmNewPassword: string;
+  }) => Promise<boolean>;
+  issueTemporaryPassword: (email: string, name: string) => Promise<boolean>; // ✨ 새로 추가할 함수 타입 선언 ✨
 }
 
 export const useAuth = (): AuthResult => {
-  const navigate = useNavigate(); // useNavigate 훅 인스턴스 생성
+  const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
   const [currentUserProfile, setCurrentUserProfile] =
@@ -60,7 +67,7 @@ export const useAuth = (): AuthResult => {
       const response = await apiClient.get<{
         user: UserProfile;
         message: string;
-      }>(`/users/getProfile`);
+      }>(`/mypage/getProfile`);
       setCurrentUserProfile(response.data.user);
     } catch (err) {
       const errMsg = handleAxiosError(
@@ -119,7 +126,7 @@ export const useAuth = (): AuthResult => {
         localStorage.setItem("userId", userId.toString());
         window.dispatchEvent(new Event("loginStatusChange"));
         alert(message);
-        navigate("/"); // 로그인 성공 후 홈페이지로 리다이렉트 [cite: 32]
+        navigate("/");
         return true;
       } catch (err) {
         const errMsg = handleAxiosError(err, "로그인 중 오류가 발생했습니다.");
@@ -130,7 +137,7 @@ export const useAuth = (): AuthResult => {
         setLoading(false);
       }
     },
-    [handleAxiosError, navigate] // navigate를 의존성 배열에 추가
+    [handleAxiosError, navigate]
   );
 
   const register = useCallback(
@@ -178,7 +185,7 @@ export const useAuth = (): AuthResult => {
         const response = await apiClient.put<{
           user: UserProfile;
           message: string;
-        }>(`/users/profile`, updateData, {
+        }>(`/mypage/profile`, updateData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -198,11 +205,38 @@ export const useAuth = (): AuthResult => {
     [handleAxiosError]
   );
 
+  const changePassword = useCallback(
+    async (passwordData: {
+      currentPassword: string;
+      newPassword: string;
+      confirmNewPassword: string;
+    }): Promise<boolean> => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await apiClient.put(
+          `/mypage/change-password`,
+          passwordData
+        );
+        alert(response.data.message);
+        return true;
+      } catch (err) {
+        const errMsg = handleAxiosError(err, "비밀번호 변경에 실패했습니다.");
+        setError(errMsg);
+        alert(errMsg);
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleAxiosError]
+  );
+
   const deleteUser = useCallback(async (): Promise<boolean> => {
     setLoading(true);
     setError(null);
     try {
-      await apiClient.delete(`/users/delete`);
+      await apiClient.delete(`/mypage/delete`);
       logout();
       return true;
     } catch (err) {
@@ -214,6 +248,33 @@ export const useAuth = (): AuthResult => {
       setLoading(false);
     }
   }, [logout, handleAxiosError]);
+
+  // ✨ 새로 추가된 임시 비밀번호 발급 함수 ✨
+  const issueTemporaryPassword = useCallback(
+    async (email: string, name: string): Promise<boolean> => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await apiClient.post("/auth/password/issue-temp", {
+          email,
+          name,
+        });
+        alert(response.data.message);
+        return true;
+      } catch (err) {
+        const errMsg = handleAxiosError(
+          err,
+          "임시 비밀번호 발급에 실패했습니다."
+        );
+        setError(errMsg);
+        alert(errMsg);
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleAxiosError]
+  );
 
   return {
     isLoggedIn,
@@ -227,5 +288,7 @@ export const useAuth = (): AuthResult => {
     fetchUserProfile,
     updateProfile,
     deleteUser,
+    changePassword,
+    issueTemporaryPassword, // ✨ 새로 추가된 함수 반환 ✨
   };
 };

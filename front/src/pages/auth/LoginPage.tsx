@@ -2,26 +2,22 @@
 import React, { useState } from "react";
 import Button from "../../components/common/Button";
 import { useAuth } from "../../hooks/useAuth";
-import { useNavigate } from "react-router-dom"; // useNavigate 훅 제거
+import { useNavigate, Link } from "react-router-dom"; // Link 컴포넌트 임포트
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, loading } = useAuth(); // useAuth 훅에서 error 제거
-  const navigate = useNavigate(); // navigate 선언 제거
+  const { login, loading } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const success = await login(email, password);
     if (success) {
-      navigate("/"); //로그안 성공 시 홈으로 이동
-      // 훅 내부에서 navigate 처리하므로 여기서는 추가 작업 없음
-    } else {
-      // 훅에서 에러 alert 처리하므로 여기서는 추가 작업 없음
+      navigate("/"); //로그인 성공 시 홈으로 이동
     }
   };
-
 
   return (
     <div>
@@ -59,6 +55,15 @@ const LoginPage: React.FC = () => {
           <Button type="submit" disabled={loading}>
             {loading ? "로그인 중..." : "로그인"}
           </Button>
+          {/* ✨ '비밀번호 찾기' 링크 추가 ✨ */}
+          <div className="text-center mt-4">
+            <Link
+              to="/auth/find-password"
+              className="text-sm text-gray-600 hover:text-main underline"
+            >
+              비밀번호를 잊으셨나요?
+            </Link>
+          </div>
         </form>
       </section>
       <section id="register" className="container mx-auto py-12 px-20">
