@@ -9,31 +9,28 @@ export class PostController {
     this.postService = new PostService();
   }
   
-  public getMyPosts = async (req: Request, res: Response, next: NextFunction) => {
+  public getMyPosts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     try {
       const userId = req.user!;
-      const { page, size, sort } = req.query;
+      const { page, size, sort, type } = req.query;
 
       const result = await this.postService.getUserPosts(userId, {
         page: page ? Number(page) : undefined,
         pageSize: size ? Number(size) : undefined,
         sort: sort ? String(sort) : undefined,
+        type: type ? String(type).toUpperCase() : undefined,
       });
 
       res.status(200).json({
         message: "내가 작성한 게시물 조회 성공",
-        data: result.data
+        data: result,
       });
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === "No posts found") {
-          next(new CustomError(500, error.message));
-        } else {
-          next(error);
-        }
-      } else {
-        next(error);
-      }
+      next(error);
     }
   };
 

@@ -1,8 +1,9 @@
 // src/services/comments.service.ts
 
 import { CommentRepository } from "../repositories/comments.repository";
+import { TeamCommentRepository } from "../repositories/team-comments.repository";
 import { PostRepository } from "../repositories/posts.repository";
-import { Comment } from "@prisma/client";
+import { Comment, PostType } from "@prisma/client";
 import { CustomError } from "../middleware/error-handing-middleware";
 
 // CommentRepository에서 정의한 CommentWithRelations 타입
@@ -11,23 +12,69 @@ type CommentWithRelations = Comment & {
   replies: (Comment & { user: { nickname: string } | null })[];
 };
 
-type CommentWithPostTitle = Comment & {
-  post: { title: string } | null;
-};
-
 export class CommentService {
   private commentRepository: CommentRepository;
   private postRepository: PostRepository;
+  private teamCommentRepository: TeamCommentRepository;
 
   constructor() {
     this.commentRepository = new CommentRepository();
     this.postRepository = new PostRepository();
+    this.teamCommentRepository = new TeamCommentRepository();
   }
 
-  public async getMyComments(userId: number): Promise<CommentWithPostTitle[]> {
-    const comments = await this.commentRepository.findByUserId(userId);
+   public async getMyComments(
+    userId: number,
+    query: {
+      page?: number;
+      pageSize?: number;
+      sort?: string;
+      type?: string;
+    }
+  ) {
+    const { page = 1, pageSize = 10, sort = "latest", type } = query;
 
-    return comments;
+    let combinedComments: any[] = [];
+
+    if (type === "TEAM") {
+      const teamComments = await this.teamCommentRepository.findByUserId(userId);
+      combinedComments = teamComments.map((c) => ({ ...c, type: "TEAM", source: "TEAM" }));
+
+    } else if (type === "GENERAL" || type === "RECRUITMENT") {
+      const postType = type as PostType;
+      const publicComments = await this.commentRepository.findByUserId(userId, postType);
+      combinedComments = publicComments.map((c) => ({ ...c, type: c.post!.type, source: "PUBLIC" }));
+
+    } else {
+      const publicComments = await this.commentRepository.findByUserId(userId);
+      const teamComments = await this.teamCommentRepository.findByUserId(userId);
+
+      combinedComments.push(...publicComments.map((c) => ({ ...c, type: c.post!.type, source: "PUBLIC" })));
+      combinedComments.push(...teamComments.map((c) => ({ ...c, type: "TEAM", source: "TEAM" })));
+    }
+
+    combinedComments.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return sort === "oldest" ? dateA - dateB : dateB - dateA;
+    });
+
+    const totalCount = combinedComments.length;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const skip = (page - 1) * pageSize;
+    const paginatedComments = combinedComments.slice(skip, skip + pageSize);
+
+    return {
+      comments: paginatedComments,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        totalCount,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
   /**
