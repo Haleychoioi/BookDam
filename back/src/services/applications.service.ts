@@ -8,9 +8,17 @@ import {
   ApplicationStatus,
   CommunityStatus,
   PostType,
+  TeamApplication,
   TeamRole,
 } from "@prisma/client";
-import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
+import { CustomError } from "../middleware/error-handing-middleware";
+
+type ApplicationWithPostInfo = TeamApplication & {
+  post: {
+    postId: number;
+    title: string;
+  };
+};
 
 export class ApplicationService {
   private applicationRepository: ApplicationRepository;
@@ -25,11 +33,42 @@ export class ApplicationService {
     this.teamMemberRepository = new TeamMemberRepository();
   }
 
+
+  public async getMyApplications(
+    userId: number
+  ): Promise<ApplicationWithPostInfo[]> {
+    const applications = await this.applicationRepository.findManyByUserId(
+      userId
+    );
+    return applications;
+  }
+
+  public async cancelApplication(applicationId: number, userId: number) {
+    const application = await this.applicationRepository.findById(
+      applicationId
+    );
+
+    if (!application) {
+      throw new CustomError(404, "지원 내역을 찾을 수 없습니다.");
+    }
+    if (application.userId !== userId) {
+      throw new CustomError(403, "자신의 지원만 취소할 수 있습니다.");
+    }
+    if (application.status !== ApplicationStatus.PENDING) {
+      throw new CustomError(
+        400,
+        "대기 중인 지원서만 취소할 수 있습니다."
+      );
+    }
+
+    await this.applicationRepository.deleteById(applicationId);
+  }
+
   /**
    * 커뮤니티 가입 신청
-   * @param communityId - 지원할 커뮤니티 ID (모집글 ID와 연결됨)
-   * @param applicationData - 지원서 데이터 { userId, applicationMessage }
-   * @returns boolean - 신청 성공 여부
+   * @param communityId
+   * @param applicationData
+   * @returns
    * @throws CustomError 커뮤니티를 찾을 수 없을 때, 모집 중이 아닐 때, 중복 신청일 때, 모집 인원 초과일 때
    */
   public async createApplication(
@@ -51,7 +90,7 @@ export class ApplicationService {
         community.postId
       );
     if (existingApplication) {
-      throw new CustomError(409, "You have already applied to this community."); // Conflict
+      throw new CustomError(409, "You have already applied to this community.");
     }
 
     // 모집 인원 초과 여부 확인
@@ -71,21 +110,21 @@ export class ApplicationService {
       currentMembersCount >= recruitmentPost.maxMembers
     ) {
       throw new CustomError(
-        409, // Conflict
+        409,
         "The community has reached its maximum number of members."
       );
     }
 
     await this.applicationRepository.create(community.postId, applicationData);
-    return true; // 성공 시 true 반환
+    return true;
   }
 
   /**
    * 특정 모집 커뮤니티의 신청자 목록 상세 조회
-   * @param communityId - 모집 커뮤니티 ID
-   * @param requestingUserId - 요청하는 사용자 ID (팀장만 조회 가능)
-   * @returns TeamApplication 배열 (지원자 정보 포함)
-   * @throws CustomError 커뮤니티를 찾을 수 없을 때 또는 권한이 없을 때
+   * @param communityId
+   * @param requestingUserId
+   * @returns
+   * @throws
    */
   public async findApplicantsByCommunity(
     communityId: number,
@@ -120,11 +159,11 @@ export class ApplicationService {
 
   /**
    * 신청 수락/거절
-   * @param communityId - 모집 커뮤니티 ID
-   * @param applicantUserId - 지원자 사용자 ID
-   * @param newStatus - 변경할 상태 (ACCEPTED 또는 REJECTED)
-   * @param requestingUserId - 요청하는 사용자 ID (팀장만 가능)
-   * @returns boolean - 처리 성공 여부
+   * @param communityId
+   * @param applicantUserId
+   * @param newStatus - ACCEPTED/REJECTED
+   * @param requestingUserId
+   * @returns
    * @throws CustomError 커뮤니티를 찾을 수 없을 때, 권한이 없을 때, 지원서를 찾을 수 없을 때, 상태 변경이 유효하지 않을 때
    */
   public async updateApplicationStatus(
@@ -178,12 +217,12 @@ export class ApplicationService {
           communityId
         );
       if (existingTeamMember) {
-        throw new CustomError(409, "Applicant is already a team member."); // Conflict
+        throw new CustomError(409, "Applicant is already a team member.");
       }
       await this.teamMemberRepository.create({
         userId: applicantUserId,
         teamId: communityId,
-        role: TeamRole.MEMBER, // 수락된 지원자는 팀원
+        role: TeamRole.MEMBER,
       });
 
       // 모집 인원이 꽉 찼다면 커뮤니티 상태를 ACTIVE로 변경
@@ -204,11 +243,11 @@ export class ApplicationService {
   }
 
   /**
-   * 모집 취소 (팀장이 모집글 및 관련 커뮤니티/지원서 삭제).
-   * @param communityId - 모집 커뮤니티 ID
-   * @param requestingUserId - 요청하는 사용자 ID (팀장만 가능)
-   * @returns boolean - 처리 성공 여부
-   * @throws CustomError 커뮤니티를 찾을 수 없을 때 또는 권한이 없을 때
+   * 모집 취소 (팀장이 모집글 및 관련 커뮤니티/지원서 삭제)
+   * @param communityId
+   * @param requestingUserId
+   * @returns
+   * @throws
    */
   public async cancelRecruitment(
     communityId: number,
@@ -233,9 +272,7 @@ export class ApplicationService {
 
     // 해당 모집글과 관련된 모든 지원서 삭제
     await this.applicationRepository.deleteRecruitment(community.postId);
-    // 해당 모집글(Post)도 삭제 (스키마에 cascade delete가 설정되어 있다면 불필요할 수 있음)
     await this.postRepository.delete(community.postId);
-    // TeamCommunity 자체도 삭제
     await this.communityRepository.delete(communityId);
 
     return true;

@@ -2,25 +2,19 @@
 
 import { Request, Response, NextFunction } from "express";
 import { TeamPostService } from "../services/team-posts.service";
-// TeamCommentService는 이 컨트롤러에서 직접 댓글 관련 로직을 처리하지 않으므로 제거합니다.
-// import { TeamCommentService } from "../services/team-comments.service";
 import { TeamPostType } from "@prisma/client";
-import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
+import { CustomError } from "../middleware/error-handing-middleware";
 
 export class TeamPostController {
   private teamPostService: TeamPostService;
-  // private teamCommentService: TeamCommentService; // 제거
 
   constructor() {
     this.teamPostService = new TeamPostService();
-    // this.teamCommentService = new TeamCommentService(); // 제거
   }
 
   /**
    * GET /communities/:communityId/posts - 특정 커뮤니티의 게시물 목록 조회
    * 라우트: src/routes/communities.routes.ts
-   * communityId: req.params
-   * requestingUserId: req.user (인증 미들웨어에서 주입)
    */
   public getTeamPosts = async (
     req: Request,
@@ -28,9 +22,9 @@ export class TeamPostController {
     next: NextFunction
   ) => {
     try {
-      const { communityId: rawCommunityId } = req.params; // communityId는 params에서
+      const { communityId: rawCommunityId } = req.params;
       const { page, size, sort } = req.query;
-      const requestingUserId = req.user; // req.user에서 requestingUserId 가져오기
+      const requestingUserId = req.user;
 
       // 인증된 사용자 ID가 없는 경우
       if (requestingUserId === undefined) {
@@ -87,9 +81,6 @@ export class TeamPostController {
   /**
    * POST /communities/:communityId/posts/write - 특정 커뮤니티에 게시물 작성
    * 라우트: src/routes/communities.routes.ts
-   * communityId: req.params
-   * userId: req.user (인증 미들웨어에서 주입)
-   * title, content, type: req.body
    */
   public createTeamPost = async (
     req: Request,
@@ -97,15 +88,15 @@ export class TeamPostController {
     next: NextFunction
   ) => {
     try {
-      const { communityId: rawCommunityId } = req.params; // communityId는 params에서
-      const userId = req.user; // req.user에서 userId 가져오기
+      const { communityId: rawCommunityId } = req.params;
+      const userId = req.user;
 
       // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
         throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
       }
 
-      const { title, content, type } = req.body; // 나머지는 body에서
+      const { title, content, type } = req.body;
 
       if (
         rawCommunityId === undefined ||
@@ -158,8 +149,6 @@ export class TeamPostController {
   /**
    * GET /communities/:communityId/posts/:teamPostId - 특정 팀 게시물 상세 조회
    * 라우트: src/routes/communities.routes.ts
-   * communityId, teamPostId: req.params
-   * requestingUserId: req.user (인증 미들웨어에서 주입)
    */
   public getTeamPostById = async (
     req: Request,
@@ -169,7 +158,7 @@ export class TeamPostController {
     try {
       const { communityId: rawCommunityId, teamPostId: rawTeamPostId } =
         req.params;
-      const requestingUserId = req.user; // req.user에서 requestingUserId 가져오기
+      const requestingUserId = req.user;
 
       // 인증된 사용자 ID가 없는 경우
       if (requestingUserId === undefined) {
@@ -226,9 +215,6 @@ export class TeamPostController {
   /**
    * PUT /communities/:communityId/posts/:teamPostId - 특정 팀 게시물 수정
    * 라우트: src/routes/communities.routes.ts
-   * communityId, teamPostId: req.params
-   * userId: req.user (인증 미들웨어에서 주입)
-   * title, content: req.body
    */
   public updateTeamPost = async (
     req: Request,
@@ -238,7 +224,7 @@ export class TeamPostController {
     try {
       const { communityId: rawCommunityId, teamPostId: rawTeamPostId } =
         req.params;
-      const userId = req.user; // req.user에서 userId 가져오기
+      const userId = req.user;
 
       // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
@@ -267,13 +253,11 @@ export class TeamPostController {
         );
       }
 
-      // 서비스 계층의 updateTeamPost는 communityId, teamPostId, userId, updateData를 받습니다.
-      // updateData는 { title?: string, content?: string } 형태의 객체입니다.
       await this.teamPostService.updateTeamPost(
         communityId,
         teamPostId,
         userId,
-        { title, content } // 이 부분이 서비스 메서드의 인자 타입과 일치해야 합니다.
+        { title, content }
       );
       res
         .status(200)
@@ -302,8 +286,6 @@ export class TeamPostController {
   /**
    * DELETE /communities/:communityId/posts/:teamPostId - 특정 팀 게시물 삭제
    * 라우트: src/routes/communities.routes.ts
-   * communityId, teamPostId: req.params
-   * requestingUserId: req.user (인증 미들웨어에서 주입)
    */
   public deleteTeamPost = async (
     req: Request,
@@ -313,7 +295,7 @@ export class TeamPostController {
     try {
       const { communityId: rawCommunityId, teamPostId: rawTeamPostId } =
         req.params;
-      const requestingUserId = req.user; // req.user에서 requestingUserId 가져오기
+      const requestingUserId = req.user;
 
       // 인증된 사용자 ID가 없는 경우
       if (requestingUserId === undefined) {
@@ -336,7 +318,6 @@ export class TeamPostController {
         );
       }
 
-      // 서비스 계층에서 삭제 실패 시 CustomError를 던지므로, 별도의 deletedCount 확인 로직은 불필요합니다.
       await this.teamPostService.deleteTeamPost(
         communityId,
         teamPostId,
@@ -366,11 +347,4 @@ export class TeamPostController {
       }
     }
   };
-
-  // --- 댓글 관련 메서드 (이 컨트롤러에서는 제거) ---
-  // 이 메서드들은 team-comments.controller.ts에서 관리됩니다.
-  // public createComment = async ( ... ) => { ... };
-  // public getCommentsByTeamPostId = async ( ... ) => { ... };
-  // public updateComment = async ( ... ) => { ... };
-  // public deleteComment = async ( ... ) => { ... };
 }

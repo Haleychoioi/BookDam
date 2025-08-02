@@ -1,12 +1,12 @@
 // src/services/comments.service.ts
 
 import { CommentRepository } from "../repositories/comments.repository";
+import { TeamCommentRepository } from "../repositories/team-comments.repository";
 import { PostRepository } from "../repositories/posts.repository";
-import { Comment } from "@prisma/client";
-import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
+import { Comment, PostType } from "@prisma/client";
+import { CustomError } from "../middleware/error-handing-middleware";
 
-// CommentRepository에서 정의한 CommentWithRelations 타입을 가져옵니다.
-// 이는 Comment 모델에 user 및 replies 관계가 포함된 형태입니다.
+// CommentRepository에서 정의한 CommentWithRelations 타입
 type CommentWithRelations = Comment & {
   user: { nickname: string } | null;
   replies: (Comment & { user: { nickname: string } | null })[];
@@ -15,19 +15,75 @@ type CommentWithRelations = Comment & {
 export class CommentService {
   private commentRepository: CommentRepository;
   private postRepository: PostRepository;
+  private teamCommentRepository: TeamCommentRepository;
 
   constructor() {
     this.commentRepository = new CommentRepository();
     this.postRepository = new PostRepository();
+    this.teamCommentRepository = new TeamCommentRepository();
+  }
+
+   public async getMyComments(
+    userId: number,
+    query: {
+      page?: number;
+      pageSize?: number;
+      sort?: string;
+      type?: string;
+    }
+  ) {
+    const { page = 1, pageSize = 10, sort = "latest", type } = query;
+
+    let combinedComments: any[] = [];
+
+    if (type === "TEAM") {
+      const teamComments = await this.teamCommentRepository.findByUserId(userId);
+      combinedComments = teamComments.map((c) => ({ ...c, type: "TEAM", source: "TEAM" }));
+
+    } else if (type === "GENERAL" || type === "RECRUITMENT") {
+      const postType = type as PostType;
+      const publicComments = await this.commentRepository.findByUserId(userId, postType);
+      combinedComments = publicComments.map((c) => ({ ...c, type: c.post!.type, source: "PUBLIC" }));
+
+    } else {
+      const publicComments = await this.commentRepository.findByUserId(userId);
+      const teamComments = await this.teamCommentRepository.findByUserId(userId);
+
+      combinedComments.push(...publicComments.map((c) => ({ ...c, type: c.post!.type, source: "PUBLIC" })));
+      combinedComments.push(...teamComments.map((c) => ({ ...c, type: "TEAM", source: "TEAM" })));
+    }
+
+    combinedComments.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return sort === "oldest" ? dateA - dateB : dateB - dateA;
+    });
+
+    const totalCount = combinedComments.length;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const skip = (page - 1) * pageSize;
+    const paginatedComments = combinedComments.slice(skip, skip + pageSize);
+
+    return {
+      comments: paginatedComments,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        totalCount,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
   /**
-   * 특정 게시물의 댓글 목록을 조회합니다.
-   * 최상위 댓글과 그에 대한 1단계 대댓글을 포함합니다.
-   * @param postId - 게시물 ID
-   * @param query - 페이지네이션 및 정렬 옵션
-   * @returns CommentWithRelations 배열
-   * @throws CustomError 게시물을 찾을 수 없을 때
+   * 특정 게시물의 댓글 목록 조회
+   * 최상위 댓글과 1단계 대댓글 포함
+   * @param postId
+   * @param query
+   * @returns
+   * @throws
    */
   public async findCommentsByPost(
     postId: number,
@@ -45,11 +101,11 @@ export class CommentService {
   }
 
   /**
-   * 특정 게시물에 댓글을 작성합니다. (대댓글 포함)
-   * @param postId - 댓글이 속할 게시물 ID
-   * @param commentData - 생성할 댓글 데이터 { userId, content, parentId? }
-   * @returns 생성된 Comment 객체
-   * @throws CustomError 게시물을 찾을 수 없을 때, 부모 댓글이 유효하지 않을 때
+   * 특정 게시물에 댓글 작성(대댓글 포함)
+   * @param postId
+   * @param commentData
+   * @returns
+   * @throws
    */
   public async createComment(
     postId: number,
@@ -81,11 +137,11 @@ export class CommentService {
   }
 
   /**
-   * 특정 댓글을 수정합니다.
-   * @param commentId - 업데이트할 댓글 ID
-   * @param updateData - 업데이트할 데이터 { content?, userId } (userId는 권한 확인용)
-   * @returns 업데이트된 Comment 객체
-   * @throws CustomError 댓글을 찾을 수 없을 때 또는 권한이 없을 때
+   * 특정 댓글 수정
+   * @param commentId
+   * @param updateData
+   * @returns
+   * @throws
    */
   public async updateComment(
     commentId: number,
@@ -110,11 +166,11 @@ export class CommentService {
   }
 
   /**
-   * 특정 댓글을 삭제합니다.
-   * @param commentId - 삭제할 댓글 ID
-   * @param requestingUserId - 요청하는 사용자 ID (권한 확인용)
-   * @returns boolean - 삭제 성공 여부
-   * @throws CustomError 댓글을 찾을 수 없을 때 또는 권한이 없을 때
+   * 특정 댓글 삭제
+   * @param commentId
+   * @param requestingUserId
+   * @returns
+   * @throws
    */
   public async deleteComment(
     commentId: number,
@@ -142,10 +198,10 @@ export class CommentService {
   }
 
   /**
-   * 특정 댓글의 상세 정보를 조회합니다.
-   * @param commentId - 조회할 댓글 ID
-   * @returns CommentWithRelations 객체
-   * @throws CustomError 댓글을 찾을 수 없을 때
+   * 특정 댓글의 상세 정보 조회
+   * @param commentId
+   * @returns
+   * @throws
    */
   public async findCommentById(
     commentId: number
@@ -154,8 +210,6 @@ export class CommentService {
     if (!comment) {
       throw new CustomError(404, "Comment not found");
     }
-    // commentRepository.findById가 CommentWithRelations | null을 반환하므로,
-    // !comment 체크 후에는 comment가 CommentWithRelations 타입임을 TypeScript가 추론합니다.
     return comment;
   }
 }

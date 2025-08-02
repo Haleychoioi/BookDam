@@ -1,5 +1,5 @@
 import TasteAnalysisRepository from '../repositories/tasteAnalysis.repository';
-import MyLibraryAnalyzer from './MyLibraryAnalyzer .service';
+import MyLibraryAnalyzer from './myLibraryAnalyzer.service'
 import { LibraryStats, BookForAnalysis } from '../types/tasteAnalysis';
 
 class TasteAnalysisService {

@@ -18,6 +18,10 @@ export interface UserUpdateData {
   introduction?: string;
 }
 
+export interface UpdatePasswordData {
+  password: string;
+}
+
 
 class UserRepository {
 
@@ -73,6 +77,25 @@ class UserRepository {
     data: updateData,
   });
 }
+
+  // 비밀번호 전용 업데이트
+  async updateUserPassword(userId: number, passwordData: UpdatePasswordData) {
+    return await prisma.user.update({
+      where: { userId },
+      data: {
+        password: passwordData.password
+      }
+    })
+  }
+
+  async findByEmailAndName(email: string, name: string) {
+    return await prisma.user.findFirst({  // findUnique 대신 findFirst 사용
+      where: {
+        email: email,
+        name: name
+      }
+    });
+  }
 
   // 사용자 삭제
   async deleteUser(userId: number) {
