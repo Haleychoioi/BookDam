@@ -11,7 +11,6 @@ type TeamCommentWithRelations = TeamComment & {
 };
 
 export class TeamCommentRepository {
-
   public async findByUserId(userId: number): Promise<TeamComment[]> {
     return prisma.teamComment.findMany({
       where: { userId: userId },
@@ -21,6 +20,10 @@ export class TeamCommentRepository {
             teamPostId: true,
             title: true,
           },
+        },
+        user: {
+          // ✨ 이 부분에 user include 추가 ✨
+          select: { nickname: true, profileImage: true },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -43,13 +46,13 @@ export class TeamCommentRepository {
       },
       include: {
         user: {
-          select: { nickname: true },
+          select: { nickname: true, profileImage: true }, // profileImage 추가됨
         },
         replies: {
           // 대댓글 포함 (1단계만)
           orderBy: { createdAt: "asc" },
           include: {
-            user: { select: { nickname: true } },
+            user: { select: { nickname: true, profileImage: true } }, // 대댓글에도 profileImage 추가됨
           },
         },
       },
@@ -118,10 +121,15 @@ export class TeamCommentRepository {
    */
   public async findById(
     teamCommentId: number
-  ): Promise<(TeamComment & { user: { nickname: string } | null }) | null> {
+  ): Promise<
+    | (TeamComment & {
+        user: { nickname: string; profileImage: string | null };
+      })
+    | null
+  > {
     const teamComment = await prisma.teamComment.findUnique({
       where: { teamCommentId: teamCommentId },
-      include: { user: { select: { nickname: true } } },
+      include: { user: { select: { nickname: true, profileImage: true } } }, // profileImage 추가됨
     });
     return teamComment;
   }

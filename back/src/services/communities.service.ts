@@ -4,7 +4,7 @@ import { CommunityRepository } from "../repositories/communities.repository";
 import { PostRepository } from "../repositories/posts.repository";
 import { TeamMemberRepository } from "../repositories/team-members.repository";
 import userRepository from "../repositories/user.repository";
-import { ApplicationService } from "./applications.service"; // ✨ ApplicationService 임포트 ✨
+import { ApplicationService } from "./applications.service";
 import {
   TeamCommunity,
   CommunityStatus,
@@ -19,18 +19,17 @@ import { CustomError } from "../middleware/error-handing-middleware";
 interface CommunityWithMemberInfo extends TeamCommunity {
   currentMembers: number;
   maxMembers: number;
-  hostId: number; // ✨ CommunityWithMemberInfo에 hostId 추가 ✨
+  hostId: number;
+  hasApplied?: boolean; // ✨ 추가: hasApplied 필드도 포함될 수 있도록 ✨
 }
 
-type CommunityWithRecruitingInfo = TeamCommunity & {
-  recruitmentPost: {
-    applications: (TeamApplication & {
-      user: {
-        userId: number;
-        nickname: string;
-      };
-    })[];
-  };
+// CommunityRepository에서 반환하는 타입과 일치시킵니다.
+type CommunityWithApplicationStatus = TeamCommunity & {
+  hasApplied?: boolean;
+  recruitmentPost?: {
+    applications?: { applicationId: number }[];
+    _count?: { applications: number };
+  } | null;
 };
 
 export class CommunityService {
@@ -38,19 +37,20 @@ export class CommunityService {
   private postRepository: PostRepository;
   private teamMemberRepository: TeamMemberRepository;
   private userRepository = userRepository;
-  private applicationService: ApplicationService; // ✨ ApplicationService 속성 추가 ✨
+  private applicationService: ApplicationService;
 
   constructor() {
     this.communityRepository = new CommunityRepository();
     this.postRepository = new PostRepository();
     this.teamMemberRepository = new TeamMemberRepository();
     this.userRepository = userRepository;
-    this.applicationService = new ApplicationService(); // ✨ ApplicationService 초기화 ✨
+    this.applicationService = new ApplicationService();
   }
 
   public async getMyRecruitingCommunities(
     hostId: number
   ): Promise<CommunityWithMemberInfo[]> {
+    // ✨ 반환 타입 변경 ✨
     const communities = await this.communityRepository.findRecruitingByHostId(
       hostId
     );
@@ -58,18 +58,19 @@ export class CommunityService {
     if (communities.length === 0) {
       return [];
     }
-    return this.enrichCommunitiesWithMemberInfo(communities as TeamCommunity[]);
+    return this.enrichCommunitiesWithMemberInfo(communities);
   }
 
   public async getMyParticipatingCommunities(
     userId: number
   ): Promise<CommunityWithMemberInfo[]> {
+    // ✨ 반환 타입 변경 ✨
     const communities = await this.communityRepository.findActiveByMemberId(
       userId
     );
 
     console.log(
-      "컨트롤러에서 클라이언트로 전송될 내가 모집 중인 커뮤니티 데이터:",
+      "서비스에서 클라이언트로 전송될 내가 모집 중인 커뮤니티 데이터:", // 로그 메시지 수정
       communities
     );
 
@@ -93,26 +94,11 @@ export class CommunityService {
     }
 
     if (membership.role === TeamRole.LEADER) {
-      // 팀장이면 커뮤니티 및 관련 게시물/지원서 삭제
       const community = await this.communityRepository.findById(teamId);
       if (community) {
-        // ✨ ApplicationService를 통해 모집 취소(지원서 삭제) 기능 호출 ✨
-        // await this.applicationService.cancelRecruitment(community.teamId, userId); // communityId와 userId 필요
-        // 이 메서드는 `applicationRepository.deleteRecruitment`와 `postRepository.delete`를 직접 호출하므로,
-        // 이곳에서는 직접 해당 리포지토리 메서드를 사용하거나, ApplicationService에 적절한 래퍼 메서드를 추가해야 합니다.
-        // 현재 CommunityService의 leaveOrDeleteCommunity는 커뮤니티 삭제와 멤버십 삭제를 함께 다루므로,
-        // 여기서는 applicationRepository와 postRepository를 직접 호출하는 기존 방식을 유지하되,
-        // 해당 리포지토리들이 CommunityService의 속성으로 선언되어 있지 않음을 인지해야 합니다.
-        // 이 문제를 해결하기 위해, applicationRepository와 postRepository를 CommunityService의 속성으로 추가해야 합니다.
-
-        // ✨ CommunityService에 applicationRepository와 postRepository를 추가합니다. ✨
-        // 이는 이미 constructor에 있지만, 명시적으로 다시 확인합니다.
-        // this.applicationRepository = new ApplicationRepository(); // constructor에 이미 존재
-        // this.postRepository = new PostRepository(); // constructor에 이미 존재
-
         await this.applicationService.cancelRecruitment(
-          community.teamId, // communityId는 teamId
-          userId // userId
+          community.teamId,
+          userId
         );
       }
       await this.communityRepository.delete(teamId);
@@ -126,21 +112,38 @@ export class CommunityService {
   /**
    * 커뮤니티 목록 조회
    * @param query
-   * @returns CommunityWithMemberInfo[]
+   * @returns Promise<{ communities: CommunityWithApplicationStatus[]; totalResults: number }>
    * @throws
    */
   public async findAllCommunities(query: {
     page?: number;
     pageSize?: number;
     sort?: string;
-  }): Promise<CommunityWithMemberInfo[]> {
+    userId?: number;
+  }): Promise<{
+    communities: CommunityWithApplicationStatus[];
+    totalResults: number;
+  }> {
+    // ✨ 반환 타입 변경 ✨
     const communities = await this.communityRepository.findMany(query);
 
     if (communities.length === 0) {
-      throw new CustomError(404, "No communities found");
+      // 이제 No communities found는 repository에서 직접 처리하지 않습니다.
+      return { communities: [], totalResults: 0 }; // 빈 배열과 0 반환
     }
 
-    return this.enrichCommunitiesWithMemberInfo(communities);
+    // `findMany`는 이미 `hasApplied`를 포함하는 `CommunityWithApplicationStatus`를 반환합니다.
+    // 여기서 `CommunityWithMemberInfo`로 한번 더 변환하는 대신, 이미 변환된 상태를 유지해야 합니다.
+    // `enrichCommunitiesWithMemberInfo`는 TeamCommunity[]를 받으므로, 타입 단언이 필요합니다.
+    const enrichedCommunities = await this.enrichCommunitiesWithMemberInfo(
+      communities as TeamCommunity[]
+    ); // ✨ 타입 단언 ✨
+
+    // totalResults는 repository에서 반환되지 않으므로, 여기서 communities.length 사용
+    return {
+      communities: enrichedCommunities,
+      totalResults: communities.length, // 현재 페이지의 결과 수
+    };
   }
 
   /**
@@ -194,22 +197,24 @@ export class CommunityService {
    * 특정 도서 관련 커뮤니티 목록 조회
    * @param bookIsbn13
    * @param query
-   * @returns CommunityWithMemberInfo[]
+   * @returns CommunityWithApplicationStatus[]
    * @throws
    */
   public async findCommunitiesByBook(
     bookIsbn13: string,
-    query: { size?: number }
-  ): Promise<CommunityWithMemberInfo[]> {
+    query: { size?: number; userId?: number }
+  ): Promise<CommunityWithApplicationStatus[]> {
+    // ✨ 반환 타입 변경 ✨
     const communities = await this.communityRepository.findByBookIsbn13(
       bookIsbn13,
       query
     );
     if (communities.length === 0) {
-      throw new CustomError(404, "No communities found for this book.");
+      // No communities found for this book은 repository에서 직접 처리하지 않습니다.
+      return []; // 빈 배열 반환
     }
 
-    return this.enrichCommunitiesWithMemberInfo(communities);
+    return this.enrichCommunitiesWithMemberInfo(communities as TeamCommunity[]); // ✨ 타입 단언 ✨
   }
 
   /**
@@ -239,7 +244,6 @@ export class CommunityService {
     newStatus: CommunityStatus,
     requestingUserId: number
   ): Promise<TeamCommunity> {
-    // TeamCommunity 반환 타입 추가
     const community = await this.communityRepository.findById(communityId);
     if (!community) {
       throw new CustomError(404, "Community not found");
@@ -257,7 +261,6 @@ export class CommunityService {
     }
 
     const updatedCommunity = await this.communityRepository.update(
-      // 이 update 메서드는 status 업데이트도 가능해야 함
       communityId,
       { status: newStatus }
     );
@@ -396,7 +399,7 @@ export class CommunityService {
       communities.map(async (community) => {
         const post = await this.postRepository.findById(community.postId);
         const maxMembers = post?.maxMembers || 0;
-        const hostId = post?.userId || 0; // ✨ Post의 userId를 hostId로 사용, 없으면 0 ✨
+        const hostId = post?.userId || 0;
 
         const currentMembers =
           await this.teamMemberRepository.countMembersByTeamId(
@@ -411,17 +414,17 @@ export class CommunityService {
         };
       })
     );
-    // ✨ 새로 추가할 로그: 서비스에서 생성된 최종 객체 확인 ✨
     console.log("서비스에서 생성된 풍부한 커뮤니티 데이터:", enrichedResults);
     return enrichedResults;
   }
 
   public async findEndedCommunitiesByHostId(
     hostId: number
-  ): Promise<TeamCommunity[]> {
+  ): Promise<CommunityWithMemberInfo[]> {
+    // ✨ 반환 타입 변경 ✨
     const communities = await this.communityRepository.findEndedByHostId(
       hostId
     );
-    return this.enrichCommunitiesWithMemberInfo(communities); // 멤버 정보를 포함하여 반환
+    return this.enrichCommunitiesWithMemberInfo(communities);
   }
 }
