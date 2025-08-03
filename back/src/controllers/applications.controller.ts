@@ -3,7 +3,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ApplicationService } from "../services/applications.service";
 import { ApplicationStatus } from "@prisma/client";
-import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
+import { CustomError } from "../middleware/error-handing-middleware";
 
 export class ApplicationController {
   private applicationService: ApplicationService;
@@ -12,11 +12,49 @@ export class ApplicationController {
     this.applicationService = new ApplicationService();
   }
 
+  public getMyApplications = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.user!;
+
+      const applications = await this.applicationService.getMyApplications(
+        userId
+      );
+
+      res.status(200).json({
+        message: "나의 지원 목록 조회 성공",
+        data: applications,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public cancelApplication = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const applicationId = Number(req.params.applicationId);
+      const userId = req.user!;
+
+      if (isNaN(applicationId)) {
+        throw new CustomError(400, "유효하지 않은 지원서 ID입니다.");
+      }
+
+      await this.applicationService.cancelApplication(applicationId, userId);
+      res.status(200).json({ message: "지원이 취소되었습니다." });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   /**
    * POST /communities/:communityId/apply - 커뮤니티 가입 신청
-   * userId: req.user (인증 미들웨어에서 주입)
-   * communityId: req.params
-   * applicationMessage: req.body
    */
   public createApplication = async (
     req: Request,
@@ -24,8 +62,8 @@ export class ApplicationController {
     next: NextFunction
   ) => {
     try {
-      const { communityId: rawCommunityId } = req.params; // 커뮤니티 ID (모집글 ID와 연결)
-      const userId = req.user; // 인증 미들웨어에서 주입된 userId 사용
+      const { communityId: rawCommunityId } = req.params;
+      const userId = req.user;
       const { applicationMessage } = req.body;
 
       // 인증된 사용자 ID가 없는 경우
@@ -58,8 +96,6 @@ export class ApplicationController {
 
   /**
    * GET /mypage/communities/recruiting/:communityId/applicants - 특정 모집 커뮤니티의 신청자 목록 상세 조회
-   * requestingUserId: req.user (인증 미들웨어에서 주입)
-   * communityId: req.params
    */
   public getCommunityApplicants = async (
     req: Request,
@@ -67,8 +103,10 @@ export class ApplicationController {
     next: NextFunction
   ) => {
     try {
-      const { communityId: rawCommunityId } = req.params; // 커뮤니티 ID (모집글 ID와 연결)
-      const requestingUserId = req.user; // 인증 미들웨어에서 주입된 userId 사용
+      console.log("DEBUG: getCommunityApplicants 컨트롤러가 호출되었습니다.");
+      const { communityId: rawCommunityId } = req.params;
+      console.log("DEBUG: rawCommunityId:", rawCommunityId);
+      const requestingUserId = req.user;
 
       // 인증된 사용자 ID가 없는 경우
       if (requestingUserId === undefined) {
@@ -87,7 +125,7 @@ export class ApplicationController {
       const applicants =
         await this.applicationService.findApplicantsByCommunity(
           communityId,
-          requestingUserId // req.user에서 가져온 requestingUserId 사용
+          requestingUserId
         );
       res.status(200).json({
         message: `커뮤니티 ID ${communityId}의 신청자 목록 조회 성공`,
@@ -100,9 +138,6 @@ export class ApplicationController {
 
   /**
    * PUT /mypage/communities/recruiting/:communityId/applicants/:userId - 신청 수락/거절
-   * requestingUserId: req.user (인증 미들웨어에서 주입)
-   * communityId, applicantUserId: req.params
-   * status: req.body
    */
   public updateApplicationStatus = async (
     req: Request,
@@ -111,19 +146,9 @@ export class ApplicationController {
   ) => {
     try {
       const { communityId: rawCommunityId, userId: rawApplicantUserId } =
-        req.params; // 커뮤니티 ID, 지원자 ID (URL 파라미터)
-      const requestingUserId = req.user; // 인증 미들웨어에서 주입된 userId 사용
-      const { status } = req.body; // status: "accepted" or "rejected"
-
-      // --- 디버깅 로그 제거 ---
-      // console.log("--- updateApplicationStatus Debug ---");
-      // console.log("req.params:", req.params);
-      // console.log("req.body:", req.body);
-      // console.log("rawCommunityId (from params):", rawCommunityId);
-      // console.log("rawApplicantUserId (from params.userId):", rawApplicantUserId);
-      // console.log("status (from body):", status);
-      // console.log("requestingUserId (from req.user):", requestingUserId);
-      // --- 디버깅 로그 끝 ---
+        req.params;
+      const requestingUserId = req.user;
+      const { status } = req.body;
 
       // 인증된 사용자 ID가 없는 경우
       if (requestingUserId === undefined) {
@@ -162,7 +187,7 @@ export class ApplicationController {
         communityId,
         applicantUserId,
         upperCaseStatus,
-        requestingUserId // req.user에서 가져온 requestingUserId 사용
+        requestingUserId
       );
       res.status(200).json({ status: "success", message: "신청 처리 성공" });
     } catch (error) {
@@ -172,8 +197,6 @@ export class ApplicationController {
 
   /**
    * DELETE /mypage/communities/recruiting/:communityId - 모집 취소 (API 명세서에 따라)
-   * requestingUserId: req.user (인증 미들웨어에서 주입)
-   * communityId: req.params
    */
   public cancelRecruitment = async (
     req: Request,
@@ -181,8 +204,8 @@ export class ApplicationController {
     next: NextFunction
   ) => {
     try {
-      const { communityId: rawCommunityId } = req.params; // 커뮤니티 ID (모집글 ID와 연결)
-      const requestingUserId = req.user; // 인증 미들웨어에서 주입된 userId 사용
+      const { communityId: rawCommunityId } = req.params;
+      const requestingUserId = req.user;
 
       // 인증된 사용자 ID가 없는 경우
       if (requestingUserId === undefined) {
@@ -200,7 +223,7 @@ export class ApplicationController {
 
       await this.applicationService.cancelRecruitment(
         communityId,
-        requestingUserId // req.user에서 가져온 requestingUserId 사용
+        requestingUserId
       );
       res.status(200).json({ status: "success", message: "모집 취소 성공" });
     } catch (error) {

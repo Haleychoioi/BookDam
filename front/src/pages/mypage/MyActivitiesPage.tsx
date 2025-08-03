@@ -2,13 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from "react"; // useCallback, useState, useEffect, useMemo 임포트
 import { useLocation, useNavigate } from "react-router-dom";
-
 import MyPostsDisplay from "../../components/mypage/MyPostsDisplay"; // MyPostsDisplay 컴포넌트
 import MyCommentsDisplay from "../../components/mypage/MyCommentsDisplay"; // MyCommentsDisplay 컴포넌트 (추후 사용)
-
-// ✨ 더미 데이터 및 fetchMyPosts/fetchMyComments 임포트 제거 (각 Display 컴포넌트가 알아서 페칭) ✨
-// import type { Post, Comment } from "../../types";
-// import { fetchMyPosts, fetchMyComments } from "../../api/mypage";
 
 const MyActivitiesPage: React.FC = () => {
   const navigate = useNavigate();

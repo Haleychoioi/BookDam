@@ -1,7 +1,7 @@
 // src/pages/mypage/MyCommunitiesAppliedPage.tsx
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import MyPageHeader from "../../components/mypage/myPageHeader";
+import MyPageHeader from "../../components/mypage/MyPageHeader";
 import AppliedCommunityCard from "../../components/mypage/AppliedCommunityCard";
 import Pagination from "../../components/common/Pagination";
 import { type AppliedCommunity } from "../../types";

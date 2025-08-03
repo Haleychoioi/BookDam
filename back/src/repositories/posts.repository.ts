@@ -1,50 +1,79 @@
 // src/repositories/posts.repository.ts
 
 import prisma from "../utils/prisma";
-import { Post, PostType, RecruitmentStatus, Prisma } from "@prisma/client";
+import {
+  Post,
+  Prisma,
+  PostType,
+  RecruitmentStatus,
+  Comment,
+} from "@prisma/client"; // ✨ RecruitmentStatus 임포트 ✨
+
+// Comment 타입에 사용자 정보와 대댓글 포함 타입을 정의합니다.
+type CommentWithUserAndReplies = Comment & {
+  user: { nickname: string; profileImage: string | null } | null;
+  replies: (Comment & {
+    user: { nickname: string; profileImage: string | null } | null;
+  })[];
+};
+
+// PostWithRelations 타입을 Prisma의 findUnique/findMany 결과에 맞게 재정의합니다.
+type PostWithRelations = Post & {
+  user: { nickname: string; profileImage: string | null } | null;
+  comments: CommentWithUserAndReplies[];
+  // Prisma의 _count는 자동 생성된 타입에 포함될 수 있으므로, 명시적으로 추가하지 않아도 될 수 있습니다.
+  // 필요한 경우 PrismaClientOptions의 log 속성에서 쿼리 로그를 확인하여 정확한 구조를 파악하세요.
+  // _count?: { comments: number };
+};
 
 export class PostRepository {
+  public async findByUserId(userId: number, type?: PostType): Promise<Post[]> {
+    const where: Prisma.PostWhereInput = {
+      userId: userId,
+    };
+
+    if (type) {
+      where.type = type;
+    }
+
+    return prisma.post.findMany({
+      where,
+      include: {
+        user: { select: { nickname: true, profileImage: true } },
+        _count: { select: { comments: true } }, // _count 포함
+        book: {
+          select: { title: true, author: true, cover: true, isbn13: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
   /**
-   * 모든 게시물을 조회합니다. (전체 게시판 일반 게시물 및 모집 중인 모집글 포함)
-   * UX 플로우: "퍼블릭 커뮤니티 게시글 (일반글 + 모집글)은 커뮤니티 페이지에 들어가면 전체 게시물을 볼 수 있고"
-   * @param query - 페이지네이션 및 정렬 옵션 { page, pageSize, sort }
-   * @returns Post 배열
-   * @remarks 해당 조건에 맞는 게시물이 없으면 빈 배열을 반환합니다.
+   * 모든 게시물 또는 특정 타입의 게시물 목록 조회
+   * @param query
+   * @returns
    */
   public async findMany(query: {
     page?: number;
     pageSize?: number;
     sort?: string;
+    type?: PostType;
   }): Promise<Post[]> {
-    const { page = 1, pageSize = 10, sort } = query;
+    const { page = 1, pageSize = 10, sort, type } = query;
     const skip = (page - 1) * pageSize;
 
     const findManyOptions: Prisma.PostFindManyArgs = {
-      where: {
-        team: null, // TeamCommunity와의 관계가 없는 게시물 (즉, 퍼블릭 게시물)
-        OR: [
-          // 일반 게시물 또는 모집 중인 모집글을 포함하도록 OR 조건 추가
-          { type: PostType.GENERAL }, // 일반 게시물
-          {
-            type: PostType.RECRUITMENT, // 모집글
-            recruitmentStatus: RecruitmentStatus.RECRUITING, // 모집 중인 상태만
-          },
-        ],
-      },
       skip,
       take: pageSize,
       include: {
         user: {
-          select: {
-            nickname: true, // 작성자 닉네임 포함
-            profileImage: true, // 프로필 이미지 포함
-          },
+          select: { nickname: true, profileImage: true },
         },
         _count: {
-          select: { comments: true }, // 댓글 수 포함
+          select: { comments: true },
         },
         book: {
-          // book 관계 포함 (Post 모델에 bookId가 연결되어 있다면)
           select: {
             title: true,
             author: true,
@@ -55,10 +84,21 @@ export class PostRepository {
       },
     };
 
+    if (type) {
+      findManyOptions.where = { type: type };
+    }
+
     if (sort === "latest") {
       findManyOptions.orderBy = { createdAt: "desc" };
-    } else {
-      findManyOptions.orderBy = { createdAt: "desc" }; // 기본 정렬 (최신순)
+    } else if (sort === "oldest") {
+      findManyOptions.orderBy = { createdAt: "asc" };
+    }
+    // 'popular' 정렬 (views 필드 오류로 인해 주석 처리)
+    // else if (sort === "popular") {
+    //   findManyOptions.orderBy = { views: "desc" };
+    // }
+    else {
+      findManyOptions.orderBy = { createdAt: "desc" };
     }
 
     const posts = await prisma.post.findMany(findManyOptions);
@@ -66,87 +106,46 @@ export class PostRepository {
   }
 
   /**
-   * 새로운 게시물을 생성합니다.
-   * @param postData - 생성할 게시물 데이터 (recruitmentStatus, isbn13 필드 추가)
-   * @returns 생성된 Post 객체
-   * @remarks Prisma의 `create`는 연결된 `userId`나 다른 제약 조건 위반 시 에러를 던질 수 있습니다.
-   * 이 에러는 서비스 계층으로 전파되어 CustomError로 처리됩니다.
+   * 새로운 게시물 생성
+   * @param postData
+   * @returns
+   * @remarks
    */
   public async create(postData: {
     userId: number;
     title: string;
     content: string;
-    type?: PostType;
+    type: PostType;
     maxMembers?: number;
-    recruitmentStatus?: RecruitmentStatus; // 새롭게 추가된 필드
-    isbn13?: string; // 새롭게 추가된 필드
+    recruitmentStatus?: RecruitmentStatus;
+    isbn13?: string;
   }): Promise<Post> {
     const newPost = await prisma.post.create({
-      data: postData,
+      data: {
+        // ✨ data 객체 직접 구성 ✨
+        userId: postData.userId, // PostUncheckedCreateInput 스타일로 userId 직접 할당
+        title: postData.title,
+        content: postData.content,
+        type: postData.type,
+        // 선택적 필드는 undefined가 아닐 경우에만 포함
+        ...(postData.maxMembers !== undefined && {
+          maxMembers: postData.maxMembers,
+        }),
+        ...(postData.recruitmentStatus !== undefined && {
+          recruitmentStatus: postData.recruitmentStatus,
+        }),
+        ...(postData.isbn13 !== undefined &&
+          postData.isbn13 !== null && { isbn13: postData.isbn13 }), // ✨ isbn13이 null도 아닐 경우에만 포함 ✨
+      } as Prisma.PostUncheckedCreateInput, // ✨ PostUncheckedCreateInput으로 명시적 타입 단언 ✨
     });
     return newPost;
   }
 
   /**
-   * 특정 게시물 ID로 게시물을 조회합니다.
-   * @param postId - 조회할 게시물 ID
-   * @returns Post 객체 또는 null (게시물을 찾을 수 없는 경우)
-   */
-  public async findById(postId: number): Promise<Post | null> {
-    const post = await prisma.post.findUnique({
-      where: { postId: postId },
-      include: {
-        user: {
-          select: {
-            nickname: true, // 작성자 닉네임 포함
-            profileImage: true, // 프로필 이미지 포함
-          },
-        },
-        comments: {
-          orderBy: { createdAt: "asc" }, // 댓글은 오래된 순으로 정렬 (일반적인 댓글 목록)
-          include: {
-            user: {
-              select: {
-                nickname: true, // 댓글 작성자 닉네임
-                profileImage: true, // 프로필 이미지 포함
-              },
-            },
-            replies: {
-              // 대댓글 포함 (1단계만)
-              include: {
-                user: {
-                  select: {
-                    nickname: true,
-                    profileImage: true, // 프로필 이미지 포함
-                  },
-                },
-              },
-            },
-          },
-        },
-        book: {
-          // book 관계 포함 (Post 모델에 bookId가 연결되어 있다면)
-          select: {
-            title: true,
-            author: true,
-            cover: true,
-            isbn13: true,
-            toc: true, // 목차 포함
-            story: true, // 줄거리 포함
-          },
-        },
-      },
-    });
-    return post;
-  }
-
-  /**
-   * 특정 게시물을 업데이트합니다.
-   * @param postId - 업데이트할 게시물 ID
-   * @param updateData - 업데이트할 데이터 (Partial<Post> 타입)
-   * @returns 업데이트된 Post 객체
-   * @remarks Prisma의 `update`는 `postId`에 해당하는 레코드가 없으면 `RecordNotFound` 에러를 던집니다.
-   * 이 에러는 서비스 계층으로 전파되어 CustomError로 처리됩니다.
+   * 특정 게시물 업데이트
+   * @param postId
+   * @param updateData
+   * @returns
    */
   public async update(
     postId: number,
@@ -154,21 +153,71 @@ export class PostRepository {
   ): Promise<Post> {
     const updatedPost = await prisma.post.update({
       where: { postId: postId },
-      data: updateData,
+      data: { ...updateData, updatedAt: new Date() },
     });
     return updatedPost;
   }
 
   /**
-   * 특정 게시물을 삭제합니다.
-   * @param postId - 삭제할 게시물 ID
-   * @returns void
-   * @remarks Prisma의 `delete`는 `postId`에 해당하는 레코드가 없으면 `RecordNotFound` 에러를 던집니다.
-   * 이 에러는 서비스 계층으로 전파되어 CustomError로 처리됩니다.
+   * 특정 게시물 삭제
+   * @param postId
+   * @returns
    */
   public async delete(postId: number): Promise<void> {
-    await prisma.post.delete({
+    const result = await prisma.post.deleteMany({
       where: { postId: postId },
     });
+    // return result.count; // ✨ return result.count; 제거 ✨
   }
+
+  /**
+   * 특정 게시물 ID로 게시물 조회
+   * @param postId
+   * @returns
+   */
+  public async findById(postId: number): Promise<PostWithRelations | null> {
+    const post = await prisma.post.findUnique({
+      where: { postId: postId },
+      include: {
+        user: {
+          select: { nickname: true, profileImage: true },
+        },
+        comments: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            user: { select: { nickname: true, profileImage: true } },
+            replies: {
+              include: {
+                user: { select: { nickname: true, profileImage: true } },
+              },
+            },
+          },
+        },
+        book: {
+          select: {
+            title: true,
+            author: true,
+            cover: true,
+            isbn13: true,
+            toc: true,
+            story: true,
+          },
+        },
+      },
+    });
+    return post as PostWithRelations | null;
+  }
+
+  /**
+   * 게시물 조회수 증가 (views 필드 오류로 인해 주석 처리)
+   * @param postId
+   * @returns
+   */
+  // public async incrementViews(postId: number): Promise<Post> {
+  //   const updatedPost = await prisma.post.update({
+  //     where: { postId: postId },
+  //     data: { views: { increment: 1 } },
+  //   });
+  //   return updatedPost;
+  // }
 }

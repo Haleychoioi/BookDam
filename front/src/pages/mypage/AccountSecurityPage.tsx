@@ -1,6 +1,6 @@
 // src/pages/mypage/AccountSecurityPage.tsx
 import { useState } from "react";
-import MyPageHeader from "../../components/mypage/myPageHeader.tsx"; // 대소문자 수정 및 확장자 추가
+import MyPageHeader from "../../components/mypage/MyPageHeader"; // 대소문자 수정 및 확장자 추가
 import Button from "../../components/common/Button";
 import { useAuth } from "../../hooks/useAuth"; // useAuth 훅 임포트
 

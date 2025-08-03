@@ -7,7 +7,8 @@ import type {
   AppliedCommunity,
   ApplicantWithStatus,
   TeamCommunity,
-  TeamApplication, // 기존에 ../types에서 임포트하려던 줄은 제거하거나 주석 처리
+  TeamApplication,
+  TeamCommunityWithBookTitle,
 } from "../types";
 
 /**
@@ -158,16 +159,17 @@ export const fetchCommunitiesByBookIsbn13 = async (
  * 특정 커뮤니티 상세 정보를 조회합니다.
  * GET /api/communities/:communityId
  * @param communityId - 커뮤니티 ID
- * @returns TeamCommunity 객체
+ * @returns TeamCommunityWithBookTitle // ✨ 이 Promise 타입이 정확해야 합니다. ✨
  */
 export const fetchCommunityById = async (
   communityId: number
-): Promise<TeamCommunity> => {
+): Promise<TeamCommunityWithBookTitle> => {
+  // ✨ 이 부분이 Promise<TeamCommunityWithBookTitle> 인지 확인 ✨
   try {
-    const response = await apiClient.get<TeamCommunity>(
+    const response = await apiClient.get<TeamCommunityWithBookTitle>( // ✨ 이 부분이 apiClient.get<TeamCommunityWithBookTitle> 인지 확인 ✨
       `/mypage/communities/${communityId}`
     );
-    return response.data;
+    return response.data; // response.data는 백엔드로부터 받은 실제 데이터 (bookTitle 포함)
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error("Failed to fetch community by ID:", err);
