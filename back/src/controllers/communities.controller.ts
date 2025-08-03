@@ -204,37 +204,41 @@ export class CommunityController {
     }
   };
 
-  // 커뮤니티 모집 종료 (새로 추가)
-  public endRecruitment = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  // 모집 종료 로직 (PATCH /api/mypage/communities/:communityId/end-recruitment)
+  public async endRecruitment(req: Request, res: Response, next: NextFunction) {
     try {
-      const communityId = parseInt(req.params.communityId);
+      const { communityId: rawCommunityId } = req.params;
       const userId = req.user!;
 
       if (!userId) {
-        throw new CustomError(401, "Need login");
+        throw new CustomError(401, "인증된 사용자 ID가 필요합니다.");
       }
 
-      // CommunityStatus.CLOSED로 상태 업데이트
+      if (rawCommunityId === undefined) {
+        throw new CustomError(400, "필수 정보(communityId)가 누락되었습니다.");
+      }
+
+      const communityId = Number(rawCommunityId);
+      if (isNaN(communityId)) {
+        throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
+      }
+
+      // ✨ communityService의 새로운 메서드를 호출 ✨
       const updatedCommunity =
-        await this.communityService.updateCommunityStatus(
+        await this.communityService.endCommunityRecruitment(
           communityId,
-          CommunityStatus.CLOSED, // 모집 종료 상태로 설정
           userId
         );
 
       res.status(200).json({
         status: "success",
-        message: "커뮤니티 모집 종료 성공",
+        message: "커뮤니티 모집이 성공적으로 종료되었습니다.",
         data: updatedCommunity,
       });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
-  };
+  }
 
   // 커뮤니티 삭제
   public deleteCommunity = async (

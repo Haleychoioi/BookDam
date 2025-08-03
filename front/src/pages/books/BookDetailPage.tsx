@@ -1,6 +1,6 @@
 // src/pages/books/BookDetailPage.tsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"; // ✨ useCallback, useMemo 제거 ✨
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
@@ -14,12 +14,12 @@ import ApplyToCommunityModal from "../../components/modals/ApplyToCommunityModal
 import CreateCommunityModal from "../../components/modals/CreateCommunityModal";
 
 import type { BookDetail, Community, BookSummary } from "../../types";
-import {
-  getBookDetail,
-  fetchBestsellers, // fetchBestsellers는 장르 추천에 사용되므로 유지
-} from "../../api/books";
+import { getBookDetail, fetchBestsellers } from "../../api/books";
 
-import { fetchCommunitiesByBook, createCommunity } from "../../api/communities";
+import {
+  fetchCommunitiesByBookIsbn13,
+  createCommunity,
+} from "../../api/communities";
 import { getCategoryId } from "../../constants/categories";
 
 interface BookDetailPageData {
@@ -48,17 +48,11 @@ const BookDetailPage: React.FC = () => {
 
       const fetchedBookDetail = await getBookDetail(itemId);
 
-      // 캐러셀 제거에 따라 fetchNewBooks, fetchSpecialNewBooks 호출 제거
-      const [fetchedBestsellers] = // fetchBestsellers는 장르 추천에 필요
-        await Promise.all([
-          fetchBestsellers(1, 10),
-          // fetchNewBooks(1, 10), // 제거
-          // fetchSpecialNewBooks(1, 10), // 제거
-        ]);
+      const [fetchedBestsellers] = await Promise.all([fetchBestsellers(1, 10)]);
 
       let fetchedCommunities: Community[] = [];
       try {
-        fetchedCommunities = await fetchCommunitiesByBook(itemId);
+        fetchedCommunities = await fetchCommunitiesByBookIsbn13(itemId);
       } catch (communityError: unknown) {
         if (
           axios.isAxiosError(communityError) &&
@@ -78,9 +72,9 @@ const BookDetailPage: React.FC = () => {
 
       return {
         book: fetchedBookDetail,
-        bestsellers: fetchedBestsellers, // 장르 추천에 사용되므로 유지 (데이터 자체는 가져옴)
-        newBooks: [], // 빈 배열로 설정 또는 제거
-        specialNewBooks: [], // 빈 배열로 설정 또는 제거
+        bestsellers: fetchedBestsellers,
+        newBooks: [],
+        specialNewBooks: [],
         communities: fetchedCommunities,
       };
     },
@@ -90,16 +84,14 @@ const BookDetailPage: React.FC = () => {
   });
 
   const book = data?.book || null;
-  const communities = data?.communities || [];
-  // bestsellers, newBooks, specialNewBooks는 렌더링에서 제거되므로 변수 사용을 줄임
-  // const bestsellers = data?.bestsellers || [];
-  // const newBooks = data?.newBooks || [];
-  // const specialNewBooks = data?.specialNewBooks || [];
+  // ✨ 'communities' 변수 선언 제거 (CommunityCarousel이 자체 페칭) ✨
+  // const communities = data?.communities || [];
 
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(
     null
   );
+  const [applyModalError, setApplyModalError] = useState<string | null>(null);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [, setItemIdForCreate] = useState<string | null>(null);
@@ -131,6 +123,7 @@ const BookDetailPage: React.FC = () => {
   }, [itemId]);
 
   const handleApplyCommunityClick = (communityId: string) => {
+    setApplyModalError(null);
     setSelectedCommunityId(communityId);
     setIsApplyModalOpen(true);
   };
@@ -138,6 +131,12 @@ const BookDetailPage: React.FC = () => {
   const handleApplyModalClose = () => {
     setIsApplyModalOpen(false);
     setSelectedCommunityId(null);
+    setApplyModalError(null);
+  };
+
+  const handleApplyModalError = (message: string) => {
+    setApplyModalError(message);
+    setIsApplyModalOpen(false);
   };
 
   const handleCreateCommunityClick = (bookIdentifier: string) => {
@@ -164,7 +163,7 @@ const BookDetailPage: React.FC = () => {
 
     try {
       await createCommunity({
-        isbn13: bookIdentifier, // ✨ bookIsbn13 -> isbn13으로 필드 이름 변경 ✨
+        isbn13: bookIdentifier,
         title: communityName,
         content: description,
         maxMembers: maxMembers,
@@ -174,7 +173,7 @@ const BookDetailPage: React.FC = () => {
       queryClient.invalidateQueries({
         queryKey: ["bookDetailPageData", bookIdentifier],
       });
-      alert("커뮤니티가 성공적으로 생성되었습니다!"); // 성공 알림 추가
+      alert("커뮤니티가 성공적으로 생성되었습니다!");
     } catch (error) {
       console.error("커뮤니티 생성 중 오류 발생:", error);
       alert("커뮤니티 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
@@ -211,23 +210,24 @@ const BookDetailPage: React.FC = () => {
 
         <BookDetailDescription book={book} />
 
+        {applyModalError && (
+          <div
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-4"
+            role="alert"
+          >
+            <strong className="font-bold">신청 오류:</strong> {applyModalError}
+          </div>
+        )}
+
         <h2 className="text-2xl text-gray-800 text-center mb-4 mt-16">
           모집 중인 커뮤니티
         </h2>
-        {communities.length > 0 && (
-          <div className="p-6">
-            <CommunityCarousel
-              communities={communities}
-              onApplyClick={handleApplyCommunityClick}
-            />
-          </div>
-        )}
-        {communities.length === 0 && !isLoading && (
-          <div className="p-6 mt-8 text-center text-gray-600">
-            아직 이 책에 대한 모집 중인 커뮤니티가 없습니다. 새로운 커뮤니티를
-            만들어보세요!
-          </div>
-        )}
+        <div className="p-6">
+          <CommunityCarousel
+            bookIsbn13={itemId!} // ✨ itemId가 string임을 확신하므로 비null 어설션 사용 ✨
+            onApplyClick={handleApplyCommunityClick}
+          />
+        </div>
 
         {/* 장르별 추천 도서 캐러셀 (유지) */}
         {isLoadingGenreRecommendations ? (
@@ -257,6 +257,7 @@ const BookDetailPage: React.FC = () => {
           isOpen={isApplyModalOpen}
           onClose={handleApplyModalClose}
           communityId={selectedCommunityId || ""}
+          onError={handleApplyModalError}
         />
 
         {itemId && (

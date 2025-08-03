@@ -1,6 +1,6 @@
 // src/pages/mypage/UserLeavePage.tsx
 import { useState } from "react";
-import MyPageHeader from "../../components/mypage/myPageHeader.tsx";
+import MyPageHeader from "../../components/mypage/MyPageHeader";
 import Button from "../../components/common/Button";
 import { useAuth } from "../../hooks/useAuth"; // useAuth 훅 임포트
 

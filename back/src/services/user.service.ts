@@ -1,10 +1,19 @@
-// src/services/user.service.ts
+// src/services/user.service.ts (수정된 전체 코드)
+
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
-import { UserRole } from "@prisma/client";
+import {
+  UserRole,
+  TeamRole,
+  CommunityStatus,
+  TeamMember,
+} from "@prisma/client";
 import userRepository from "../repositories/user.repository";
 import { TeamMemberRepository } from "../repositories/team-members.repository";
+import { CommunityRepository } from "../repositories/communities.repository";
+import { PostRepository } from "../repositories/posts.repository";
+
 import {
   SignupRequest,
   SignupResponse,
@@ -15,16 +24,30 @@ import {
   ChangePasswordRequest,
   ChangePasswordResponse,
 } from "../types/user.type";
-import { MultiDuplicateError } from "../middleware/error-handing-middleware";
+import {
+  MultiDuplicateError,
+  CustomError,
+} from "../middleware/error-handing-middleware";
 
-class UserService {
+interface CommunityHistoryEntry {
+  communityName: string;
+  role: string;
+  startDate: string;
+  endDate?: string;
+  status: "활동중" | "활동종료" | "모집중" | "알 수 없음";
+}
+
+export default class UserService {
   private teamMemberRepository: TeamMemberRepository;
+  private communityRepository: CommunityRepository;
+  private postRepository: PostRepository;
   private transporter: nodemailer.Transporter;
 
   constructor() {
     this.teamMemberRepository = new TeamMemberRepository();
+    this.communityRepository = new CommunityRepository();
+    this.postRepository = new PostRepository();
 
-    // 이메일 transporter 설정
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST || "smtp.gmail.com",
       port: parseInt(process.env.EMAIL_PORT || "587"),
@@ -36,20 +59,18 @@ class UserService {
     });
   }
 
-  // 임시 비밀번호 생성 (8자리 영문+숫자)
   generateTemporaryPassword(): string {
     const chars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let result = "";
     for (let i = 0; i < 8; i++) {
-      // ✨ for 루프 조건 수정: i = 8 -> i < 8 ✨
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
   }
 
-  // 임시 비밀번호 이메일 전송
   async sendTemporaryPasswordEmail(
+    // ✨ async 키워드 추가 ✨
     email: string,
     temporaryPassword: string,
     userName: string
@@ -70,23 +91,20 @@ class UserService {
             `,
     };
 
-    await this.transporter.sendMail(mailOptions);
+    // sendMail은 Promise를 반환하므로, 함수 자체가 async여야 합니다.
+    await this.transporter.sendMail(mailOptions); // ✨ await 키워드 추가 (선택 사항이지만 명확성을 위해) ✨
   }
 
-  // ✨ 전화번호 정규화 헬퍼 함수 추가 ✨
   private normalizePhoneNumber(phone: string): string {
-    return phone.replace(/[^0-9]/g, ""); // 숫자 이외의 문자 제거
+    return phone.replace(/[^0-9]/g, "");
   }
 
-  // 회원가입
   async signUp(signupData: SignupRequest): Promise<SignupResponse> {
     const { name, email, password, nickname, phone, agreement, introduction } =
       signupData;
 
-    // ✨ 전화번호 정규화 ✨
     const normalizedPhone = this.normalizePhoneNumber(phone);
 
-    // ✨ 다중 중복 오류를 수집할 객체 ✨
     const duplicateErrors: { [key: string]: string } = {};
 
     const existingEmailUser = await userRepository.findByEmail(email);
@@ -99,13 +117,11 @@ class UserService {
       duplicateErrors.nickname = "사용중인 닉네임";
     }
 
-    // ✨ 정규화된 전화번호로 중복 검사 ✨
     const existingPhoneUser = await userRepository.findByPhone(normalizedPhone);
     if (existingPhoneUser) {
       duplicateErrors.phone = "이미 가입된 전화번호입니다.";
     }
 
-    // ✨ 중복 오류가 하나라도 있다면 MultiDuplicateError throw ✨
     if (Object.keys(duplicateErrors).length > 0) {
       throw new MultiDuplicateError(duplicateErrors);
     }
@@ -113,7 +129,7 @@ class UserService {
     const saltRounds = parseInt(process.env.SALT_ROUNDS || "10");
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    const avatarName = encodeURIComponent(nickname); // 닉네임에 따라 고유한 아바타 생성
+    const avatarName = encodeURIComponent(nickname);
     const profileImage = `https://api.dicebear.com/8.x/identicon/svg?seed=${avatarName}`;
 
     const newUser = await userRepository.createUser({
@@ -121,7 +137,7 @@ class UserService {
       email,
       password: hashedPassword,
       nickname,
-      phone: normalizedPhone, // ✨ 정규화된 전화번호 저장 ✨
+      phone: normalizedPhone,
       agreement,
       introduction,
       profileImage,
@@ -129,16 +145,13 @@ class UserService {
     });
 
     const { password: _, ...userWithoutPassword } = newUser;
-    // 제외하는것, 나머지 모든것(password를 제외한 나머지 필드를 새 객체로 생성)
-    // _는 사용하지 않는 변수를 표현
 
     return {
-      user: userWithoutPassword, // 타입이 자동으로 맞춰짐
+      user: userWithoutPassword,
       message: "회원가입이 성공적으로 완료되었습니다.",
     };
   }
 
-  // 로그인
   async login(loginData: LoginRequest): Promise<LoginResponse> {
     const { email, password } = loginData;
 
@@ -169,33 +182,27 @@ class UserService {
     };
   }
 
-  // 비밀번호 찾기 - 임시 비밀번호 발급
   async findPassword(
     email: string,
     name: string
   ): Promise<{ message: string }> {
-    // 이메일과 이름으로 사용자 확인
     const user = await userRepository.findByEmailAndName(email, name);
     if (!user) {
       throw new Error("UserNotFound");
     }
 
-    // 임시 비밀번호 생성
     const temporaryPassword = this.generateTemporaryPassword();
 
-    // 임시 비밀번호 해싱
     const saltRounds = parseInt(process.env.SALT_ROUNDS || "10");
     const hashedTemporaryPassword = await bcrypt.hash(
       temporaryPassword,
       saltRounds
     );
 
-    // DB에 임시 비밀번호 저장
     await userRepository.updateUserPassword(user.userId, {
       password: hashedTemporaryPassword,
     });
 
-    // 이메일로 임시 비밀번호 전송 (사용자 이름 포함)
     await this.sendTemporaryPasswordEmail(email, temporaryPassword, user.name);
 
     return {
@@ -204,28 +211,23 @@ class UserService {
     };
   }
 
-  // 내 정보 조회
   async getMyProfile(userId: number) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error("UserNotFound");
     }
 
-    // 비밀번호 제외하고 반환
     const { password, agreement, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
 
-  // 회원정보 수정
   async updateProfile(
     userId: number,
     updateData: UpdateUserData,
     file: Express.Multer.File | undefined
   ) {
-    // DB에 업데이트할 내용만 담을 빈 객체
     const dataToUpdate: Partial<UpdateUserData> = {};
 
-    // 닉네임 중복 체크 (변경하려는 경우)
     if (updateData.nickname) {
       const existingUser = await userRepository.findByNickname(
         updateData.nickname
@@ -236,12 +238,10 @@ class UserService {
       dataToUpdate.nickname = updateData.nickname;
     }
 
-    // 소개글
     if (updateData.introduction) {
       dataToUpdate.introduction = updateData.introduction;
     }
 
-    // 기본 이미지로 변경
     if (updateData.deleteProfileImage === "true") {
       const currentUser = await userRepository.findById(userId);
       if (!currentUser) throw new Error("UserNotFound");
@@ -252,24 +252,23 @@ class UserService {
       dataToUpdate.profileImage = defaultImageUrl;
     }
 
-    // 파일 업로드
     if (file) {
-      // 주의: 3000부분은 배포 시 서버 주소로 변경해야함
       const fileUrl = `http://localhost:3000/static/images/${file.filename}`;
       dataToUpdate.profileImage = fileUrl;
     }
 
-    const updatedUser = await userRepository.updateUser(
-      userId,
-      dataToUpdate as UpdateUserData
-    );
-
-    // 비밀번호 제외하고 반환
-    const { password, agreement, ...userWithoutPassword } = updatedUser;
-    return userWithoutPassword;
+    try {
+      const updatedUser = await userRepository.updateUser(
+        userId,
+        dataToUpdate as UpdateUserData
+      );
+      const { password, agreement, ...userWithoutPassword } = updatedUser;
+      return userWithoutPassword;
+    } catch (error) {
+      return Promise.reject(error); // ✨ 수정: 명시적으로 Promise.reject 반환 ✨
+    }
   }
 
-  // 비밀번호 변경
   async changePassword(
     userId: number,
     passwordData: ChangePasswordRequest
@@ -305,18 +304,21 @@ class UserService {
       throw new Error("CurrentPasswordMismatch");
     }
 
-    const saltRounds = parseInt(process.env.SALT_ROUNDS || "10");
-    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
-    await userRepository.updateUserPassword(user.userId, {
-      password: hashedNewPassword,
-    });
+    try {
+      const saltRounds = parseInt(process.env.SALT_ROUNDS || "10");
+      const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+      await userRepository.updateUserPassword(user.userId, {
+        password: hashedNewPassword,
+      });
 
-    return {
-      message: "비밀번호가 성공적으로 변경되었습니다.",
-    };
+      return {
+        message: "비밀번호가 성공적으로 변경되었습니다.",
+      };
+    } catch (error) {
+      return Promise.reject(error); // ✨ 수정: 명시적으로 Promise.reject 반환 ✨
+    }
   }
 
-  // 유저 삭제
   async deleteUser(userId: number) {
     const existingUser = await userRepository.findById(userId);
 
@@ -331,12 +333,63 @@ class UserService {
       throw new Error("LeaderCannotWithdraw");
     }
 
-    await userRepository.deleteUser(userId);
+    try {
+      await userRepository.deleteUser(userId);
+      return {
+        message: "유저 삭제가 완료되었습니다.",
+      };
+    } catch (error) {
+      return Promise.reject(error); // ✨ 수정: 명시적으로 Promise.reject 반환 ✨
+    }
+  }
 
-    return {
-      message: "유저 삭제가 완료되었습니다.",
-    };
+  public async getCommunityHistory(
+    userId: number
+  ): Promise<CommunityHistoryEntry[]> {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new CustomError(404, "User not found.");
+    }
+
+    const memberships =
+      await this.teamMemberRepository.findManyMembershipsByUserId(userId);
+
+    const history: CommunityHistoryEntry[] = [];
+
+    for (const membership of memberships) {
+      const community = membership.team;
+
+      // '모집중' 상태의 커뮤니티는 이력에 포함하지 않습니다.
+      if (community.status === CommunityStatus.RECRUITING) {
+        continue;
+      }
+
+      let communityStatus: "활동중" | "활동종료" | "모집중" | "알 수 없음";
+      let endDate: string | undefined;
+
+      if (community.status === CommunityStatus.ACTIVE) {
+        communityStatus = "활동중";
+        endDate = undefined;
+      } else if (
+        community.status === CommunityStatus.CLOSED ||
+        community.status === CommunityStatus.COMPLETED
+      ) {
+        communityStatus = "활동종료";
+        endDate = community.createdAt.toISOString();
+      } else {
+        communityStatus = "알 수 없음";
+        endDate = undefined;
+      }
+
+      history.push({
+        communityName: community.postTitle,
+        role: membership.role === TeamRole.LEADER ? "host" : "member",
+        startDate: community.createdAt.toISOString(),
+        endDate: endDate,
+        status: communityStatus,
+      });
+    }
+
+    return history;
   }
 }
-
-export default new UserService();

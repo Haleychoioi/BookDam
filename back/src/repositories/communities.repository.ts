@@ -66,7 +66,14 @@ export class CommunityRepository {
   public async findActiveByMemberId(userId: number): Promise<TeamCommunity[]> {
     const communities = await prisma.teamCommunity.findMany({
       where: {
-        status: CommunityStatus.ACTIVE,
+        // ✨ 수정: ACTIVE, CLOSED, COMPLETED 상태를 모두 포함 ✨
+        status: {
+          in: [
+            CommunityStatus.ACTIVE,
+            CommunityStatus.CLOSED,
+            CommunityStatus.COMPLETED,
+          ],
+        },
         members: {
           some: {
             userId: userId,

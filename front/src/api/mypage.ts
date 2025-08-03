@@ -1,6 +1,7 @@
 // src/api/mypage.ts
+
 import apiClient from "./apiClient";
-import type { Post, Comment } from "../types";
+import type { Post, Comment, CommunityHistoryEntry } from "../types"; // ✨ CommunityHistoryEntry 임포트 추가 ✨
 
 // 위시리스트 응답 타입 (실제 백엔드 응답에 맞춰 수정)
 interface WishlistResponseData {
@@ -167,6 +168,23 @@ export const deleteBookFromMyLibrary = async (isbn13: string) => {
     return response.data;
   } catch (error) {
     console.error("Failed to delete book from my library:", error);
+    throw error;
+  }
+};
+
+// ✨ 새로 추가: 특정 사용자의 커뮤니티 참여 이력 조회 ✨
+export const fetchCommunityHistory = async (
+  userId: string // API는 userId를 string으로 받음
+): Promise<CommunityHistoryEntry[]> => {
+  try {
+    const response = await apiClient.get<{
+      status: string;
+      message: string;
+      data: CommunityHistoryEntry[];
+    }>(`/mypage/users/${userId}/community-history`); // 백엔드 라우트에 맞춤
+    return response.data.data;
+  } catch (error) {
+    console.error("Failed to fetch community history:", error);
     throw error;
   }
 };

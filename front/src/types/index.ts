@@ -16,6 +16,7 @@ export interface Community {
   role: "host" | "member"; // 현재 사용자의 커뮤니티 내 역할 (로그인된 사용자 기준)
   status: "모집중" | "모집종료"; // 프론트엔드에서 표시할 모집 상태
   createdAt: string; // ✨ 추가: 생성일시 ✨
+  hasApplied?: boolean; // ✨ 이 줄을 추가합니다: hasApplied 필드 추가 ✨
 }
 
 export interface UserProfile {
@@ -89,9 +90,23 @@ export interface TeamCommunity {
   maxMembers?: number; // Post에서 가져오는 최대 인원수
 }
 
+export interface TeamApplication {
+  applicationId: number;
+  userId: number;
+  postId: number;
+  applicationMessage: string;
+  status: "PENDING" | "ACCEPTED" | "REJECTED";
+  appliedAt: string;
+  processedAt: string | null;
+}
+
 export interface CommunityWithMemberInfo extends TeamCommunity {
   currentMembers: number; // 현재 멤버 수 (필수)
   maxMembers: number; // 최대 멤버 수 (필수)
+}
+
+export interface TeamCommunityWithBookTitle extends TeamCommunity {
+  bookTitle: string | null;
 }
 
 // 1.6 PostType Enum (일반 게시물 타입)

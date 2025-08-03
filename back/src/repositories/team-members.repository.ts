@@ -1,4 +1,4 @@
-// src/repositories/team-members.repository.ts
+// src/zip/repositories/team-members.repository.ts
 
 import prisma from "../utils/prisma";
 import { TeamMember, TeamRole } from "@prisma/client";
@@ -118,7 +118,6 @@ export class TeamMemberRepository {
     return updatedMember;
   }
 
-
   // 특정 사용자가 'LEADER' 역할을 맡고 있는 팀 멤버십이 있는지 확인
   public async findLeaderMembershipByUserId(
     userId: number
@@ -130,5 +129,41 @@ export class TeamMemberRepository {
       },
     });
     return leaderMembership;
+  }
+
+  /**
+   * ✨ 새로 추가 ✨
+   * 특정 사용자의 모든 팀 멤버십 조회 (커뮤니티 정보 포함)
+   * @param userId
+   * @returns
+   */
+  public async findManyMembershipsByUserId(userId: number): Promise<
+    (TeamMember & {
+      team: {
+        teamId: number;
+        postTitle: string;
+        createdAt: Date;
+        status: string;
+        postId: number;
+      };
+    })[]
+  > {
+    // CommunityStatus는 string으로 넘어오므로 일단 string
+    const memberships = await prisma.teamMember.findMany({
+      where: { userId: userId },
+      include: {
+        team: {
+          select: {
+            teamId: true,
+            postTitle: true,
+            createdAt: true,
+            status: true,
+            postId: true, // Community와 Post 연결을 위해 postId 추가
+          },
+        },
+      },
+      orderBy: { teamId: "desc" },
+    });
+    return memberships as any; // 타입 불일치 방지를 위한 임시 any, 정확한 타입으로 추후 변경
   }
 }

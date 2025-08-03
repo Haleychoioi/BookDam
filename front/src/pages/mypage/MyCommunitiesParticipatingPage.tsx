@@ -1,6 +1,6 @@
 // src/pages/mypage/MyCommunitiesParticipatingPage.tsx
 
-import MyPageHeader from "../../components/mypage/myPageHeader";
+import MyPageHeader from "../../components/mypage/MyPageHeader";
 import CommunityCard from "../../components/mypage/ParticipatingCommunityCard";
 import type { Community } from "../../types";
 import { useQuery } from "@tanstack/react-query"; // useQuery 임포트

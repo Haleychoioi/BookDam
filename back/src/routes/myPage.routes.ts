@@ -297,6 +297,20 @@ communitiesRouter.delete(
   teamCommentController.deleteTeamComment.bind(teamCommentController)
 );
 
+// PUT /mypage/communities/recruiting/:communityId/applicants/:userId - 신청 수락/거절
+communitiesRouter.put(
+  "/recruiting/:communityId/applicants/:userId", // 이 줄을 수동으로 다시 정확히 입력합니다.
+  authenticate,
+  applicationController.updateApplicationStatus.bind(applicationController)
+);
+
+// GET /api/mypage/users/:userId/community-history - 특정 사용자의 커뮤니티 참여 이력 조회
+router.get(
+  "/users/:userId/community-history",
+  authenticate,
+  userController.getCommunityHistory.bind(userController)
+);
+
 // myPageRouter에 communitiesRouter를 마운트합니다.
 router.use("/communities", communitiesRouter);
 

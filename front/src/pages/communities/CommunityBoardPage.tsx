@@ -1,9 +1,9 @@
 // src/pages/communities/CommunityBoardPage.tsx
 
-import { useEffect, useState, useCallback } from "react"; // useCallback 추가
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import BoardTemplate from "../../components/posts/BoardTemplate";
-import type { TeamCommunity, TeamPost } from "../../types";
+import type { TeamPost, TeamCommunityWithBookTitle } from "../../types"; // ✨ ApiResponse는 필요 없으므로 제거했습니다. ✨
 
 import { fetchCommunityById } from "../../api/communities";
 import { fetchTeamPosts } from "../../api/teamPosts";
@@ -14,25 +14,25 @@ const CommunityBoardPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUserProfile, loading: authLoading } = useAuth();
 
-  const [, setCommunityInfo] = useState<TeamCommunity | null>(null);
+  const [communityInfo, setCommunityInfo] =
+    useState<TeamCommunityWithBookTitle | null>(null);
   const [communityPosts, setCommunityPosts] = useState<TeamPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const parsedCommunityId = communityId ? Number(communityId) : NaN; // communityId를 숫자로 파싱
+  const parsedCommunityId = communityId ? Number(communityId) : NaN;
 
   // 게시물 상세 정보 및 커뮤니티 데이터 불러오기
   const loadCommunityData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    // ✨ 유효하지 않은 커뮤니티 ID 검사 (API 호출 전에) ✨
     if (isNaN(parsedCommunityId)) {
       setError("유효하지 않은 커뮤니티 ID입니다. 올바른 경로로 접속해주세요.");
       setLoading(false);
-      return; // API 호출 중단
+      return;
     }
 
     if (!authLoading && !currentUserProfile) {
@@ -42,11 +42,20 @@ const CommunityBoardPage: React.FC = () => {
     }
 
     try {
-      // fetchCommunityById는 이제 number를 인자로 받습니다.
-      const communityResponse = await fetchCommunityById(parsedCommunityId);
-      setCommunityInfo(communityResponse);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const communityResponse: any = await fetchCommunityById(
+        parsedCommunityId
+      );
 
-      // fetchTeamPosts는 communityId를 string으로 받으므로 다시 string으로 변환
+      // 이제 communityResponse는 data 속성을 가지고 있다는 것을 가정하고 코드를 작성합니다.
+      if (communityResponse && communityResponse.data) {
+        setCommunityInfo(communityResponse.data);
+      } else {
+        // 데이터가 없을 경우 에러 처리
+        setError("커뮤니티 데이터를 찾을 수 없습니다.");
+      }
+
+      // 게시물 목록 불러오기
       const postsResponse = await fetchTeamPosts(
         String(parsedCommunityId),
         currentPage,
@@ -65,7 +74,7 @@ const CommunityBoardPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [parsedCommunityId, currentUserProfile, authLoading, currentPage]); // 의존성 배열 업데이트
+  }, [parsedCommunityId, currentUserProfile, authLoading, currentPage]);
 
   useEffect(() => {
     if (!authLoading && currentUserProfile) {
@@ -75,7 +84,7 @@ const CommunityBoardPage: React.FC = () => {
       setError("로그인이 필요합니다.");
     }
     window.scrollTo(0, 0);
-  }, [authLoading, currentUserProfile, loadCommunityData]); // 의존성 배열 업데이트
+  }, [authLoading, currentUserProfile, loadCommunityData]);
 
   const handleWritePostClick = () => {
     navigate(`/communities/${communityId}/posts/write`);
@@ -108,13 +117,24 @@ const CommunityBoardPage: React.FC = () => {
     return <div className="text-center p-8 text-red-600">오류: {error}</div>;
   }
 
+  if (!communityInfo) {
+    return (
+      <div className="text-center p-8 text-gray-700">
+        커뮤니티 정보를 찾을 수 없습니다.
+      </div>
+    );
+  }
+
   return (
     <BoardTemplate
-      boardTitle="게시물"
+      // ✨ communityInfo에 직접 접근하여 postTitle과 bookTitle을 가져옵니다. ✨
+      boardTitle={`${communityInfo.postTitle}${
+        communityInfo.bookTitle ? ` - ${communityInfo.bookTitle}` : ""
+      }`}
       posts={communityPosts}
       onWritePostClick={handleWritePostClick}
       onPostClick={handlePostClick}
-      isLoading={false}
+      isLoading={loading}
       currentPage={currentPage}
       totalPages={totalPages}
       onPageChange={handlePageChange}

@@ -11,7 +11,7 @@ import {
   TeamApplication,
   TeamRole,
 } from "@prisma/client";
-import { CustomError } from "../middleware/error-handing-middleware"; // ✨ CustomError 임포트 ✨
+import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
 
 // ApplicationService의 CustomError 문제를 임시로 해결하기 위한 타입 단언 (최후의 수단)
 // import * as ErrorMiddleware from "../middleware/error-handing-middleware";
