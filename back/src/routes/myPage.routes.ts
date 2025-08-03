@@ -31,25 +31,25 @@ router.put('/change-password', authenticate, userController.changePassword);
 router.delete('/delete', authenticate, handleValidationResult, userController.deleteUser);
 
 // 위시리스트 추가
-router.post('/', authenticate, wishListController.addWish);
+router.post('/wishlist', authenticate, wishListController.addWish);
 
 // 위시 삭제
-router.delete('/:isbn13', authenticate, wishListController.removeWish);
+router.delete('/wishlist/:isbn13', authenticate, wishListController.removeWish);
 
 // 전체 위시리스트
-router.get('/', authenticate, wishListController.getWishList);
+router.get('/wishlist', authenticate, wishListController.getWishList);
 
 // 사용자 도서 통계
-router.get("/", authenticate, tasteAnalysisController.getTasteAnalysis);
+router.get("/taste-analysis", authenticate, tasteAnalysisController.getTasteAnalysis);
 
 // 서재에 없으면 추가, 있으면 상태변경
-router.post('/', authenticate, myLibraryController.upsertBookInLibrary);
+router.post('/my-library', authenticate, myLibraryController.upsertBookInLibrary);
 
 // 서재 목록 보기
-router.get("/", authenticate, myLibraryController.getBooksInLibrary);
+router.get("/my-library", authenticate, myLibraryController.getBooksInLibrary);
 
 // 서재 도서 삭제
-router.delete("/:isbn13", authenticate, myLibraryController.deleteBookFromLibrary);
+router.delete("/my-library/:isbn13", authenticate, myLibraryController.deleteBookFromLibrary);
 
 // 내가 작성한 글
 router.get("/my-post", authenticate, postController.getMyPosts);
@@ -57,10 +57,10 @@ router.get("/my-post", authenticate, postController.getMyPosts);
 // 내가 작성한 댓글
 router.get("/my-comments", authenticate, commentController.getMyComments);
 
-// 내가 모집중인
+// 내가 모집중인 커뮤
 router.get("/communities/recruiting", authenticate, communityController.getMyRecruitingCommunities);
 
-// 내가 신청한
+// 내가 지원한
 router.get("/communities/applied", authenticate, applicationController.getMyApplications);
 
 // 지원서 모집 신청 취소
