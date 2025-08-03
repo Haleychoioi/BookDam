@@ -12,7 +12,9 @@ interface AuthResult {
   loading: boolean;
   error: string | null; // 일반적인 에러 메시지
   login: (email: string, password: string) => Promise<boolean>;
-  register: (formData: SignupRequest) => Promise<boolean>;
+  register: (
+    formData: SignupRequest
+  ) => Promise<string | { [key: string]: string } | null>; // ✨ 반환 타입 변경 ✨
   logout: () => void;
   fetchUserProfile: () => Promise<void>;
   updateProfile: (updateData: FormData) => Promise<boolean>;
@@ -23,6 +25,7 @@ interface AuthResult {
     confirmNewPassword: string;
   }) => Promise<boolean>;
   issueTemporaryPassword: (email: string, name: string) => Promise<boolean>;
+  handleAxiosError: (err: unknown, defaultMsg: string) => string;
 }
 
 export const useAuth = (): AuthResult => {
@@ -131,14 +134,12 @@ export const useAuth = (): AuthResult => {
         const errMsg = handleAxiosError(err, "로그인 중 오류가 발생했습니다.");
         setError(errMsg);
 
-        // '해당 유저가 없습니다' 또는 '패스워드 불일치' 메시지일 경우 처리 로직
         if (errMsg === "해당 유저가 없습니다") {
-          alert("회원 정보가 없습니다. 회원가입 페이지로 이동합니다."); // 단일 알림 메시지
-          navigate("/auth/register"); // 회원가입 페이지로 리다이렉트
+          alert("회원 정보가 없습니다. 회원가입 페이지로 이동합니다.");
         } else if (errMsg === "패스워드 불일치") {
-          alert("이메일 또는 비밀번호가 올바르지 않습니다."); // 일반적인 메시지
+          alert("이메일 또는 비밀번호가 올바르지 않습니다.");
         } else {
-          alert(errMsg); // 그 외의 다른 에러는 원래 메시지 표시
+          alert(errMsg);
         }
         return false;
       } finally {
@@ -149,23 +150,40 @@ export const useAuth = (): AuthResult => {
   );
 
   const register = useCallback(
-    async (formData: SignupRequest): Promise<boolean> => {
+    async (
+      formData: SignupRequest
+    ): Promise<string | { [key: string]: string } | null> => {
+      // ✨ 반환 타입 변경 ✨
       setLoading(true);
-      setError(null); // 새로운 요청 전에 에러 상태 초기화
+      setError(null);
       try {
         const response = await apiClient.post("/auth/register", formData);
-        alert(response.data.message); // 회원가입 성공 메시지는 alert 유지
+        alert(response.data.message); // 회원가입 성공 메시지
         navigate("/auth/login");
-        return true;
+        return null; // ✨ 성공 시 null 반환 ✨
       } catch (err) {
+        // ✨ Axios 에러일 경우 MultiDuplicateError 여부 확인 ✨
+        if (axios.isAxiosError(err) && err.response && err.response.data) {
+          if (err.response.data.errors) {
+            // MultiDuplicateError에서 보낸 errors 객체
+            setError("다중 중복 오류 발생"); // useAuth의 에러 상태는 일반 메시지로
+            return err.response.data.errors; // ✨ errors 객체 반환 ✨
+          }
+          // 그 외의 Axios 에러 (단일 errorMessage)
+          const errMsg = handleAxiosError(
+            err,
+            "회원가입 중 알 수 없는 오류가 발생했습니다."
+          );
+          setError(errMsg);
+          return errMsg; // ✨ 단일 오류 메시지 문자열 반환 ✨
+        }
+        // Axios 에러가 아닌 일반 JS 에러
         const errMsg = handleAxiosError(
-          // 에러 메시지 추출
           err,
-          "회원가입 중 알 수 없는 오류가 발생했습니다." // 기본 오류 메시지
+          "회원가입 중 알 수 없는 오류가 발생했습니다."
         );
-        setError(errMsg); // 에러 메시지를 useAuth 훅의 error 상태에만 저장
-        // alert(errMsg); // ✨ 이 줄을 제거하여 alert를 띄우지 않음 ✨
-        return false;
+        setError(errMsg);
+        return errMsg; // ✨ 단일 오류 메시지 문자열 반환 ✨
       } finally {
         setLoading(false);
       }
@@ -194,7 +212,7 @@ export const useAuth = (): AuthResult => {
         const response = await apiClient.put<{
           user: UserProfile;
           message: string;
-        }>(`/mypage/profile`, updateData, {
+        }>(`/mypage/profile-edit`, updateData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -298,5 +316,6 @@ export const useAuth = (): AuthResult => {
     deleteUser,
     changePassword,
     issueTemporaryPassword,
+    handleAxiosError,
   };
 };

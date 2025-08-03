@@ -111,3 +111,27 @@ export const deletePost = async (
     throw error;
   }
 };
+
+// ✨ export 키워드 추가 ✨
+export interface MyPostsResponse {
+  posts: Post[];
+  pagination: {
+    currentPage: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export const fetchMyPosts = async (
+  page: number = 1,
+  pageSize: number = 10,
+  sort: string = "latest" // ✨ type 파라미터 제거 ✨
+): Promise<MyPostsResponse> => {
+  const response = await apiClient.get<MyPostsResponse>(`/mypage/my-posts`, {
+    params: { page, size: pageSize, sort /* ✨ type 제거 ✨ */ },
+  });
+  return response.data;
+};

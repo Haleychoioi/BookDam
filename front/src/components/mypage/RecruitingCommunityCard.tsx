@@ -1,129 +1,174 @@
-// src/components/mypage/RecruitingCommunityCard.tsx
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
+// src/components/home/RecruitingCommunityList.tsx
+
+import { useState } from "react";
 import Button from "../common/Button";
-import { FaUserFriends } from "react-icons/fa";
+import ApplyToCommunityModal from "../modals/ApplyToCommunityModal";
 import type { Community } from "../../types";
+import { useQuery } from "@tanstack/react-query";
+import { fetchCommunities } from "../../api/communities";
+import { useAuth } from "../../hooks/useAuth";
+import { FaUserFriends } from "react-icons/fa";
 
-interface RecruitingCommunityCardProps {
-  community: Community;
-  onEndRecruitment: (communityId: string) => void;
-  onEditCommunity: (community: Community) => void; // <-- 이 줄을 추가합니다.
-}
+const initialDisplayCount = 6;
+const loadMoreIncrement = 3;
 
-const RecruitingCommunityCard: React.FC<RecruitingCommunityCardProps> = ({
-  community,
-  onEndRecruitment,
-  onEditCommunity,
-}) => {
-  const isRecruitmentEnded = community.status === "모집종료";
-  const isFull = community.currentMembers >= community.maxMembers;
+const RecruitingCommunityList: React.FC = () => {
+  const [currentLimit, setCurrentLimit] = useState(initialDisplayCount);
+  const { currentUserProfile } = useAuth();
 
-  const handleEndRecruitmentClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(
+    null
+  );
+  const [listError, setListError] = useState<string | null>(null);
 
-    if (!isFull) {
-      if (
-        !window.confirm(
-          "모집 인원이 다 차지 않았습니다.\n정말로 모집을 종료하고 커뮤니티를 생성하시겠습니까?"
-        )
-      ) {
-        return;
-      }
-    }
-    onEndRecruitment(community.id);
+  const {
+    data: communitiesData,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+  } = useQuery<{ communities: Community[]; totalResults: number }, Error>({
+    queryKey: ["allCommunities", currentLimit, currentUserProfile?.userId], // ✨ userId를 queryKey에 추가 ✨
+    queryFn: ({ queryKey }) => {
+      const [, limit, userId] = queryKey;
+      return fetchCommunities(1, limit as number, "latest", userId as number); // ✨ userId 전달 ✨
+    },
+    staleTime: 1000 * 60,
+    placeholderData: (previousData) => previousData,
+  });
+
+  const communities = communitiesData?.communities || [];
+  const totalResults = communitiesData?.totalResults || 0;
+
+  const handleLoadMore = () => {
+    setCurrentLimit((prevLimit) => prevLimit + loadMoreIncrement);
   };
 
-  const handleEditClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onEditCommunity(community);
+  const handleJoinClick = (community: Community) => {
+    setListError(null);
+    setSelectedCommunityId(community.id);
+    setIsModalOpen(true);
   };
 
-  useEffect(() => {
-    if (isFull && community.status === "모집중") {
-      onEndRecruitment(community.id);
-    }
-  }, [
-    isFull,
-    community.status,
-    community.id,
-    onEndRecruitment,
-    community.title,
-  ]);
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedCommunityId(null);
+  };
+
+  const handleApplyModalError = (message: string) => {
+    setListError(message);
+    setIsModalOpen(false);
+  };
+
+  const allItemsLoaded = communities.length >= totalResults;
+
+  if (isLoading && !isFetching) {
+    return (
+      <section className="container mx-auto py-12 px-4 text-center text-gray-600">
+        커뮤니티 목록을 불러오는 중...
+      </section>
+    );
+  }
+
+  if (isError) {
+    return (
+      <section className="container mx-auto py-12 px-4 text-center text-red-600">
+        오류: {error?.message || "커뮤니티 목록을 불러오는 데 실패했습니다."}
+      </section>
+    );
+  }
 
   return (
-    <div className="bg-gray-100 p-6 flex flex-col justify-between">
-      <div className="flex flex-col items-start mb-6">
-        <div className="flex justify-between items-start w-full">
-          <div>
-            <h3 className="text-md font-bold text-gray-800 mb-1">
-              {community.title}
-            </h3>
-          </div>
-          <div className="flex items-center text-gray-600 text-sm mb-1">
-            <FaUserFriends className="w-5 h-5 mr-1 text-gray-500" />
-            <span>
-              {community.currentMembers}/{community.maxMembers}명
-            </span>
-          </div>
+    <section className="container mx-auto py-12 px-4">
+      <h2 className="text-3xl font-bold text-gray-800 mb-8">
+        현재 모집 중인 커뮤니티
+      </h2>
+
+      {listError && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+          role="alert"
+        >
+          <strong className="font-bold">오류: </strong>
+          <span className="block sm:inline">{listError}</span>
         </div>
-        <hr className="border-t border-gray-300 w-full mb-4" />
-        <p className="text-gray-700 text-md font-light leading-relaxed">
-          {community.description}
-        </p>
+      )}
+
+      <div className="space-y-6">
+        {communities.length === 0 && !isLoading && !isFetching ? (
+          <p className="text-center text-gray-500 py-10">
+            현재 모집 중인 커뮤니티가 없습니다.
+          </p>
+        ) : (
+          communities.map((community: Community) => {
+            const isCurrentUserHost =
+              currentUserProfile?.userId === community.hostId;
+            const hasApplied = community.hasApplied; // ✨ hasApplied 값 가져오기 ✨
+
+            return (
+              <div
+                key={community.id}
+                className="flex justify-between items-center border-b border-gray-200 pb-4"
+              >
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {community.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-2">
+                    {community.description}
+                  </p>
+                  <div className="flex items-center text-gray-600 text-sm">
+                    <FaUserFriends className="w-4 h-4 mr-1 text-gray-500" />
+                    <span>
+                      {community.currentMembers}/{community.maxMembers}명
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => handleJoinClick(community)}
+                  className="px-6 py-2"
+                  bgColor={hasApplied ? "bg-gray-400" : "bg-apply"} // ✨ 신청 여부에 따라 배경색 변경 ✨
+                  disabled={isCurrentUserHost || hasApplied} // ✨ 신청 여부에 따라 버튼 비활성화 ✨
+                >
+                  {isCurrentUserHost
+                    ? "나의 커뮤니티"
+                    : hasApplied // ✨ 신청 여부에 따라 텍스트 변경 ✨
+                    ? "신청 완료"
+                    : "신청하기"}
+                </Button>
+              </div>
+            );
+          })
+        )}
       </div>
 
-      <div className="flex flex-col items-end mt-auto w-full space-y-2">
-        <div className="w-full">
-          <Link
-            to={`/mypage/communities/recruiting/${community.id}/applicants`}
-          >
-            <Button
-              bgColor="bg-gray-200"
-              textColor="text-gray-700"
-              hoverBgColor="hover:bg-gray-300"
-              className="w-full px-2 py-2 text-sm"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              신청 내역 보기
-            </Button>
-          </Link>
+      {isFetching && communities.length > 0 && (
+        <div className="text-center mt-4 text-gray-500">
+          더 많은 커뮤니티를 불러오는 중...
         </div>
+      )}
 
-        <div className="w-full">
+      {!allItemsLoaded && (
+        <div className="text-center mt-10">
           <Button
-            onClick={handleEditClick}
-            bgColor="bg-blue-400"
-            textColor="text-white"
-            hoverBgColor="hover:bg-blue-500"
-            className="w-full px-2 py-2 text-sm"
-            disabled={isRecruitmentEnded}
+            onClick={handleLoadMore}
+            className="px-8 py-3 text-lg"
+            disabled={isFetching}
           >
-            수정
+            더보기
           </Button>
         </div>
+      )}
 
-        <div className="w-full">
-          <Button
-            onClick={handleEndRecruitmentClick}
-            bgColor={isRecruitmentEnded ? "bg-gray-400" : "bg-main"}
-            textColor="text-white"
-            hoverBgColor={
-              isRecruitmentEnded ? "hover:bg-gray-500" : "hover:bg-apply"
-            }
-            className="w-full px-2 py-2 text-sm"
-            disabled={isRecruitmentEnded}
-          >
-            {isRecruitmentEnded ? "모집 종료됨" : "모집 종료"}
-          </Button>
-        </div>
-      </div>
-    </div>
+      <ApplyToCommunityModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        communityId={selectedCommunityId || ""}
+        onError={handleApplyModalError}
+      />
+    </section>
   );
 };
 
-export default RecruitingCommunityCard;
+export default RecruitingCommunityList;

@@ -1,17 +1,19 @@
-// src/api/communities.ts (일부 발췌)
+// src/api/communities.ts
 
 import apiClient from "./apiClient";
 import type {
   Community,
+  // CommunityDetail,
   AppliedCommunity,
-  TeamCommunity,
   ApplicantWithStatus,
+  TeamCommunity,
+  TeamApplication, // 기존에 ../types에서 임포트하려던 줄은 제거하거나 주석 처리
 } from "../types";
 
 /**
  * 백엔드 TeamCommunity 응답을 프론트엔드 Community 타입으로 매핑합니다.
  * 백엔드 API에서 직접 제공하지 않는 필드(예: currentMembers, maxMembers)에 기본값을 할당합니다.
- * @param backendCommunity - 백엔드에서 받은 TeamCommunity 객체 (currentMembers, maxMembers, hostId 포함)
+ * @param backendCommunity - 백엔드에서 받은 TeamCommunity 객체 (currentMembers, maxMembers, hostId, hasApplied 포함)
  * @returns 프론트엔드 Community 객체
  */
 const mapBackendCommunityToFrontendCommunity = (
@@ -19,6 +21,7 @@ const mapBackendCommunityToFrontendCommunity = (
     currentMembers?: number;
     maxMembers?: number;
     hostId?: number;
+    hasApplied?: boolean; // 백엔드에서 이 필드를 넘겨줄 경우를 대비
   }
 ): Community => {
   return {
@@ -31,7 +34,8 @@ const mapBackendCommunityToFrontendCommunity = (
     maxMembers: backendCommunity.maxMembers || 0,
     role: "member",
     status: backendCommunity.status === "RECRUITING" ? "모집중" : "모집종료",
-    createdAt: backendCommunity.createdAt, // ✨ 추가: createdAt 필드 매핑 ✨
+    createdAt: backendCommunity.createdAt,
+    hasApplied: backendCommunity.hasApplied, // ✨ hasApplied 매핑 ✨
   };
 };
 
@@ -45,30 +49,50 @@ const mapBackendCommunityToFrontendCommunity = (
  * @param page - 페이지 번호
  * @param pageSize - 페이지당 항목 수
  * @param sort - 정렬 기준 (예: 'latest')
+ * @param userId - 현재 로그인한 사용자 ID (선택 사항, 신청 여부 확인용)
  * @returns 커뮤니티 목록 배열 및 총 결과 수
  */
 export const fetchCommunities = async (
   page: number = 1,
   pageSize: number = 10,
-  sort: string = "latest"
+  sort: string = "latest",
+  userId?: number // ✨ userId 인자 추가 ✨
 ): Promise<{ communities: Community[]; totalResults: number }> => {
   try {
+    // ✨ 수정: apiClient.get 제네릭 타입 변경 및 data.communities에 접근하도록 수정 ✨
     const response = await apiClient.get<{
       message: string;
-      data: (TeamCommunity & {
-        currentMembers?: number;
-        maxMembers?: number;
-        hostId?: number;
-      })[];
-    }>(`/mypage/communities?page=${page}&pageSize=${pageSize}&sort=${sort}`); // ✨ URL 변경 ✨
+      data: {
+        // 백엔드의 data 필드가 객체를 포함하도록 수정
+        communities: (TeamCommunity & {
+          // communities 배열
+          currentMembers?: number;
+          maxMembers?: number;
+          hostId?: number;
+          hasApplied?: boolean;
+        })[];
+        totalResults: number; // totalResults 포함
+      };
+    }>(
+      `/mypage/communities?page=${page}&pageSize=${pageSize}&sort=${sort}${
+        userId ? `&userId=${userId}` : ""
+      }`
+    );
 
-    const mappedCommunities = response.data.data.map(
-      mapBackendCommunityToFrontendCommunity
+    const mappedCommunities: Community[] = response.data.data.communities.map(
+      // ✨ 수정: .communities에 접근하여 .map() 호출 ✨
+      (backendCommunity) => {
+        const mapped = mapBackendCommunityToFrontendCommunity(backendCommunity);
+        if ("hasApplied" in backendCommunity) {
+          mapped.hasApplied = backendCommunity.hasApplied;
+        }
+        return mapped;
+      }
     );
 
     return {
       communities: mappedCommunities,
-      totalResults: mappedCommunities.length,
+      totalResults: response.data.data.totalResults, // ✨ 수정: totalResults는 백엔드에서 받은 값 사용 ✨
     };
   } catch (err: unknown) {
     if (err instanceof Error) {
@@ -82,24 +106,45 @@ export const fetchCommunities = async (
 /**
  * 특정 도서 관련 커뮤니티 목록을 조회합니다.
  * GET /api/mypage/communities/books/:itemId (경로 변경됨)
- * @param itemId - 도서 ISBN13
+ * @param isbn13 - 도서 ISBN13 (itemId 대신 isbn13으로 인자명 변경)
  * @param size - 조회할 커뮤니티 수 (기본값: 10)
+ * @param userId - 현재 로그인한 사용자 ID (선택 사항, 신청 여부 확인용)
  * @returns 커뮤니티 목록 배열
  */
-export const fetchCommunitiesByBook = async (
-  itemId: string,
-  size: number = 10
+export const fetchCommunitiesByBookIsbn13 = async (
+  // ✨ 이름 변경 ✨
+  isbn13: string, // ✨ 인자명 변경 ✨
+  size: number = 10,
+  userId?: number
 ): Promise<Community[]> => {
   try {
+    // 이 함수의 백엔드는 data 필드에 배열을 직접 반환하므로, 기존 코드는 올바릅니다.
     const response = await apiClient.get<{
       message: string;
       data: (TeamCommunity & {
+        // 백엔드 컨트롤러가 배열을 직접 반환
         currentMembers?: number;
         maxMembers?: number;
         hostId?: number;
+        hasApplied?: boolean;
       })[];
-    }>(`/mypage/communities/books/${itemId}?size=${size}`); // ✨ URL 변경 ✨
-    return response.data.data.map(mapBackendCommunityToFrontendCommunity);
+    }>(
+      `/mypage/communities/books/${isbn13}?size=${size}${
+        userId ? `&userId=${userId}` : ""
+      }`
+    );
+
+    const mappedCommunities: Community[] = response.data.data.map(
+      // 이 부분은 올바르게 작동합니다.
+      (backendCommunity) => {
+        const mapped = mapBackendCommunityToFrontendCommunity(backendCommunity);
+        if ("hasApplied" in backendCommunity) {
+          mapped.hasApplied = backendCommunity.hasApplied;
+        }
+        return mapped;
+      }
+    );
+    return mappedCommunities;
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error("Failed to fetch communities by book:", err);
@@ -116,11 +161,11 @@ export const fetchCommunitiesByBook = async (
  * @returns TeamCommunity 객체
  */
 export const fetchCommunityById = async (
-  communityId: number // ✨ number 타입 유지 ✨
+  communityId: number
 ): Promise<TeamCommunity> => {
   try {
     const response = await apiClient.get<TeamCommunity>(
-      `/mypage/communities/${communityId}` // ✨ URL 변경 ✨
+      `/mypage/communities/${communityId}`
     );
     return response.data;
   } catch (err: unknown) {
@@ -153,7 +198,7 @@ export const createCommunity = async (communityData: {
       status: string;
       message: string;
       communityId: number;
-    }>(`/mypage/communities`, communityData); // ✨ URL 변경 ✨
+    }>(`/mypage/communities`, communityData);
     return response.data.communityId.toString();
   } catch (err: unknown) {
     if (err instanceof Error) {
@@ -184,7 +229,7 @@ export const updateCommunityDetails = async (
     const response = await apiClient.put<{
       message: string;
       data: TeamCommunity;
-    }>(`/mypage/communities/${communityId}`, updateData); // ✨ URL 변경 ✨
+    }>(`/mypage/communities/${communityId}`, updateData);
 
     const backendComm = response.data.data;
 
@@ -200,7 +245,7 @@ export const updateCommunityDetails = async (
       status: (backendComm.status === "RECRUITING" ? "모집중" : "모집종료") as
         | "모집중"
         | "모집종료",
-      createdAt: backendComm.createdAt, // ✨ 추가: createdAt 필드 매핑 ✨
+      createdAt: backendComm.createdAt,
     };
     return mappedCommunity;
   } catch (err: unknown) {
@@ -227,7 +272,7 @@ export const updateCommunityStatus = async (
     const response = await apiClient.put<{
       message: string;
       data: TeamCommunity;
-    }>(`/mypage/communities/${communityId}/status`, { newStatus }); // ✨ URL 변경 ✨
+    }>(`/mypage/communities/${communityId}/status`, { newStatus });
     return mapBackendCommunityToFrontendCommunity(response.data.data);
   } catch (err: unknown) {
     if (err instanceof Error) {
@@ -247,7 +292,7 @@ export const deleteCommunity = async (communityId: number): Promise<void> => {
   try {
     const response = await apiClient.delete(
       `/mypage/communities/${communityId}`
-    ); // ✨ URL 변경 ✨
+    );
     console.log(response.data.message);
   } catch (error) {
     console.error(`Failed to delete community ${communityId}:`, error);
@@ -271,7 +316,6 @@ export const applyToCommunity = async (
 ): Promise<void> => {
   try {
     await apiClient.post(`/mypage/communities/${communityId}/apply`, {
-      // ✨ URL 변경 ✨
       applicationMessage,
     });
   } catch (err: unknown) {
@@ -306,7 +350,7 @@ export const fetchApplicantsByCommunity = async (
         status: "PENDING" | "ACCEPTED" | "REJECTED";
         user: { nickname: string };
       }[];
-    }>(`/mypage/communities/recruiting/${communityId}/applicants`); // ✨ URL 변경 ✨
+    }>(`/mypage/communities/recruiting/${communityId}/applicants`);
 
     const transformedApplicants: ApplicantWithStatus[] =
       response.data.applicants.map((app) => ({
@@ -346,7 +390,7 @@ export const updateApplicationStatus = async (
 ): Promise<void> => {
   try {
     await apiClient.put(
-      `/mypage/communities/recruiting/${communityId}/applicants/${userId}`, // ✨ URL 변경 ✨
+      `/mypage/communities/recruiting/${communityId}/applicants/${userId}`,
       { status }
     );
   } catch (err: unknown) {
@@ -365,7 +409,7 @@ export const updateApplicationStatus = async (
  */
 export const cancelRecruitment = async (communityId: string): Promise<void> => {
   try {
-    await apiClient.delete(`/mypage/communities/recruiting/${communityId}`); // ✨ URL 변경 ✨
+    await apiClient.delete(`/mypage/communities/recruiting/${communityId}`);
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error("Failed to cancel recruitment:", err);
@@ -384,7 +428,7 @@ export const cancelApplication = async (
   applicationId: string
 ): Promise<void> => {
   try {
-    await apiClient.delete(`/mypage/communities/applications/${applicationId}`); // ✨ URL 변경 ✨
+    await apiClient.delete(`/mypage/communities/applications/${applicationId}`);
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error("Failed to cancel application:", err);
@@ -406,7 +450,7 @@ export const cancelApplication = async (
 export const fetchParticipatingCommunities = async (): Promise<Community[]> => {
   try {
     const response = await apiClient.get<{ data: TeamCommunity[] }>(
-      `/mypage/communities/participating` // ✨ URL 변경 ✨
+      `/mypage/communities/participating`
     );
     return response.data.data.map(mapBackendCommunityToFrontendCommunity);
   } catch (err: unknown) {
@@ -427,7 +471,7 @@ export const leaveOrDeleteCommunity = async (
   communityId: string
 ): Promise<void> => {
   try {
-    await apiClient.delete(`/mypage/communities/participating/${communityId}`); // ✨ URL 변경 ✨
+    await apiClient.delete(`/mypage/communities/participating/${communityId}`);
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error("Failed to leave or delete community:", err);
@@ -445,25 +489,37 @@ export const fetchAppliedCommunities = async (): Promise<
   AppliedCommunity[]
 > => {
   try {
-    const response = await apiClient.get<{ data: TeamCommunity[] }>(
-      `/mypage/communities/applied` // ✨ URL 변경 ✨
-    );
+    // 백엔드는 ApplicationWithPostInfo (TeamApplication & { post: { postId, title }}) 배열을 반환합니다.
+    const response = await apiClient.get<{
+      data: (TeamApplication & {
+        post: { postId: number; title: string }; // 커뮤니티 게시물 정보
+      })[];
+    }>(`/mypage/communities/applied`);
 
-    return response.data.data.map((backendComm) => {
-      const mappedCommunity: AppliedCommunity = {
-        id: backendComm.teamId.toString(),
-        title: backendComm.postTitle,
-        description: backendComm.postContent,
-        hostName: backendComm.postAuthor,
+    return response.data.data.map((backendApplication) => {
+      // backendApplication 객체에는 teamId가 직접적으로 없습니다.
+      // id는 신청서 자체의 고유 ID(applicationId)를 사용하는 것이 적합합니다.
+      const mappedAppliedCommunity: AppliedCommunity = {
+        id: backendApplication.applicationId.toString(), // ✨ 수정: applicationId를 id로 사용 ✨
+        title: backendApplication.post.title, // 연결된 게시물의 제목
+        // 아래 필드들은 ApplicationWithPostInfo에 직접 제공되지 않습니다.
+        // 필요하다면 백엔드 API를 수정하거나 프론트엔드에서 추가 호출이 필요합니다.
+        // 일단은 기본값/빈 값으로 처리합니다. AppliedCommunity 타입 정의에 따라 조절해야 합니다.
+        description: "",
+        hostName: "",
         hostId: 0,
         currentMembers: 0,
-        maxMembers: backendComm.maxMembers || 0,
-        role: "member",
-        status: backendComm.status === "RECRUITING" ? "모집중" : "모집종료",
-        createdAt: backendComm.createdAt, // ✨ 추가: createdAt 필드 매핑 ✨
-        myApplicationStatus: "pending", // 이 값은 백엔드 응답에 따라 동적으로 설정되어야 합니다.
+        maxMembers: 0,
+        role: "member", // 신청 목록이므로 기본 역할은 member로 설정
+        status: "모집중", // 신청 당시 커뮤니티 상태 (백엔드에서 제공하지 않으므로 기본값)
+
+        createdAt: backendApplication.appliedAt, // 신청 날짜
+        myApplicationStatus: backendApplication.status.toLowerCase() as
+          | "pending"
+          | "accepted"
+          | "rejected", // 나의 신청 상태
       };
-      return mappedCommunity;
+      return mappedAppliedCommunity;
     });
   } catch (err: unknown) {
     if (err instanceof Error) {
@@ -487,7 +543,7 @@ export const fetchMyRecruitingCommunities = async (): Promise<Community[]> => {
         maxMembers?: number;
         hostId?: number;
       })[];
-    }>(`/mypage/communities/recruiting`); // ✨ URL 변경 ✨
+    }>(`/mypage/communities/recruiting`);
     return response.data.data.map(mapBackendCommunityToFrontendCommunity);
   } catch (err: unknown) {
     if (err instanceof Error) {
