@@ -2,10 +2,21 @@
 
 import { Link } from "react-router-dom";
 import type { Comment, TeamComment } from "../../types";
-import { useState } from "react";
+import { useState, useRef } from "react"; // ✨ useRef 임포트 ✨
 import CommentInput from "./CommentInput";
-import CommentList from "./CommentList"; // 재귀적으로 CommentList 사용
-import { formatKoreanDateTime } from "../../utils/dateFormatter"; // ✨ 추가: formatKoreanDateTime 임포트 ✨
+import CommentList from "./CommentList";
+import { formatKoreanDateTime } from "../../utils/dateFormatter";
+
+// Helper function to safely get the comment ID
+const getCommentIdentifier = (c: Comment | TeamComment): number => {
+  if ("commentId" in c && typeof c.commentId === "number") {
+    return c.commentId;
+  }
+  if ("teamCommentId" in c && typeof c.teamCommentId === "number") {
+    return c.teamCommentId;
+  }
+  return 0;
+};
 
 interface CommentItemProps {
   comment: Comment | TeamComment;
@@ -31,13 +42,24 @@ const CommentItem: React.FC<CommentItemProps> = ({
   );
   const isAuthor = comment.userId === currentUserId;
 
+  // ✨ 답글 입력창을 위한 ref 생성 ✨
+  const replyInputRef = useRef<HTMLTextAreaElement>(null);
+
   const handleReplyClick = () => {
-    setShowReplyInput(!showReplyInput);
+    setShowReplyInput((prev) => {
+      const newState = !prev;
+      if (newState) {
+        // ✨ 입력창이 나타난 후 포커스되도록 setTimeout 사용 ✨
+        setTimeout(() => {
+          replyInputRef.current?.focus();
+        }, 0);
+      }
+      return newState;
+    });
   };
 
   const handleReplySubmit = async (content: string) => {
-    const commentActualId =
-      "commentId" in comment ? comment.commentId : comment.teamCommentId;
+    const commentActualId = getCommentIdentifier(comment);
     await onAddReply(commentActualId, content);
     setShowReplyInput(false);
   };
@@ -67,8 +89,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
       return;
     }
 
-    const commentActualId =
-      "commentId" in comment ? comment.commentId : comment.teamCommentId;
+    const commentActualId = getCommentIdentifier(comment);
     await onEditComment(commentActualId, trimmedContent);
     setIsEditingComment(false);
   };
@@ -85,8 +106,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
     }
 
     if (window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) {
-      const commentActualId =
-        "commentId" in comment ? comment.commentId : comment.teamCommentId;
+      const commentActualId = getCommentIdentifier(comment);
       await onDeleteComment(commentActualId);
     }
   };
@@ -104,14 +124,12 @@ const CommentItem: React.FC<CommentItemProps> = ({
     return <div className="block rounded-lg">{children}</div>;
   };
 
-  // 들여쓰기를 위한 margin-left와 padding-left를 조합
-  // depth가 0일 때 (최상위)는 ml-0, p-4. depth가 1일 때 (대댓글)는 ml-8, p-4
-  const indentationClass = comment.depth ? `ml-${comment.depth * 8}` : "ml-0"; // Tailwind ml-8, ml-16 등
-  const basePadding = "p-4"; // 기본 패딩은 유지
+  const indentationClass = comment.depth ? `ml-${comment.depth * 8}` : "ml-0";
+  const basePadding = "p-4";
 
-  const canReply = (comment.depth || 0) < 1; // ✨ 추가: canReply 변수 정의 ✨
+  const canReply = (comment.depth || 0) < 1;
 
-  const DEFAULT_AVATAR_URL = "https://via.placeholder.com/40?text=User";
+  const DEFAULT_AVATAR_URL = "https://api.dicebear.com/8.x/identicon/svg?seed="; // Dicebear URL로 변경
 
   return (
     <OuterWrapper>
@@ -119,7 +137,12 @@ const CommentItem: React.FC<CommentItemProps> = ({
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center">
             <img
-              src={comment.user?.profileImage || DEFAULT_AVATAR_URL}
+              src={
+                comment.user?.profileImage ||
+                `${DEFAULT_AVATAR_URL}${encodeURIComponent(
+                  comment.user?.nickname || "Guest"
+                )}`
+              }
               alt={comment.user?.nickname || "작성자"}
               className="w-8 h-8 rounded-full mr-3 object-cover border border-gray-200"
             />
@@ -195,8 +218,10 @@ const CommentItem: React.FC<CommentItemProps> = ({
         {showReplyInput && (
           <div className="mt-4">
             <CommentInput
+              ref={replyInputRef} // ✨ ref 전달 ✨
               onAddComment={handleReplySubmit}
               placeholder="답글을 작성하세요..."
+              onCancel={handleCancelReply}
             />
 
             <div className="flex justify-end mt-2">
@@ -210,7 +235,6 @@ const CommentItem: React.FC<CommentItemProps> = ({
           </div>
         )}
 
-        {/* 대댓글 목록은 CommentList가 받도록 유지 */}
         {Array.isArray(comment.replies) && comment.replies.length > 0 && (
           <div className="mt-4">
             <CommentList

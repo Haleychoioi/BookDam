@@ -1,13 +1,14 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import MyPostsDisplay from "../../components/mypage/MyPostsDisplay";
-import MyCommentsDisplay from "../../components/mypage/MyCommentsDisplay";
-import type { Post, Comment } from "../../types";
-import { fetchMyPosts, fetchMyComments } from "../../api/mypage";
+// src/pages/mypage/MyActivitiesPage.tsx (수정된 전체 코드)
 
-// ✨ 더미 데이터 삭제 ✨
-// const myPostsMockData: Post[] = Array.from(...);
-// const myCommentsMockData: Comment[] = Array.from(...);
+import React, { useState, useEffect, useMemo } from "react"; // useCallback, useState, useEffect, useMemo 임포트
+import { useLocation, useNavigate } from "react-router-dom";
+
+import MyPostsDisplay from "../../components/mypage/MyPostsDisplay"; // MyPostsDisplay 컴포넌트
+import MyCommentsDisplay from "../../components/mypage/MyCommentsDisplay"; // MyCommentsDisplay 컴포넌트 (추후 사용)
+
+// ✨ 더미 데이터 및 fetchMyPosts/fetchMyComments 임포트 제거 (각 Display 컴포넌트가 알아서 페칭) ✨
+// import type { Post, Comment } from "../../types";
+// import { fetchMyPosts, fetchMyComments } from "../../api/mypage";
 
 const MyActivitiesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -17,55 +18,17 @@ const MyActivitiesPage: React.FC = () => {
     () => new URLSearchParams(location.search),
     [location.search]
   );
+  // URL에서 'tab' 파라미터 가져오기. 없으면 기본값 'posts'
   const initialTab = queryParams.get("tab") || "posts";
 
+  // 활성화된 탭 상태
   const [activeTab, setActiveTab] = useState<"posts" | "comments">(
-    initialTab as "posts" | "comments"
+    initialTab as "posts" | "comments" // 'posts'와 'comments'만 현재 탭으로 가정
   );
-  const [currentPage, setCurrentPage] = useState(1);
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [comments, setComments] = useState<Comment[]>([]);
-
-  const [totalPostsCount, setTotalPostsCount] = useState(0);
-  const [totalCommentsCount, setTotalCommentsCount] = useState(0);
-
-  const [loading, setLoading] = useState(true); // 초기 로딩 상태 true
-  const [error, setError] = useState<string | null>(null);
-
-  const itemsPerPage = 8;
-
-  const fetchActivities = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      if (activeTab === "posts") {
-        const data = await fetchMyPosts(currentPage, itemsPerPage);
-        setPosts(data.posts);
-        setTotalPostsCount(data.total);
-      } else {
-        // activeTab === "comments"
-        const data = await fetchMyComments(currentPage, itemsPerPage);
-        setComments(data.comments);
-        setTotalCommentsCount(data.total);
-      }
-    } catch (err) {
-      console.error("내 활동 기록 불러오기 실패:", err);
-      setError("활동 기록을 불러오는 데 실패했습니다.");
-      setPosts([]);
-      setComments([]);
-      setTotalPostsCount(0);
-      setTotalCommentsCount(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [activeTab, currentPage, itemsPerPage]);
-
+  // URL 탭 파라미터와 컴포넌트 상태 동기화
   useEffect(() => {
-    fetchActivities();
-  }, [fetchActivities]);
-
-  useEffect(() => {
+    // URL의 탭이 현재 activeTab과 다르면 업데이트
     const tabFromUrl = queryParams.get("tab");
     if (
       tabFromUrl &&
@@ -73,99 +36,81 @@ const MyActivitiesPage: React.FC = () => {
       tabFromUrl !== activeTab
     ) {
       setActiveTab(tabFromUrl);
-      setCurrentPage(1);
+      // 탭 변경 시 페이지는 각 Display 컴포넌트가 알아서 1페이지로 리셋할 것임
     }
   }, [queryParams, activeTab]);
 
-  const totalPages = useMemo(() => {
-    if (activeTab === "posts") {
-      return Math.ceil(totalPostsCount / itemsPerPage);
-    } else {
-      return Math.ceil(totalCommentsCount / itemsPerPage);
-    }
-  }, [activeTab, totalPostsCount, totalCommentsCount, itemsPerPage]);
-
-  const displayedData = useMemo(() => {
-    if (activeTab === "posts") {
-      return posts;
-    } else {
-      return comments;
-    }
-  }, [activeTab, posts, comments]);
-
+  // 탭 변경 핸들러
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId as "posts" | "comments");
-    setCurrentPage(1);
+    // URL의 탭 파라미터를 업데이트하여 새로고침 시에도 탭 유지
     navigate(`${location.pathname}?tab=${tabId}`, { replace: true });
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo(0, 0);
-  };
+  // ✨ MyActivitiesPage에서 직접 데이터를 페칭하는 로직 제거 ✨
+  // - useState 훅들 (posts, comments, totalPostsCount 등) 제거
+  // - useEffect(fetchActivities) 제거
+  // - fetchActivities useCallback 제거
+  // - displayedData useMemo 제거
+  // - totalPages useMemo 제거
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">내 활동 기록</h2>
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+      {/* ✨ h2 태그는 이 위치에 고정되어 항상 렌더링됨 ✨ */}
+      <h1 className="text-3xl font-bold text-gray-800 mb-8">내 활동</h1>
       <p className="text-gray-600 mb-8">
         내가 작성한 글과 댓글 목록을 확인하세요.
       </p>
 
-      <div className="flex border-b border-gray-200 mb-8">
-        {[
-          { id: "posts", label: "내가 작성한 글" },
-          { id: "comments", label: "내가 작성한 댓글" },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            className={`px-4 py-2 text-lg font-medium ${
-              activeTab === tab.id
-                ? "text-main border-b-2 border-main"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-            onClick={() => handleTabChange(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* 활동 탭 메뉴 */}
+      <nav className="mb-8 border-b border-gray-200">
+        <ul className="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500">
+          <li className="mr-2">
+            <button
+              className={`inline-block p-4 border-b-2 rounded-t-lg ${
+                activeTab === "posts"
+                  ? "text-main border-main"
+                  : "border-transparent hover:text-gray-600 hover:border-gray-300"
+              }`}
+              onClick={() => handleTabChange("posts")}
+            >
+              내가 작성한 글
+            </button>
+          </li>
+          <li className="mr-2">
+            <button
+              className={`inline-block p-4 border-b-2 rounded-t-lg ${
+                activeTab === "comments"
+                  ? "text-main border-main"
+                  : "border-transparent hover:text-gray-600 hover:border-gray-300"
+              }`}
+              onClick={() => handleTabChange("comments")}
+            >
+              내가 작성한 댓글
+            </button>
+          </li>
+          {/* 다른 활동 탭들도 여기에 추가 가능 */}
+        </ul>
+      </nav>
 
-      {loading && (
-        <p className="text-center text-gray-600">활동 기록을 불러오는 중...</p>
-      )}
-      {error && <p className="text-center text-red-600">{error}</p>}
-      {!loading && !error && displayedData.length === 0 ? (
-        <p className="text-center text-gray-600">
-          작성한 활동 기록이 없습니다.
-        </p>
-      ) : (
-        <>
-          {activeTab === "posts" ? (
-            <MyPostsDisplay
-              posts={displayedData as Post[]}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
-          ) : (
-            <MyCommentsDisplay
-              comments={displayedData as Comment[]}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              onAddReply={() => {
-                // TODO: 댓글 답글 추가 로직 구현
-                // 이 함수는 MyCommentsDisplay 내부에서 답글 버튼 클릭 시 호출됩니다.
-                // 실제 답글 작성 API 호출 로직을 여기에 구현하거나, MyCommentsDisplay에서 받은
-                // 특정 댓글 ID 등을 바탕으로 부모 컴포넌트에서 처리하도록 할 수 있습니다.
-                console.log("답글 추가 기능 구현 필요");
-              }}
-              currentUserId={1} // ✨ 현재 로그인된 사용자의 ID를 전달해야 합니다. ✨
-              // 실제 애플리케이션에서는 사용자 인증 상태(예: Context API, Redux 등)에서 이 ID를 가져와야 합니다.
-            />
-          )}
-        </>
-      )}
+      {/* 선택된 탭 내용 렌더링 */}
+      <div className="mt-8">
+        {/* 각 Display 컴포넌트가 자체적으로 데이터 페칭을 담당 */}
+        {activeTab === "posts" && (
+          <MyPostsDisplay
+          // ✨ 더 이상 부모에서 props로 posts, currentPage, totalPages 등을 넘기지 않습니다. ✨
+          // MyPostsDisplay 내부에서 useQuery 훅으로 직접 페칭합니다.
+          />
+        )}
+        {activeTab === "comments" && (
+          <MyCommentsDisplay
+          // ✨ MyCommentsDisplay도 자체 페칭을 담당하도록 변경합니다. ✨
+          // 부모에서 props로 comments, currentPage, totalPages 등을 넘기지 않습니다.
+          // currentUserId는 필요 시 useAuth() 훅을 통해 MyCommentsDisplay 내부에서 가져옵니다.
+          />
+        )}
+        {/* 다른 탭 컴포넌트들도 여기에 추가될 예정 */}
+      </div>
     </div>
   );
 };

@@ -2,21 +2,19 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import MyPageHeader from "../../components/mypage/MyPageHeader"; // MyPageHeader로 수정 (대소문자 일치)
+import MyPageHeader from "../../components/mypage/MyPageHeader";
 import Button from "../../components/common/Button";
-// import type { UserProfile } from "../../types"; // UserProfile 임포트 제거 (훅에서 타입 제공)
 import { useAuth } from "../../hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 
-// 기본 프로필 이미지 경로 (useAuth 훅 내의 로직과 동일하게 유지)
 const defaultProfileImage = "https://api.dicebear.com/8.x/identicon/svg?seed=";
 
 const ProfileEditPage: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // useAuth 훅에서 사용자 프로필 관련 상태와 함수를 가져옵니다.
-  // fetchUserProfile은 훅 내부에서 자동으로 호출되므로 여기서는 가져오지 않습니다.
   const { currentUserProfile, loading, error, updateProfile } = useAuth();
+  const queryClient = useQueryClient();
 
   const [currentNickname, setCurrentNickname] = useState<string>("");
   const [currentIntroduction, setCurrentIntroduction] = useState<string>("");
@@ -25,12 +23,10 @@ const ProfileEditPage: React.FC = () => {
   const [deleteExistingImage, setDeleteExistingImage] =
     useState<boolean>(false);
 
-  // currentUserProfile이 변경될 때마다 폼 상태 초기화
   useEffect(() => {
     if (currentUserProfile) {
       setCurrentNickname(currentUserProfile.nickname || "");
       setCurrentIntroduction(currentUserProfile.introduction || "");
-      // 프로필 이미지가 null이거나 비어있으면 기본 Dicebear 아바타 사용
       const initialProfileImage =
         currentUserProfile.profileImage ||
         `${defaultProfileImage}${encodeURIComponent(
@@ -40,7 +36,6 @@ const ProfileEditPage: React.FC = () => {
       setSelectedFile(null);
       setDeleteExistingImage(false);
     } else {
-      // currentUserProfile이 null이면 (로그아웃 등), 폼도 초기 상태로
       setCurrentNickname("");
       setCurrentIntroduction("");
       setPreviewImageUrl(defaultProfileImage + "Default");
@@ -49,19 +44,16 @@ const ProfileEditPage: React.FC = () => {
     }
   }, [currentUserProfile]);
 
-  // 닉네임 변경 핸들러
   const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCurrentNickname(e.target.value);
   };
 
-  // 자기소개 변경 핸들러
   const handleIntroductionChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
     setCurrentIntroduction(e.target.value);
   };
 
-  // 파일 선택 input 변경 핸들러
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -79,12 +71,10 @@ const ProfileEditPage: React.FC = () => {
     }
   };
 
-  // 이미지 업로드 버튼 클릭 시 숨겨진 파일 input 트리거
   const handleProfileImageUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-  // 기존 이미지 삭제 버튼 핸들러
   const handleDeleteProfileImage = () => {
     if (
       window.confirm(
@@ -101,9 +91,7 @@ const ProfileEditPage: React.FC = () => {
     }
   };
 
-  // "저장하기" 버튼 클릭 핸들러
   const handleSave = async () => {
-    // 닉네임 유효성 검사
     if (
       currentNickname.trim().length < 2 ||
       currentNickname.trim().length > 10
@@ -111,27 +99,24 @@ const ProfileEditPage: React.FC = () => {
       alert("닉네임은 2자 이상 10자 이내로 입력해주세요.");
       return;
     }
-    // 자기소개 유효성 검사
     if (currentIntroduction.trim().length > 100) {
       alert("자기소개는 100자 이내로 입력해주세요.");
       return;
     }
 
-    // 변경사항 확인
     const isNicknameChanged =
       currentNickname !== (currentUserProfile?.nickname || "");
     const isIntroductionChanged =
       currentIntroduction !== (currentUserProfile?.introduction || "");
     const isNewImageSelected = selectedFile !== null;
     const isImageDeletionRequested = deleteExistingImage;
-    // 실제 이미지 변경 여부를 정확히 판단
     const isImageActuallyChanged =
       isNewImageSelected ||
       isImageDeletionRequested ||
       (previewImageUrl !== currentUserProfile?.profileImage &&
-        !previewImageUrl?.startsWith(defaultProfileImage) && // 새 이미지가 기본 이미지가 아니고
+        !previewImageUrl?.startsWith(defaultProfileImage) &&
         (currentUserProfile?.profileImage === undefined ||
-          !currentUserProfile?.profileImage?.startsWith(defaultProfileImage))); // 기존 이미지도 기본 이미지가 아닐 때
+          !currentUserProfile?.profileImage?.startsWith(defaultProfileImage)));
 
     if (
       !isNicknameChanged &&
@@ -146,7 +131,6 @@ const ProfileEditPage: React.FC = () => {
       return;
     }
 
-    // FormData 객체 생성 (multipart/form-data 형식으로 데이터 전송)
     const formData = new FormData();
     formData.append("nickname", currentNickname);
     formData.append("introduction", currentIntroduction);
@@ -157,30 +141,32 @@ const ProfileEditPage: React.FC = () => {
       formData.append("deleteProfileImage", "true");
     }
 
-    // useAuth 훅의 updateProfile 함수 호출
     const success = await updateProfile(formData);
     if (success) {
-      // 훅 내부에서 alert 처리하므로 여기서는 추가 작업 없음
-      // navigate('/mypage'); // 마이페이지 메인으로 이동 (필요하다면 훅에서 처리)
+      // 프로필 수정 성공 후 관련 쿼리 무효화하여 데이터 다시 불러오기
+      queryClient.invalidateQueries({ queryKey: ["allPosts"] });
+      queryClient.invalidateQueries({ queryKey: ["teamPosts"] });
+      queryClient.invalidateQueries({ queryKey: ["myPosts"] });
+      queryClient.invalidateQueries({ queryKey: ["myComments"] });
+      // 개별 게시글 및 팀 게시글 상세 정보 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: ["post"] }); // 모든 개별 게시글 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: ["teamPost"] }); // 모든 개별 팀 게시글 쿼리 무효화
+      // 다른 프로필 이미지를 사용하는 페이지가 있다면 해당 쿼리 키도 추가
     }
-    // 훅에서 에러 처리하므로 여기서는 추가 작업 없음
   };
 
-  // "취소" 버튼 클릭 핸들러
   const handleCancel = () => {
     if (window.confirm("변경사항을 취소하고 이전으로 돌아가시겠습니까?")) {
       navigate(-1);
     }
   };
 
-  // 로딩 및 에러 상태는 훅에서 관리하므로, 페이지에서는 이를 받아와 표시만 합니다.
   if (loading) {
     return <div className="text-center py-12">회원 정보를 불러오는 중...</div>;
   }
   if (error) {
     return <div className="text-center py-12 text-red-500">오류: {error}</div>;
   }
-  // currentUserProfile이 아직 로드되지 않았다면 로딩 중으로 간주 (초기 상태)
   if (!currentUserProfile) {
     return <div className="text-center py-12">회원 정보를 불러오는 중...</div>;
   }
@@ -193,7 +179,6 @@ const ProfileEditPage: React.FC = () => {
       />
 
       <div className="p-8 space-y-6">
-        {/* 프로필 이미지 섹션 */}
         <div className="flex flex-col items-center space-y-4">
           <img
             src={previewImageUrl || `${defaultProfileImage}Default`}
@@ -214,7 +199,6 @@ const ProfileEditPage: React.FC = () => {
             >
               사진 변경
             </Button>
-            {/* 현재 프로필 이미지가 기본 이미지가 아니거나, 업로드된 이미지가 있는 경우에만 삭제 버튼 표시 */}
             {currentUserProfile?.profileImage &&
               !currentUserProfile.profileImage.startsWith(
                 defaultProfileImage
@@ -229,7 +213,6 @@ const ProfileEditPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 이름 섹션 */}
         <div>
           <label
             htmlFor="name"
@@ -243,11 +226,8 @@ const ProfileEditPage: React.FC = () => {
             value={currentUserProfile?.name || ""}
             readOnly
             className="w-full p-3 border border-gray-300 rounded-md text-gray-800 bg-gray-100"
-
-
           />
         </div>
-        {/* 전화번호 섹션 */}
         <div>
           <label
             htmlFor="phone"
@@ -263,7 +243,6 @@ const ProfileEditPage: React.FC = () => {
             className="w-full p-3 border border-gray-300 rounded-md text-gray-800 bg-gray-100"
           />
         </div>
-        {/* 닉네임 섹션 */}
         <div>
           <label
             htmlFor="nickname"
@@ -282,7 +261,6 @@ const ProfileEditPage: React.FC = () => {
           />
         </div>
 
-        {/* 자기소개 섹션 */}
         <div>
           <label
             htmlFor="introduction"
@@ -301,7 +279,6 @@ const ProfileEditPage: React.FC = () => {
           ></textarea>
         </div>
 
-        {/* 저장/취소 버튼 */}
         <div className="flex justify-end space-x-4 mt-6">
           <Button
             onClick={handleCancel}

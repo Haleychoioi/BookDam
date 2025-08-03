@@ -1,14 +1,13 @@
-// src/api/comments.ts
+// src/api/comments.ts (수정된 전체 코드)
 
 import apiClient from "./apiClient";
-import type { Comment } from "../types";
+import type { Comment } from "../types"; // Comment 타입 임포트
 
 // =========================================================
 // 일반 게시물 댓글 관련 API
 // =========================================================
 
 export const fetchCommentsByPost = async (
-  // ✨ export 추가 ✨
   postId: number,
   page?: number,
   size?: number,
@@ -38,7 +37,7 @@ export const fetchCommentsByPost = async (
 
 export const createComment = async (
   postId: number,
-  commentData: { userId: number; content: string; parentId: number | null } // ✨ 수정: parentId 타입을 number | null로 변경 ✨
+  commentData: { userId: number; content: string; parentId: number | null }
 ): Promise<Comment> => {
   try {
     const response = await apiClient.post<{
@@ -60,7 +59,6 @@ export const createComment = async (
 };
 
 export const updateComment = async (
-  // ✨ export 추가 ✨
   commentId: number,
   updateData: { content: string; userId: number }
 ): Promise<void> => {
@@ -73,7 +71,6 @@ export const updateComment = async (
 };
 
 export const deleteComment = async (
-  // ✨ export 추가 ✨
   commentId: number,
   userId: number
 ): Promise<void> => {
@@ -81,6 +78,43 @@ export const deleteComment = async (
     await apiClient.delete(`/comments/${commentId}`, { data: { userId } });
   } catch (error) {
     console.error("Failed to delete comment:", error);
+    throw error;
+  }
+};
+
+// =========================================================
+// 마이페이지 - 내가 작성한 댓글 관련 API (✨ 새로 추가 ✨)
+// =========================================================
+
+export interface MyCommentsResponse {
+  // ✨ 새로 추가 ✨
+  comments: Comment[];
+  pagination: {
+    currentPage: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export const fetchMyComments = async (
+  // ✨ 새로 추가 ✨
+  page: number = 1,
+  pageSize: number = 10,
+  sort: string = "latest"
+): Promise<MyCommentsResponse> => {
+  try {
+    const response = await apiClient.get<MyCommentsResponse>(
+      `/mypage/my-comments`,
+      {
+        params: { page, size: pageSize, sort },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch my comments:", error);
     throw error;
   }
 };

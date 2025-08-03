@@ -1,12 +1,24 @@
 // src/pages/auth/RegisterPage.tsx
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import Button from "../../components/common/Button";
 import { useAuth } from "../../hooks/useAuth";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import ReactDOM from "react-dom";
+
+const initialErrorsState = {
+  name: "",
+  nickname: "",
+  phone: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  introduction: "",
+  agreement: "",
+};
 
 const RegisterPage: React.FC = () => {
-  const { register, loading, error: authError } = useAuth();
+  const { register, loading } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -20,78 +32,115 @@ const RegisterPage: React.FC = () => {
 
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [errors, setErrors] = useState({
-    name: "",
-    nickname: "",
-    phone: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    introduction: "",
-    agreement: "",
-  });
+  const [errors, setErrors] = useState(initialErrorsState);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // useRef 훅의 타입 지정은 HTMLInputElement 또는 HTMLTextAreaElement로 유지
   const nameRef = useRef<HTMLInputElement>(null);
   const nicknameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
-  const introductionRef = useRef<HTMLTextAreaElement>(null); // textarea용
+  const introductionRef = useRef<HTMLTextAreaElement>(null);
   const agreementRef = useRef<HTMLInputElement>(null);
 
-  const validateField = (name: string, value: string | boolean): string => {
-    let message = "";
-    switch (name) {
-      case "name":
-        if (!value) message = "이름을 입력해주세요.";
-        break;
-      case "nickname":
-        if (!value) message = "닉네임을 입력해주세요.";
-        else if ((value as string).length < 1 || (value as string).length > 10)
-          message = "닉네임은 1자 이상 10자 이하로 입력해주세요.";
-        break;
-      case "phone":
-        if (!value) message = "전화번호를 입력해주세요.";
-        break;
-      case "email":
-        if (!value) message = "이메일을 입력해주세요.";
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string))
-          message = "유효한 이메일 형식이 아닙니다.";
-        break;
-      case "password":
-        if (!value) message = "비밀번호를 입력해주세요.";
-        else if ((value as string).length < 8)
-          message = "비밀번호는 최소 8자 이상이어야 합니다.";
-        break;
-      case "confirmPassword":
-        if (!value) message = "비밀번호 확인을 입력해주세요.";
-        else if (value !== form.password)
-          message = "비밀번호가 일치하지 않습니다.";
-        break;
-      case "introduction":
-        if ((value as string).length > 100)
-          message = "한 줄 소개는 100자 이내로 입력해주세요.";
-        break;
-      case "agreement":
-        if (!value) message = "이용약관에 동의해야 회원가입을 할 수 있습니다.";
-        break;
-      default:
-        break;
-    }
-    return message;
-  };
+  // validateField 함수를 useCallback으로 감싸서 안정화
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const validateField = useCallback(
+    (name: string, value: string | boolean): string => {
+      let message = "";
+      switch (name) {
+        case "name":
+          if (!value) message = "이름을 입력해주세요.";
+          break;
+        case "nickname":
+          if (!value) message = "닉네임을 입력해주세요.";
+          else if (
+            (value as string).length < 1 ||
+            (value as string).length > 10
+          )
+            message = "닉네임은 1자 이상 10자 이하로 입력해주세요.";
+          break;
+        case "phone":
+          if (!value) message = "전화번호를 입력해주세요.";
+          // ✨ 전화번호 정규식 수정: 하이픈 선택 사항으로 변경 ✨
+          else if (!/^\d{2,3}-?\d{3,4}-?\d{4}$/.test(value as string))
+            // 01012345678, 02-123-4567 등 모두 허용
+            message = "유효한 전화번호 형식이 아닙니다 (예: 010-1234-5678).";
+          break;
+        case "email":
+          if (!value) message = "이메일을 입력해주세요.";
+          else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string))
+            message = "유효한 이메일 형식이 아닙니다.";
+          break;
+        case "password":
+          if (!value) message = "비밀번호를 입력해주세요.";
+          else if ((value as string).length < 8)
+            message = "비밀번호는 최소 8자 이상이어야 합니다.";
+          break;
+        case "confirmPassword":
+          if (!value) message = "비밀번호 확인을 입력해주세요.";
+          else if (value !== form.password)
+            message = "비밀번호가 일치하지 않습니다.";
+          break;
+        case "introduction":
+          if ((value as string).length > 100)
+            message = "한 줄 소개는 100자 이내로 입력해주세요.";
+          break;
+        case "agreement":
+          if (!value)
+            message = "이용약관에 동의해야 회원가입을 할 수 있습니다.";
+          break;
+        default:
+          break;
+      }
+      return message;
+    },
+    [form.password, confirmPassword, form.agreement]
+  );
 
   const handleChange = (
+    // onChange에서 값과 에러 상태를 모두 업데이트
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
-    const newValue = type === "checkbox" ? checked : value;
+    let newValue: string | boolean = type === "checkbox" ? checked : value;
+
+    // ✨ 전화번호 자동 하이픈 추가 로직 ✨
+    if (name === "phone" && typeof newValue === "string") {
+      const digitsOnly = newValue.replace(/\D/g, ""); // 숫자만 남김
+      let formattedNumber = "";
+      if (digitsOnly.length > 10) {
+        // 010-XXXX-XXXX (11자리)
+        formattedNumber = digitsOnly.replace(
+          /(\d{3})(\d{4})(\d{4})/,
+          "$1-$2-$3"
+        );
+      } else if (digitsOnly.length > 6) {
+        // 0X-XXX-XXXX or 0XX-XXX-XXXX (7-10자리)
+        if (digitsOnly.startsWith("02")) {
+          // 서울 국번
+          formattedNumber = digitsOnly.replace(
+            /(\d{2})(\d{3,4})(\d{4})/,
+            "$1-$2-$3"
+          );
+        } else {
+          // 그 외 3자리 국번 (01X, 0XX 등)
+          formattedNumber = digitsOnly.replace(
+            /(\d{3})(\d{3,4})(\d{4})/,
+            "$1-$2-$3"
+          );
+        }
+      } else if (digitsOnly.length > 2) {
+        formattedNumber = digitsOnly.replace(/(\d{2,3})(.+)/, "$1-$2");
+      } else {
+        formattedNumber = digitsOnly;
+      }
+      newValue = formattedNumber; // 포맷된 값으로 업데이트
+    }
 
     if (name === "confirmPassword") {
       setConfirmPassword(newValue as string);
@@ -108,15 +157,44 @@ const RegisterPage: React.FC = () => {
         name,
         newValue
       );
-      if (name === "password") {
+
+      if (name === "password" || name === "confirmPassword") {
+        const currentPasswordValue =
+          name === "password" ? newValue : form.password;
+        const currentConfirmPasswordValue =
+          name === "confirmPassword" ? newValue : confirmPassword;
+
+        updatedErrors.password = validateField(
+          "password",
+          currentPasswordValue
+        );
+        updatedErrors.confirmPassword = validateField(
+          "confirmPassword",
+          currentConfirmPasswordValue
+        );
+      }
+      return updatedErrors;
+    });
+  };
+
+  const handleBlur = (
+    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    const valueToValidate = type === "checkbox" ? checked : value;
+
+    setErrors((prev) => {
+      const updatedErrors = { ...prev };
+      updatedErrors[name as keyof typeof errors] = validateField(
+        name,
+        valueToValidate
+      );
+
+      if (name === "password" || name === "confirmPassword") {
         updatedErrors.confirmPassword = validateField(
           "confirmPassword",
           confirmPassword
-        );
-      } else if (name === "confirmPassword") {
-        updatedErrors.confirmPassword = validateField(
-          "confirmPassword",
-          newValue
         );
       }
       return updatedErrors;
@@ -135,13 +213,10 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const newErrorsState = { ...errors };
-    // ✨ firstErrorElement의 타입을 HTMLElement | null로 명시하고, 초기값을 null로 설정 ✨
+    const newErrorsState = { ...initialErrorsState };
     let firstErrorElement: HTMLElement | null = null;
 
-    const fieldsToValidate: Array<
-      keyof typeof form | "confirmPassword" | "agreement"
-    > = [
+    const fieldsToValidate: Array<keyof typeof form | "confirmPassword"> = [
       "name",
       "nickname",
       "phone",
@@ -149,61 +224,65 @@ const RegisterPage: React.FC = () => {
       "password",
       "confirmPassword",
       "introduction",
-      "agreement",
     ];
 
     for (const field of fieldsToValidate) {
-      // forEach 대신 for...of 루프 사용
       let valueToCheck: string | boolean;
       if (field === "confirmPassword") valueToCheck = confirmPassword;
-      else if (field === "agreement") valueToCheck = form.agreement;
       else valueToCheck = form[field as keyof typeof form];
 
       const errorMessage = validateField(field, valueToCheck);
-      newErrorsState[field as keyof typeof errors] = errorMessage;
-
-      if (errorMessage && !firstErrorElement) {
-        // 에러가 있고 아직 첫 에러 요소가 설정되지 않았다면 설정
-        switch (field) {
-          case "name":
-            firstErrorElement = nameRef.current;
-            break;
-          case "nickname":
-            firstErrorElement = nicknameRef.current;
-            break;
-          case "phone":
-            firstErrorElement = phoneRef.current;
-            break;
-          case "email":
-            firstErrorElement = emailRef.current;
-            break;
-          case "password":
-            firstErrorElement = passwordRef.current;
-            break;
-          case "confirmPassword":
-            firstErrorElement = confirmPasswordRef.current;
-            break;
-          case "introduction":
-            firstErrorElement = introductionRef.current;
-            break;
-          case "agreement":
-            firstErrorElement = agreementRef.current;
-            break;
-        }
+      if (errorMessage) {
+        newErrorsState[field as keyof typeof errors] = errorMessage;
       }
     }
 
-    setErrors(newErrorsState); // 모든 에러를 한 번에 업데이트
+    if (!form.agreement) {
+      newErrorsState.agreement =
+        "이용약관에 동의해야 회원가입을 할 수 있습니다.";
+    }
 
-    // 에러가 있다면 제출 방지 및 첫 에러 필드로 포커스 이동
     if (Object.values(newErrorsState).some((msg) => msg !== "")) {
-      if (firstErrorElement) {
-        // ✨ firstErrorElement가 null이 아닐 때만 focus/scrollIntoView 호출 ✨
-        firstErrorElement.focus(); // ?. 대신 직접 focus 호출
-        firstErrorElement.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        }); // 직접 scrollIntoView 호출
+      ReactDOM.flushSync(() => {
+        setErrors(newErrorsState);
+      });
+      for (const field of [...fieldsToValidate, "agreement"]) {
+        if (newErrorsState[field as keyof typeof errors]) {
+          switch (field) {
+            case "name":
+              firstErrorElement = nameRef.current;
+              break;
+            case "nickname":
+              firstErrorElement = nicknameRef.current;
+              break;
+            case "phone":
+              firstErrorElement = phoneRef.current;
+              break;
+            case "email":
+              firstErrorElement = emailRef.current;
+              break;
+            case "password":
+              firstErrorElement = passwordRef.current;
+              break;
+            case "confirmPassword":
+              firstErrorElement = confirmPasswordRef.current;
+              break;
+            case "introduction":
+              firstErrorElement = introductionRef.current;
+              break;
+            case "agreement":
+              firstErrorElement = agreementRef.current;
+              break;
+          }
+          if (firstErrorElement) {
+            firstErrorElement.focus();
+            firstErrorElement.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+            return;
+          }
+        }
       }
       return;
     }
@@ -211,35 +290,81 @@ const RegisterPage: React.FC = () => {
     const dataToSend = {
       name: form.name,
       nickname: form.nickname,
-      phone: form.phone,
+      // ✨ 전화번호 정규화: 하이픈 제거 ✨ (handle change에서 이미 포맷팅 됨)
+      phone: form.phone.replace(/[^0-9]/g, ""), // 백엔드에는 숫자만 보냄
       email: form.email,
       password: form.password,
       introduction: form.introduction,
       agreement: form.agreement,
     };
 
-    const success = await register(dataToSend);
+    const authError = await register(dataToSend);
 
-    if (!success && authError) {
-      setErrors((prev) => ({ ...prev, general: "" }));
+    if (authError) {
+      const serverErrorsState = { ...initialErrorsState };
 
-      if (authError.includes("사용중인 닉네임")) {
-        setErrors((prev) => ({ ...prev, nickname: authError }));
-        nicknameRef.current?.focus();
-        nicknameRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      } else if (authError.includes("가입된 이메일 존재")) {
-        setErrors((prev) => ({ ...prev, email: authError }));
-        emailRef.current?.focus();
-        emailRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
+      if (typeof authError === "object" && authError !== null) {
+        if (authError.email) serverErrorsState.email = authError.email;
+        if (authError.nickname) serverErrorsState.nickname = authError.nickname;
+        if (authError.phone) serverErrorsState.phone = authError.phone;
+
+        console.error("회원가입 중 다중 중복 오류:", authError);
+
+        if (serverErrorsState.email && emailRef.current) {
+          emailRef.current.focus();
+          emailRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        } else if (serverErrorsState.nickname && nicknameRef.current) {
+          nicknameRef.current.focus();
+          nicknameRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        } else if (serverErrorsState.phone && phoneRef.current) {
+          phoneRef.current.focus();
+          phoneRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      } else if (typeof authError === "string") {
+        if (authError.includes("가입된 이메일 존재")) {
+          serverErrorsState.email = authError;
+          emailRef.current?.focus();
+          emailRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        } else if (authError.includes("사용중인 닉네임")) {
+          serverErrorsState.nickname = authError;
+          nicknameRef.current?.focus();
+          nicknameRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        } else if (authError.includes("이미 가입된 전화번호입니다.")) {
+          serverErrorsState.phone = authError;
+          phoneRef.current?.focus();
+          phoneRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        } else {
+          console.error("회원가입 중 백엔드 오류:", authError);
+          alert(authError);
+        }
       } else {
-        console.error("회원가입 중 백엔드 오류:", authError);
+        console.error("회원가입 중 예상치 못한 오류 발생:", authError);
+        alert("알 수 없는 오류가 발생했습니다.");
       }
+
+      console.log("최종 설정될 serverErrorsState:", serverErrorsState);
+
+      ReactDOM.flushSync(() => {
+        setErrors(serverErrorsState);
+      });
     }
   };
 
@@ -264,12 +389,7 @@ const RegisterPage: React.FC = () => {
               name="name"
               value={form.name}
               onChange={handleChange}
-              onBlur={() =>
-                setErrors((prev) => ({
-                  ...prev,
-                  name: validateField("name", form.name),
-                }))
-              }
+              onBlur={handleBlur}
               required
               placeholder="이름을 입력하세요"
               className={`w-full border ${
@@ -294,15 +414,10 @@ const RegisterPage: React.FC = () => {
               name="nickname"
               value={form.nickname}
               onChange={handleChange}
-              onBlur={() =>
-                setErrors((prev) => ({
-                  ...prev,
-                  nickname: validateField("nickname", form.nickname),
-                }))
-              }
+              onBlur={handleBlur}
+              required
               placeholder="닉네임을 입력하세요 (1자 이상 10자 이하)"
               maxLength={10}
-              required
               className={`w-full border ${
                 errors.nickname ? "border-red-500" : "border-gray-300"
               } rounded px-4 py-2`}
@@ -322,12 +437,7 @@ const RegisterPage: React.FC = () => {
               name="phone"
               value={form.phone}
               onChange={handleChange}
-              onBlur={() =>
-                setErrors((prev) => ({
-                  ...prev,
-                  phone: validateField("phone", form.phone),
-                }))
-              }
+              onBlur={handleBlur}
               required
               placeholder="전화번호를 입력하세요 (예: 010-1234-5678)"
               className={`w-full border ${
@@ -349,12 +459,7 @@ const RegisterPage: React.FC = () => {
               name="email"
               value={form.email}
               onChange={handleChange}
-              onBlur={() =>
-                setErrors((prev) => ({
-                  ...prev,
-                  email: validateField("email", form.email),
-                }))
-              }
+              onBlur={handleBlur}
               required
               placeholder="이메일 주소를 입력하세요"
               className={`w-full border ${
@@ -380,12 +485,7 @@ const RegisterPage: React.FC = () => {
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                onBlur={() =>
-                  setErrors((prev) => ({
-                    ...prev,
-                    password: validateField("password", form.password),
-                  }))
-                }
+                onBlur={handleBlur}
                 onCopy={handleCopyPaste}
                 onPaste={handleCopyPaste}
                 required
@@ -421,15 +521,7 @@ const RegisterPage: React.FC = () => {
                 name="confirmPassword"
                 value={confirmPassword}
                 onChange={handleChange}
-                onBlur={() =>
-                  setErrors((prev) => ({
-                    ...prev,
-                    confirmPassword: validateField(
-                      "confirmPassword",
-                      confirmPassword
-                    ),
-                  }))
-                }
+                onBlur={handleBlur}
                 onCopy={handleCopyPaste}
                 onPaste={handleCopyPaste}
                 required
@@ -465,15 +557,7 @@ const RegisterPage: React.FC = () => {
               name="introduction"
               value={form.introduction}
               onChange={handleChange}
-              onBlur={() =>
-                setErrors((prev) => ({
-                  ...prev,
-                  introduction: validateField(
-                    "introduction",
-                    form.introduction
-                  ),
-                }))
-              }
+              onBlur={handleBlur}
               placeholder="자신을 한 줄로 소개해보세요 (100자 이내, 선택사항)"
               rows={3}
               maxLength={100}
@@ -493,12 +577,7 @@ const RegisterPage: React.FC = () => {
               name="agreement"
               checked={form.agreement}
               onChange={handleChange}
-              onBlur={() =>
-                setErrors((prev) => ({
-                  ...prev,
-                  agreement: validateField("agreement", form.agreement),
-                }))
-              }
+              onBlur={handleBlur}
               required
               className={`w-4 h-4 ${
                 errors.agreement ? "border-red-500" : "border-gray-300"
