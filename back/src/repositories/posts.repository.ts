@@ -1,5 +1,4 @@
 // src/repositories/posts.repository.ts
-
 import prisma from "../utils/prisma";
 import {
   Post,

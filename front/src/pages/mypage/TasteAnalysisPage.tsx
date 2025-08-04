@@ -1,7 +1,5 @@
-// src/pages/mypage/TasteAnalysisPage.tsx
-
 import React, { useEffect, useState } from "react";
-import type { LibraryStats } from "../../types"; // LibraryStats는 src/types/index.ts에 통합됨
+import type { LibraryStats } from "../../types/tasteAnalysis.types";
 import apiClient from "../../api/apiClient";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 
@@ -24,6 +22,13 @@ const TasteAnalysisPage: React.FC = () => {
     fetchStats();
   }, []);
 
+  // if (loading) return <p className="text-center mt-10">로딩 중...</p>;
+  // if (!data || data.totalBooks === 0) {
+  //   return <p className="text-center mt-10 text-gray-500">아직 평점을 등록한 도서가 없어요 😢</p>;
+  // }
+
+  //서재에 추가, 완독 기준
+
   return (
     <div className="container mx-auto px-4 py-10 space-y-12">
       <section className="container mx-auto py-12 px-4">
@@ -36,7 +41,7 @@ const TasteAnalysisPage: React.FC = () => {
       {/* 로딩 중일 때만 표시 */}
       {loading && <p className="text-center mt-10">로딩 중...</p>}
 
-      {/* 데이터는 있지만 책이 없을 때 */}
+      {/*  데이터는 있지만 책이 없을 때 */}
       {!loading && data && data.totalBooks === 0 && (
         <p className="text-center mt-10 text-gray-500 text-lg">
           아직 독서 기록이 없어요 😌 <br />
@@ -44,7 +49,7 @@ const TasteAnalysisPage: React.FC = () => {
         </p>
       )}
 
-      {/* 데이터가 있고 책도 있을 때 → 기존 UI 전부 포함 */}
+      {/*  데이터가 있고 책도 있을 때 → 기존 UI 전부 포함 */}
       {!loading && data && data.totalBooks > 0 && (
         <div className="space-y-12">
           {/* 1. 기본 통계 */}
@@ -64,27 +69,19 @@ const TasteAnalysisPage: React.FC = () => {
           <section>
             <h2 className="text-2xl font-bold mb-4">⭐ 평점 분포</h2>
             <div className="flex gap-4 items-end h-40">
-              {data.ratingDistribution.map(
-                (item: {
-                  rating: number;
-                  count: number;
-                  percentage: number;
-                }) => (
+              {data.ratingDistribution.map((item) => (
+                <div
+                  key={item.rating}
+                  className="flex flex-col items-center text-sm w-12"
+                >
                   <div
-                    key={item.rating}
-                    className="flex flex-col items-center text-sm w-12"
-                  >
-                    <div
-                      className="bg-indigo-400 w-full rounded-t"
-                      style={{ height: `${item.percentage * 1.5}px` }}
-                    />
-                    <span className="mt-2">{item.rating}점</span>
-                    <span className="text-gray-500 text-xs">
-                      {item.count}권
-                    </span>
-                  </div>
-                )
-              )}
+                    className="bg-indigo-400 w-full rounded-t"
+                    style={{ height: `${item.percentage * 1.5}px` }} // 비율을 높이로
+                  />
+                  <span className="mt-2">{item.rating}점</span>
+                  <span className="text-gray-500 text-xs">{item.count}권</span>
+                </div>
+              ))}
             </div>
           </section>
 
@@ -98,22 +95,12 @@ const TasteAnalysisPage: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-2">📗 선호 카테고리</h3>
                 <ul className="space-y-1 text-sm">
-                  {data.preferredCategories.map(
-                    (
-                      item: {
-                        categoryName: string;
-                        count: number;
-                        averageRating: number;
-                        percentage: number;
-                      },
-                      idx: number
-                    ) => (
-                      <li key={idx} className="border p-2 rounded bg-green-50">
-                        {item.categoryName} ({item.count}권, 평점{" "}
-                        {item.averageRating.toFixed(1)}, {item.percentage}%)
-                      </li>
-                    )
-                  )}
+                  {data.preferredCategories.map((item, idx) => (
+                    <li key={idx} className="border p-2 rounded bg-green-50">
+                      {item.categoryName} ({item.count}권, 평점{" "}
+                      {item.averageRating.toFixed(1)}, {item.percentage}%)
+                    </li>
+                  ))}
                 </ul>
               </div>
 
@@ -121,21 +108,12 @@ const TasteAnalysisPage: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-2">✍️ 선호 작가</h3>
                 <ul className="space-y-1 text-sm">
-                  {data.preferredAuthors.map(
-                    (
-                      item: {
-                        author: string;
-                        count: number;
-                        averageRating: number;
-                      },
-                      idx: number
-                    ) => (
-                      <li key={idx} className="border p-2 rounded bg-orange-50">
-                        {item.author} ({item.count}권, 평점{" "}
-                        {item.averageRating.toFixed(1)})
-                      </li>
-                    )
-                  )}
+                  {data.preferredAuthors.map((item, idx) => (
+                    <li key={idx} className="border p-2 rounded bg-orange-50">
+                      {item.author} ({item.count}권, 평점{" "}
+                      {item.averageRating.toFixed(1)})
+                    </li>
+                  ))}
                 </ul>
               </div>
 
@@ -143,21 +121,12 @@ const TasteAnalysisPage: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-2">🏢 선호 출판사</h3>
                 <ul className="space-y-1 text-sm">
-                  {data.preferredPublishers.map(
-                    (
-                      item: {
-                        publisher: string;
-                        count: number;
-                        averageRating: number;
-                      },
-                      idx: number
-                    ) => (
-                      <li key={idx} className="border p-2 rounded bg-purple-50">
-                        {item.publisher} ({item.count}권, 평점{" "}
-                        {item.averageRating.toFixed(1)})
-                      </li>
-                    )
-                  )}
+                  {data.preferredPublishers.map((item, idx) => (
+                    <li key={idx} className="border p-2 rounded bg-purple-50">
+                      {item.publisher} ({item.count}권, 평점{" "}
+                      {item.averageRating.toFixed(1)})
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>
@@ -176,28 +145,16 @@ const TasteAnalysisPage: React.FC = () => {
               </thead>
               <tbody>
                 {data.allCategoryStats
-                  .sort(
-                    (a: { count: number }, b: { count: number }) =>
-                      b.count - a.count
-                  )
-                  .map(
-                    (
-                      item: {
-                        categoryName: string;
-                        count: number;
-                        averageRating: number;
-                      },
-                      idx: number
-                    ) => (
-                      <tr key={idx} className="text-center">
-                        <td className="p-2 border">{item.categoryName}</td>
-                        <td className="p-2 border">{item.count}</td>
-                        <td className="p-2 border">
-                          {item.averageRating.toFixed(1)}
-                        </td>
-                      </tr>
-                    )
-                  )}
+                  .sort((a, b) => b.count - a.count)
+                  .map((item, idx) => (
+                    <tr key={idx} className="text-center">
+                      <td className="p-2 border">{item.categoryName}</td>
+                      <td className="p-2 border">{item.count}</td>
+                      <td className="p-2 border">
+                        {item.averageRating.toFixed(1)}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </section>

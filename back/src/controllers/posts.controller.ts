@@ -1,5 +1,3 @@
-// src/controllers/posts.controller.ts
-
 import { Request, Response, NextFunction } from "express";
 import { PostService } from "../services/posts.service";
 import { CustomError } from "../middleware/error-handing-middleware";
