@@ -9,7 +9,20 @@ import BookCategoryFilter from "../../components/bookResults/BookCategoryFilter"
 
 import { searchBooks } from "../../api/books";
 
-const categories = ["만화", "인문학", "소설/시/희곡", "외국어", "여행", "잡지"];
+const categories = [
+  "소설",
+  "에세이",
+  "자기계발",
+  "경영",
+  "인문학",
+  "역사",
+  "과학",
+  "사회과학",
+  "예술",
+  "만화",
+  "장르소설",
+  "고전",
+];
 
 const BookSearchResultPage: React.FC = () => {
   const location = useLocation();
@@ -94,10 +107,12 @@ const BookSearchResultPage: React.FC = () => {
       </div>
 
       <div className="container mx-auto px-4 lg:px-20 xl:px-32 mb-16">
+        {/* ✨ BookCategoryFilter에 max-w-3xl과 mx-auto 추가하여 너비를 제한하고 중앙 정렬합니다. ✨ */}
         <BookCategoryFilter
           categories={categories}
           activeCategory={activeCategory}
           onCategoryClick={handleCategoryClick}
+          className="max-w-3xl mx-auto" // Added classes here
         />
       </div>
 
