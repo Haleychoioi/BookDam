@@ -61,7 +61,7 @@ const TasteAnalysisPage: React.FC = () => {
           </section>
 
           {/* 2. 평점 분포 */}
-          <section>
+          <section className="flex justify-center">
             <h2 className="text-2xl font-bold mb-4">⭐ 평점 분포</h2>
             <div className="flex gap-4 items-end h-40">
               {data.ratingDistribution.map(
