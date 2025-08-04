@@ -65,16 +65,22 @@ export interface TeamPost {
   userId: number;
   title: string;
   content: string;
-  type: TeamPostType;
+  type: string; // ✨ TeamPostType 대신 string으로 변경 ✨
   createdAt: string;
   updatedAt: string; // 통일된 string 타입
   user: {
     nickname: string;
-    profileImage?: string | null; // 백엔드 include에 따라 없을 수도 있음
+    profileImage?: string | null;
   };
   _count?: {
     comments: number;
   };
+  // 이전 단계에서 추가된 teamPost 속성 (이 오류와는 무관하지만 코드 일관성을 위해 유지)
+  teamPost?: {
+    teamPostId: number;
+    title: string;
+    teamId: number;
+  } | null;
 }
 
 export interface TeamCommunity {
@@ -120,7 +126,7 @@ export interface Post {
   userId: number;
   title: string;
   content: string;
-  type: PostType;
+  type: string; // ✨ PostType 대신 string으로 변경 ✨
   createdAt: string;
   updatedAt: string; // 통일된 string 타입
   user: {
@@ -144,7 +150,7 @@ export interface Post {
 
 export interface Comment {
   commentId: number;
-  postId: number;
+  postId?: number; // 서비스에서 평탄화하여 추가할 수 있음
   userId: number;
   content: string;
   createdAt: string;
@@ -156,14 +162,14 @@ export interface Comment {
   };
   replies?: (Comment | TeamComment)[];
   depth?: number;
-  postTitle?: string;
-  postType?: string;
-  communityId?: string;
+  postTitle?: string; // ✨ 서비스에서 추가 ✨
+  postType?: string; // ✨ 서비스에서 추가 (GENERAL, RECRUITMENT) ✨
+  // 'post' 중첩 객체는 서비스에서 평탄화되므로 여기에 직접 정의하지 않습니다.
 }
 
 export interface TeamComment {
   teamCommentId: number;
-  teamPostId: number;
+  teamPostId?: number; // 서비스에서 평탄화하여 추가할 수 있음
   userId: number;
   content: string;
   createdAt: string;
@@ -175,9 +181,10 @@ export interface TeamComment {
   };
   replies?: (Comment | TeamComment)[];
   depth?: number;
-  postTitle?: string;
-  postType?: string;
-  communityId?: string;
+  postTitle?: string; // ✨ 서비스에서 추가 (teamPost.title) ✨
+  postType?: string; // ✨ 서비스에서 추가 (항상 'TEAM') ✨
+  communityId?: number; // ✨ 서비스에서 추가 (teamPost.teamId) ✨
+  // 'teamPost' 중첩 객체는 서비스에서 평탄화되므로 여기에 직접 정의하지 않습니다.
 }
 
 export interface JWTPayload {

@@ -1,7 +1,24 @@
-// src/api/comments.ts (수정된 전체 코드)
+// src/api/comments.ts
 
 import apiClient from "./apiClient";
-import type { Comment } from "../types"; // Comment 타입 임포트
+import type { Comment, TeamComment } from "../types"; // TeamComment 타입 임포트 확인
+
+// ✨ MyCommentsResponse 인터페이스를 실제 API 응답 구조에 맞게 변경합니다. ✨
+export interface MyCommentsResponse {
+  message: string; // 응답 메시지
+  data: {
+    // 실제 데이터와 페이지네이션 정보가 담긴 중첩된 'data' 객체
+    comments: (Comment | TeamComment)[]; // Comment와 TeamComment를 모두 포함할 수 있도록 타입 확장
+    pagination: {
+      currentPage: number;
+      pageSize: number;
+      totalCount: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  };
+}
 
 // =========================================================
 // 일반 게시물 댓글 관련 API
@@ -86,35 +103,17 @@ export const deleteComment = async (
 // 마이페이지 - 내가 작성한 댓글 관련 API (✨ 새로 추가 ✨)
 // =========================================================
 
-export interface MyCommentsResponse {
-  // ✨ 새로 추가 ✨
-  comments: Comment[];
-  pagination: {
-    currentPage: number;
-    pageSize: number;
-    totalCount: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPrevPage: boolean;
-  };
-}
-
 export const fetchMyComments = async (
-  // ✨ 새로 추가 ✨
   page: number = 1,
   pageSize: number = 10,
   sort: string = "latest"
 ): Promise<MyCommentsResponse> => {
-  try {
-    const response = await apiClient.get<MyCommentsResponse>(
-      `/mypage/my-comments`,
-      {
-        params: { page, size: pageSize, sort },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Failed to fetch my comments:", error);
-    throw error;
-  }
+  // useQuery의 data 타입은 이제 MyCommentsResponse와 동일합니다.
+  const response = await apiClient.get<MyCommentsResponse>(
+    `/mypage/my-comments`,
+    {
+      params: { page, size: pageSize, sort },
+    }
+  );
+  return response.data;
 };
