@@ -1,3 +1,5 @@
+// src/components/bookResults/BookGridDisplay.tsx
+
 import { Link } from "react-router-dom";
 import HeartButton from "../common/HeartButton";
 import { type BookSummary, type MyLibraryBook } from "../../types";
@@ -56,20 +58,40 @@ const BookGridDisplay: React.FC<BookGridDisplayProps> = ({
   return (
     <div className={`grid gap-x-8 gap-y-12 justify-items-center ${className}`}>
       {books.map((book, index) => {
-        // 맵핑되는 각 'book' 객체의 실제 타입을 확인하여 올바른 속성에 접근
-        const displayIsbn13 = isMyLibraryBook(book)
-          ? book.book.isbn13
-          : book.isbn13;
-        const displayCover = isMyLibraryBook(book)
-          ? book.book.cover
-          : book.cover;
-        const displayTitle = isMyLibraryBook(book)
-          ? book.book.title
-          : book.title;
+        // ✨ 이 부분을 추가하여 book 객체와 그 내부 속성을 더 안전하게 접근합니다. ✨
+        if (!book) {
+          return null; // book 자체가 null/undefined인 경우 건너뛰기
+        }
+
+        let displayIsbn13: string | undefined;
+        let displayCover: string | null | undefined;
+        let displayTitle: string | undefined;
+
+        if (isMyLibraryBook(book)) {
+          // MyLibraryBook일 경우, 중첩된 'book' 속성이 존재하는지 확인
+          if (!book.book) {
+            // console.warn("MyLibraryBook found without nested 'book' property:", book);
+            return null; // 중첩된 book 속성이 없으면 렌더링 건너뛰기
+          }
+          displayIsbn13 = book.book.isbn13;
+          displayCover = book.book.cover;
+          displayTitle = book.book.title;
+        } else {
+          // BookSummary일 경우 직접 속성 사용
+          displayIsbn13 = book.isbn13;
+          displayCover = book.cover;
+          displayTitle = book.title;
+        }
+
+        // 필수 정보(ISBN13, 제목)가 없는 경우 렌더링 건너뛰기
+        if (!displayIsbn13 || !displayTitle) {
+          // console.warn("Book missing ISBN or Title, skipping:", book);
+          return null;
+        }
 
         return (
           <Link
-            key={displayIsbn13 || index}
+            key={displayIsbn13 || index} // displayIsbn13은 이제 유효함
             to={`/books/${displayIsbn13}`}
             className="group w-52 flex flex-col items-center max-w-full relative"
           >
@@ -99,7 +121,7 @@ const BookGridDisplay: React.FC<BookGridDisplayProps> = ({
                 <button
                   onClick={(event) => handleDeleteButtonClick(book, event)}
                   className="p-2 rounded-full bg-red-400 bg-opacity-80 text-white hover:bg-red-600 transition-colors duration-200 shadow-md"
-                  aria-label={`Delete ${book.book.title} from My Library`} // isMyLibraryBook(book) 조건문 안이므로 book은 MyLibraryBook 타입
+                  aria-label={`Delete ${book.book.title} from My Library`}
                 >
                   <FaTrash className="w-4 h-4" />
                 </button>

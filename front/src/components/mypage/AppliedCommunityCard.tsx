@@ -1,3 +1,5 @@
+// src/components/mypage/AppliedCommunityCard.tsx
+
 import Button from "../common/Button";
 import { FaUserFriends } from "react-icons/fa";
 import { type AppliedCommunity } from "../../types";
@@ -59,7 +61,8 @@ const AppliedCommunityCard: React.FC<AppliedCommunityCardProps> = ({
 
       <div className="flex justify-end items-center mt-auto">
         <div className="flex items-end space-x-2">
-          {community.status === "모집중" && (
+          {/* ✨ 신청 취소 버튼을 나의 신청 상태(myApplicationStatus)가 'pending'일 때만 표시하도록 변경 ✨ */}
+          {community.myApplicationStatus === "pending" && (
             <Button
               onClick={() => onCancelApplication(community.id)}
               bgColor="bg-red-400"

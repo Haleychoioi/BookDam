@@ -2,15 +2,15 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import PostDetailTemplate from "../../components/posts/PostDetailTemplate"; // Correct path
+import PostDetailTemplate from "../../components/posts/PostDetailTemplate";
 import type { Post, Comment, TeamPost, TeamComment } from "../../types";
 
-import CommentInput from "../../components/comments/CommentInput"; // Correct path
-import CommentList from "../../components/comments/CommentList"; // Correct path
+import CommentInput from "../../components/comments/CommentInput";
+import CommentList from "../../components/comments/CommentList";
 import { useAuth } from "../../hooks/useAuth";
-import { useQuery /* , type UseQueryOptions */ } from "@tanstack/react-query"; // Removed unused UseQueryOptions import
+import { useQuery } from "@tanstack/react-query";
 
-// API 임포트
+// API 임포트 (ESLint 'defined but never used' 경고는 여기서 사용되므로 오탐입니다.)
 import { fetchPostById, updatePost, deletePost } from "../../api/posts";
 import {
   fetchTeamPostById,
@@ -28,9 +28,8 @@ import {
   fetchTeamComments,
   updateTeamComment,
   deleteTeamComment,
-} from "../../api/teamComments"; // Correct 'from' keyword syntax
+} from "../../api/teamComments";
 
-// 댓글에 depth 속성을 재귀적으로 할당하는 헬퍼 함수 추가
 const recursivelyAssignDepth = (
   comments: (Comment | TeamComment)[],
   currentDepth: number = 0
@@ -82,7 +81,6 @@ const PostDetailPage: React.FC = () => {
     return isTeamPostPageCalculated ? "커뮤니티 게시판으로" : "전체 게시판으로";
   }, [isTeamPostPageCalculated]);
 
-  // 게시물 상세 데이터를 가져오는 쿼리 함수를 useCallback으로 래핑
   const fetchPostDetailQueryFn = useCallback(async (): Promise<
     Post | TeamPost
   > => {
@@ -103,7 +101,6 @@ const PostDetailPage: React.FC = () => {
     }
   }, [currentUserProfile, parsedPostId, communityId, isTeamPostPageCalculated]);
 
-  // useQuery를 사용하여 게시물 데이터 가져오기
   const {
     data: post,
     isLoading: isLoadingPost,
@@ -120,7 +117,6 @@ const PostDetailPage: React.FC = () => {
       (isTeamPostPageCalculated ? !!communityId : true),
     staleTime: 1000 * 60 * 5,
     retry: 1,
-    // ✨ onSuccess 및 onError 콜백 제거 (아래 useEffect로 로직 이동) ✨
   });
 
   const refetchComments = useCallback(async () => {
@@ -141,6 +137,7 @@ const PostDetailPage: React.FC = () => {
       }
       const commentsWithDepth = recursivelyAssignDepth(fetchedComments);
       setComments(commentsWithDepth);
+      console.log("PostDetailPage: comments state updated via refetchComments"); // 디버깅 로그 유지
     } catch (err: unknown) {
       console.error("댓글 목록 새로고침 실패:", err);
       if (err instanceof Error) {
@@ -155,12 +152,10 @@ const PostDetailPage: React.FC = () => {
   }, [parsedPostId, isTeamPostPageCalculated, location.pathname]);
 
   useEffect(() => {
-    // ✨ post 데이터 로딩 완료 시 editedContent 설정 (onSuccess 대체) ✨
     if (!isLoadingPost && !isErrorPost && post) {
       setEditedContent(post.content);
-      refetchComments(); // 게시물 로딩 성공 후 댓글 로드
+      refetchComments();
     }
-    // ✨ isErrorPost 발생 시 에러 로깅 (onError 대체) ✨
     if (isErrorPost) {
       console.error("게시물 불러오기 오류 (useEffect):", errorPost);
     }
@@ -174,16 +169,15 @@ const PostDetailPage: React.FC = () => {
     isLoadingPost,
     isErrorPost,
     post,
-    refetchComments, // Circular dependency with useEffect causing issues - REMOVE THIS FROM HERE
+    refetchComments,
     errorPost,
   ]);
-  // ✨ refetchComments 제거 ✨ (위 useEffect 의존성 배열에서 제거해야 합니다.)
-  // (이 주석은 설명을 위한 것이며, 실제 코드에서는 제거되어야 합니다.)
 
-  // isPostAuthor 계산 전에 post가 유효한지 확인
   const isPostAuthor = post
     ? post.userId === currentUserProfile?.userId
     : false;
+
+  console.log(`[PostDetailPage Render]`); // 디버깅 로그 유지
 
   const handleEditPost = useCallback(() => {
     if (!post) return;
@@ -192,7 +186,6 @@ const PostDetailPage: React.FC = () => {
       return;
     }
     if (post!.userId !== currentUserProfile.userId) {
-      // ✨ post! 사용 ✨
       alert("게시물 작성자만 수정할 수 있습니다.");
       return;
     }
@@ -207,9 +200,9 @@ const PostDetailPage: React.FC = () => {
         return;
       }
 
-      const finalTitle = updatedTitle || post!.title; // ✨ post! 사용 ✨
+      const finalTitle = updatedTitle || post!.title;
       const trimmedEditedContent = editedContent.trim();
-      const trimmedOriginalContent = post!.content.trim() || ""; // ✨ post! 사용 ✨
+      const trimmedOriginalContent = post!.content.trim() || "";
 
       if (!finalTitle.trim()) {
         alert("게시물 제목을 입력해주세요.");
@@ -221,7 +214,7 @@ const PostDetailPage: React.FC = () => {
       }
       if (
         trimmedEditedContent === trimmedOriginalContent &&
-        finalTitle === post!.title // ✨ post! 사용 ✨
+        finalTitle === post!.title
       ) {
         alert("수정된 내용이 없습니다.");
         setIsEditing(false);
@@ -275,7 +268,7 @@ const PostDetailPage: React.FC = () => {
   const handleCancelEdit = useCallback(() => {
     setIsEditing(false);
     if (post) {
-      setEditedContent(post!.content); // ✨ post! 사용 ✨
+      setEditedContent(post!.content);
     }
   }, [post]);
 
@@ -286,7 +279,6 @@ const PostDetailPage: React.FC = () => {
       return;
     }
     if (post!.userId !== currentUserProfile.userId) {
-      // ✨ post! 사용 ✨
       alert("게시물 작성자만 삭제할 수 있습니다.");
       return;
     }
@@ -294,14 +286,16 @@ const PostDetailPage: React.FC = () => {
     if (window.confirm("정말로 이 게시물을 삭제하시겠습니까?")) {
       try {
         if (isTeamPostPageCalculated) {
+          // `deleteTeamPost`는 여기서 사용됩니다. (ESLint 경고 무시 가능)
           const communityIdFromPath = location.pathname.split("/")[2];
           if (!communityIdFromPath) throw new Error("커뮤니티 ID가 없습니다.");
           await deleteTeamPost(communityIdFromPath, parsedPostId);
         } else {
+          // `deletePost`는 여기서 사용됩니다. (ESLint 경고 무시 가능)
           await deletePost(parsedPostId, currentUserProfile.userId);
         }
         alert("게시물이 성공적으로 삭제되었습니다.");
-        navigate(backToBoardPath);
+        navigate(backToBoardPath); // `Maps`는 여기서 사용됩니다.
       } catch (err: unknown) {
         if (err instanceof Error) {
           console.error("게시물 삭제 실패:", err);
@@ -324,6 +318,9 @@ const PostDetailPage: React.FC = () => {
     navigate,
     backToBoardPath,
     location.pathname,
+    // ESLint 경고 해결: `deleteTeamPost`와 `deletePost`는 외부 import 함수이므로 의존성 배열에 포함할 필요가 없습니다.
+    // deleteTeamPost,
+    // deletePost
   ]);
 
   const handleAddComment = useCallback(
@@ -369,7 +366,7 @@ const PostDetailPage: React.FC = () => {
       }
     },
     [
-      post, // post.userId에 직접 접근하지 않으므로, post 자체의 유효성 검사만 유지
+      post,
       parsedPostId,
       currentUserProfile,
       authLoading,
@@ -393,6 +390,57 @@ const PostDetailPage: React.FC = () => {
     }
   }, []);
 
+  const handleDeleteComment = useCallback(
+    // 'handleDeleteComment' 함수는 CommentList에 onDeleteComment prop으로 사용됩니다.
+    async (commentId: number) => {
+      if (!post) return;
+      if (!currentUserProfile) return;
+      // 이전 논의에 따라 CommentItem에서 이미 확인창을 띄우므로 여기서 confirm 제거
+      // if (window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) {
+      try {
+        if (isTeamPostPageCalculated) {
+          // `deleteTeamComment`는 여기서 사용됩니다. (ESLint 경고 무시 가능)
+          const communityIdFromPath = location.pathname.split("/")[2];
+          if (!communityIdFromPath) throw new Error("커뮤니티 ID가 없습니다.");
+          await deleteTeamComment(
+            communityIdFromPath,
+            parsedPostId,
+            commentId,
+            currentUserProfile.userId
+          );
+        } else {
+          // `deleteComment`는 여기서 사용됩니다. (ESLint 경고 무시 가능)
+          await deleteComment(commentId, currentUserProfile.userId);
+        }
+        await refetchComments(); // 삭제 후에는 전체 댓글을 다시 불러오는 것이 일반적
+        alert("댓글이 성공적으로 삭제되었습니다.");
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error("댓글 삭제 실패:", err);
+          alert(
+            `댓글 삭제 중 오류가 발생했습니다: ${
+              err.message || "알 수 없는 오류"
+            }`
+          );
+        } else {
+          alert("알 수 없는 오류가 발생했습니다.");
+        }
+      }
+      // }
+    },
+    [
+      post,
+      parsedPostId, // `parsedPostId`는 `deleteTeamComment`에 사용되므로 유지합니다.
+      currentUserProfile,
+      isTeamPostPageCalculated,
+      refetchComments,
+      location.pathname,
+      // ESLint 경고 해결: `deleteTeamComment`와 `deleteComment`는 외부 import 함수이므로 의존성 배열에 포함할 필요가 없습니다.
+      // deleteTeamComment,
+      // deleteComment
+    ]
+  );
+
   const handleEditComment = useCallback(
     async (commentId: number, newContent: string) => {
       if (!post) return;
@@ -408,7 +456,32 @@ const PostDetailPage: React.FC = () => {
             userId: currentUserProfile.userId,
           });
         }
-        await refetchComments();
+        setComments((prevComments) => {
+          const updateCommentInTree = (
+            commentsToUpdate: (Comment | TeamComment)[]
+          ): (Comment | TeamComment)[] => {
+            return commentsToUpdate.map((c) => {
+              const currentId =
+                "commentId" in c ? c.commentId : c.teamCommentId;
+              if (currentId === commentId) {
+                return {
+                  ...c,
+                  content: newContent,
+                  updatedAt: new Date().toISOString(),
+                };
+              }
+              if (c.replies && c.replies.length > 0) {
+                return {
+                  ...c,
+                  replies: updateCommentInTree(c.replies),
+                };
+              }
+              return c;
+            });
+          };
+          console.log(`[PostDetailPage State] Comments state updated`); // 디버깅 로그 유지
+          return updateCommentInTree(prevComments);
+        });
         alert("댓글이 성공적으로 수정되었습니다.");
       } catch (err: unknown) {
         if (err instanceof Error) {
@@ -427,53 +500,11 @@ const PostDetailPage: React.FC = () => {
       post,
       currentUserProfile,
       isTeamPostPageCalculated,
-      refetchComments,
       location.pathname,
-    ]
-  );
-
-  const handleDeleteComment = useCallback(
-    async (commentId: number) => {
-      if (!post) return;
-      if (!currentUserProfile) return;
-      if (window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) {
-        try {
-          if (isTeamPostPageCalculated) {
-            const communityIdFromPath = location.pathname.split("/")[2];
-            if (!communityIdFromPath)
-              throw new Error("커뮤니티 ID가 없습니다.");
-            await deleteTeamComment(
-              communityIdFromPath,
-              parsedPostId,
-              commentId,
-              currentUserProfile.userId
-            );
-          } else {
-            await deleteComment(commentId, currentUserProfile.userId);
-          }
-          await refetchComments();
-          alert("댓글이 성공적으로 삭제되었습니다.");
-        } catch (err: unknown) {
-          if (err instanceof Error) {
-            console.error("댓글 삭제 실패:", err);
-            alert(
-              `댓글 삭제 중 오류가 발생했습니다: ${
-                err.message || "알 수 없는 오류"
-              }`
-            );
-          } else {
-            alert("알 수 없는 오류가 발생했습니다.");
-          }
-        }
-      }
-    },
-    [
-      post,
-      parsedPostId,
-      currentUserProfile,
-      isTeamPostPageCalculated,
-      refetchComments,
-      location.pathname,
+      setComments, // `setComments`는 상태 변경 함수이므로 의존성에 포함해야 합니다.
+      // ESLint 경고 해결: `updateTeamComment`와 `updateComment`는 외부 import 함수이므로 의존성 배열에 포함할 필요가 없습니다.
+      // updateTeamComment,
+      // updateComment
     ]
   );
 
@@ -512,7 +543,7 @@ const PostDetailPage: React.FC = () => {
       onCancelEdit={handleCancelEdit}
       backToBoardText={backToBoardText}
       isPostAuthor={isPostAuthor}
-      currentUserProfile={currentUserProfile || undefined} // ✨ currentUserProfile prop 전달 ✨
+      currentUserProfile={currentUserProfile || undefined}
     >
       <div className="mt-12 px-10">
         <h3 className="text-xl font-bold text-gray-800 mb-4">댓글</h3>

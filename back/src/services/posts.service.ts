@@ -27,39 +27,66 @@ export class PostService {
 
     let combinedPosts: any[] = [];
 
-    // 1. 쿼리 타입에 따라 데이터 조회 로직을 명확하게 분리합니다.
+    // ✨ 추가: userId 및 쿼리 타입 로깅 ✨
+    console.log(
+      `[PostService] getUserPosts - userId: ${userId}, type: ${type || "ALL"}`
+    );
+
     if (type === "TEAM") {
-      // 'TEAM' 타입일 경우: 팀 게시글만 조회
       const teamPosts = await this.teamPostRepository.findByUserId(userId);
-      combinedPosts = teamPosts.map((p) => ({ ...p, type: "TEAM", source: "TEAM" }));
-
+      combinedPosts = teamPosts.map((p) => ({
+        ...p,
+        type: "TEAM",
+        source: "TEAM",
+      }));
+      console.log(
+        `[PostService] Fetched TEAM posts count: ${teamPosts.length}`
+      ); // ✨ 추가 ✨
     } else if (type === "GENERAL" || type === "RECRUITMENT") {
-      // 'GENERAL' 또는 'RECRUITMENT' 타입일 경우: 해당 퍼블릭 게시글만 조회
       const postType = type as PostType;
-      const publicPosts = await this.postRepository.findByUserId(userId, postType);
+      const publicPosts = await this.postRepository.findByUserId(
+        userId,
+        postType
+      );
       combinedPosts = publicPosts.map((p) => ({ ...p, source: "PUBLIC" }));
-
+      console.log(
+        `[PostService] Fetched PUBLIC posts (type: ${type}) count: ${publicPosts.length}`
+      ); // ✨ 추가 ✨
     } else {
-      // type이 없거나 유효하지 않은 경우: 전체 조회 (안전한 기본값)
       const publicPosts = await this.postRepository.findByUserId(userId);
       const teamPosts = await this.teamPostRepository.findByUserId(userId);
-      
-      combinedPosts.push(...publicPosts.map((p) => ({ ...p, source: "PUBLIC" })));
-      combinedPosts.push(...teamPosts.map((p) => ({ ...p, type: "TEAM", source: "TEAM" })));
+
+      combinedPosts.push(
+        ...publicPosts.map((p) => ({ ...p, source: "PUBLIC" }))
+      );
+      combinedPosts.push(
+        ...teamPosts.map((p) => ({ ...p, type: "TEAM", source: "TEAM" }))
+      );
+      console.log(
+        `[PostService] Fetched ALL posts - Public: ${publicPosts.length}, Team: ${teamPosts.length}`
+      ); // ✨ 추가 ✨
     }
 
-    // 2. 합쳐진 배열을 생성 날짜 기준으로 정렬합니다.
+    // ✨ 추가: 결합된 게시물 수 로깅 ✨
+    console.log(
+      `[PostService] combinedPosts total count before pagination: ${combinedPosts.length}`
+    );
+
     combinedPosts.sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
       return sort === "oldest" ? dateA - dateB : dateB - dateA;
     });
 
-    // 3. 정렬된 배열에 대해 페이지네이션을 적용합니다.
     const totalCount = combinedPosts.length;
     const totalPages = Math.ceil(totalCount / pageSize);
     const skip = (page - 1) * pageSize;
     const paginatedPosts = combinedPosts.slice(skip, skip + pageSize);
+
+    // ✨ 추가: 페이지네이션 후 게시물 수 로깅 ✨
+    console.log(
+      `[PostService] paginatedPosts count: ${paginatedPosts.length}, TotalCount: ${totalCount}`
+    );
 
     return {
       posts: paginatedPosts,
