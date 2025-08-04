@@ -1,3 +1,5 @@
+// src/components/bookResults/BookCategoryFilter.tsx
+
 interface BookCategoryFilterProps {
   categories: string[];
   activeCategory: string | null;
@@ -12,12 +14,14 @@ const BookCategoryFilter: React.FC<BookCategoryFilterProps> = ({
   className = "",
 }) => {
   return (
-    <div className={`flex justify-center space-x-4 ${className}`}>
+    <div
+      className={`flex justify-center flex-wrap gap-x-3 gap-y-3 ${className}`}
+    >
       {categories.map((category) => (
         <button
           key={category}
           onClick={() => onCategoryClick(category)}
-          className={`px-8 py-1 rounded-xl text-sm transition-colors duration-200 whitespace-nowrap
+          className={`flex-shrink-0 px-6 py-1 rounded-xl text-sm transition-colors duration-200
             ${
               activeCategory === category
                 ? "bg-apply text-white"
