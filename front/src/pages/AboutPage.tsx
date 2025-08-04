@@ -1,3 +1,5 @@
+// src/pages/AboutPage.tsx
+
 import {
   IoSearchOutline,
   IoBookmarkOutline,
@@ -10,6 +12,8 @@ import { LuLayoutDashboard } from "react-icons/lu";
 const AboutPage: React.FC = () => {
   return (
     <div>
+      {" "}
+      {/* <--- 이 <div> 태그가 라인 17에 해당합니다. */}
       <section id="vision" className="container mx-auto py-12 px-20 mt-10">
         <h1 className="text-3xl font-bold mb-8">우리의 비전</h1>
         <p className="text-lg mb-40">
@@ -109,7 +113,7 @@ const AboutPage: React.FC = () => {
           </div>
         </div>
       </section>
-    </div>
+    </div> /* <--- 이 닫는 </div> 태그가 해당합니다. */
   );
 };
 
