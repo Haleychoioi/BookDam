@@ -39,12 +39,12 @@ const TasteAnalysisPage: React.FC = () => {
         />
       </section>
 
-          {/* 🔵 로딩 중일 때만 표시 */}
+    {/* 로딩 중일 때만 표시 */}
     {loading && (
       <p className="text-center mt-10">로딩 중...</p>
     )}
 
-    {/* 🔵 데이터는 있지만 책이 없을 때 */}
+    {/*  데이터는 있지만 책이 없을 때 */}
     {!loading && data && data.totalBooks === 0 && (
       <p className="text-center mt-10 text-gray-500 text-lg">
         아직 독서 기록이 없어요 😌 <br />
@@ -52,10 +52,10 @@ const TasteAnalysisPage: React.FC = () => {
       </p>
     )}
 
-    {/* 🔵 데이터가 있고 책도 있을 때 → 기존 UI 전부 포함 */}
+    {/*  데이터가 있고 책도 있을 때 → 기존 UI 전부 포함 */}
     {!loading && data && data.totalBooks > 0 && (
 
-      <>
+    <div className="space-y-12">
       {/* 1. 기본 통계 */}
       <section>
         <h2 className="text-2xl font-bold mb-4">📚 기본 통계</h2>
@@ -82,32 +82,8 @@ const TasteAnalysisPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. 전체 카테고리 통계 */}
-      <section>
-        <h2 className="text-2xl font-bold mb-4">📘 전체 카테고리 통계</h2>
-        <table className="w-full border text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 border">카테고리</th>
-              <th className="p-2 border">권수</th>
-              <th className="p-2 border">평균 평점</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.allCategoryStats
-              .sort((a, b) => b.count - a.count)
-              .map((item, idx) => (
-                <tr key={idx} className="text-center">
-                  <td className="p-2 border">{item.categoryName}</td>
-                  <td className="p-2 border">{item.count}</td>
-                  <td className="p-2 border">{item.averageRating.toFixed(1)}</td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </section>
 
-      {/* 4~6. 선호 카테고리 / 작가 / 출판사 */}
+      {/* 3~5. 선호 카테고리 / 작가 / 출판사 */}
       <section>
         <h2 className="text-2xl font-bold mb-4">🏆 선호 카테고리 / 작가 / 출판사</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -150,7 +126,32 @@ const TasteAnalysisPage: React.FC = () => {
 
         </div>
       </section>
-      </>
+      
+      {/* 6. 전체 카테고리 통계 */}
+      <section>
+        <h2 className="text-2xl font-bold mb-4">📘 전체 카테고리 통계</h2>
+        <table className="w-full border text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-2 border">카테고리</th>
+              <th className="p-2 border">권수</th>
+              <th className="p-2 border">평균 평점</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.allCategoryStats
+              .sort((a, b) => b.count - a.count)
+              .map((item, idx) => (
+                <tr key={idx} className="text-center">
+                  <td className="p-2 border">{item.categoryName}</td>
+                  <td className="p-2 border">{item.count}</td>
+                  <td className="p-2 border">{item.averageRating.toFixed(1)}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </section>
+      </div>
     )}
     </div>
   );

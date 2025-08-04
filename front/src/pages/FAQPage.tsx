@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { IoIosArrowUp, IoIosArrowDown  } from "react-icons/io";
-import { IoMailOutline , IoCallOutline, IoLocationOutline } from "react-icons/io5";
+// import { IoMailOutline , IoCallOutline, IoLocationOutline } from "react-icons/io5";
 
 const FAQPage: React.FC = () => {
   const faqList = [
@@ -45,7 +45,7 @@ const [openIndex, setOpenIndex] = useState<number | null>(null);;
           </div>
         ))}
     </section>
-    <section id="contact" className="container mx-auto py-12 px-20">
+    {/* <section id="contact" className="container mx-auto py-12 px-20">
       <h1 className="text-3xl font-bold mb-8">문의하기</h1>
       <p>추가 질문이 있으시면 언제든지 연락주세요</p>
         <div className="flex flex-col md:flex-row justify-between gap-8 mt-20">
@@ -78,7 +78,7 @@ const [openIndex, setOpenIndex] = useState<number | null>(null);;
             </div>
           </div>
         </div>
-    </section>
+    </section> */}
   </div>
   )
 };

@@ -11,8 +11,11 @@ const AboutPage: React.FC = () => {
   
       <div className="flex flex-col md:flex-row items-center justify-center gap-10 max-w-5xl mx-auto mb-10">
         <div className="md:w-1/2 mr-12">
-          <div className="w-full h-48 bg-gray-200 flex items-center justify-center rounded-lg">
-            이미지 영역
+          <div className="w-full h-60 flex items-center justify-center rounded-lg">
+            <img 
+              src="/BookCommunity2.jpg"
+              className="w-full h-60 object-cover rounded-lg shadow"
+            />
           </div>
         </div>
         <div className="md:w-1/2">
@@ -56,7 +59,7 @@ const AboutPage: React.FC = () => {
         </div>
       </div>
     </section>
-    <section id="review" className="container mx-auto py-12 px-4">
+    {/* <section id="review" className="container mx-auto py-12 px-4">
       <h2 className="text-2xl font-bold mb-4">고객 후기</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {[1, 2, 3].map((i) => (
@@ -67,7 +70,7 @@ const AboutPage: React.FC = () => {
           </div>
         ))}
       </div>
-    </section>
+    </section> */}
     <section id="info" className="container mx-auto py-12 px-20">
       <div className="flex justify-around mb-4">
         <div className="text-center">
