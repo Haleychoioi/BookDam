@@ -12,6 +12,47 @@ export class ApplicationController {
     this.applicationService = new ApplicationService();
   }
 
+  public getMyApplications = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.user!;
+
+      const applications = await this.applicationService.getMyApplications(
+        userId
+      );
+
+      res.status(200).json({
+        message: "나의 지원 목록 조회 성공",
+        data: applications,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public cancelApplication = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const applicationId = Number(req.params.applicationId);
+      const userId = req.user!;
+
+      if (isNaN(applicationId)) {
+        throw new CustomError(400, "유효하지 않은 지원서 ID입니다.");
+      }
+
+      await this.applicationService.cancelApplication(applicationId, userId);
+      res.status(200).json({ message: "지원이 취소되었습니다." });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   /**
    * POST /communities/:communityId/apply - 커뮤니티 가입 신청
    */
@@ -62,7 +103,9 @@ export class ApplicationController {
     next: NextFunction
   ) => {
     try {
+      console.log("DEBUG: getCommunityApplicants 컨트롤러가 호출되었습니다.");
       const { communityId: rawCommunityId } = req.params;
+      console.log("DEBUG: rawCommunityId:", rawCommunityId);
       const requestingUserId = req.user;
 
       // 인증된 사용자 ID가 없는 경우

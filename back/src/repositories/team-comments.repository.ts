@@ -11,6 +11,30 @@ type TeamCommentWithRelations = TeamComment & {
 };
 
 export class TeamCommentRepository {
+  public async findByUserId(userId: number): Promise<TeamComment[]> {
+    const teamComments = await prisma.teamComment.findMany({
+      // Add log here too
+      where: { userId: userId },
+      include: {
+        teamPost: {
+          select: {
+            teamPostId: true,
+            title: true,
+            teamId: true, // ✨ teamId (커뮤니티 ID)를 포함합니다. ✨
+          },
+        },
+        user: {
+          select: { nickname: true, profileImage: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    console.log(
+      `[TeamCommentRepository] findByUserId - userId: ${userId}, found: ${teamComments.length} team comments`
+    ); // Debugging log
+    return teamComments;
+  }
+
   /**
    * 특정 팀 게시물 ID에 해당하는 댓글 목록 조회
    * @param teamPostId
@@ -27,13 +51,13 @@ export class TeamCommentRepository {
       },
       include: {
         user: {
-          select: { nickname: true },
+          select: { nickname: true, profileImage: true }, // profileImage 추가됨
         },
         replies: {
           // 대댓글 포함 (1단계만)
           orderBy: { createdAt: "asc" },
           include: {
-            user: { select: { nickname: true } },
+            user: { select: { nickname: true, profileImage: true } }, // 대댓글에도 profileImage 추가됨
           },
         },
       },
@@ -100,12 +124,15 @@ export class TeamCommentRepository {
    * @param teamCommentId
    * @returns
    */
-  public async findById(
-    teamCommentId: number
-  ): Promise<(TeamComment & { user: { nickname: string } | null }) | null> {
+  public async findById(teamCommentId: number): Promise<
+    | (TeamComment & {
+        user: { nickname: string; profileImage: string | null };
+      })
+    | null
+  > {
     const teamComment = await prisma.teamComment.findUnique({
       where: { teamCommentId: teamCommentId },
-      include: { user: { select: { nickname: true } } },
+      include: { user: { select: { nickname: true, profileImage: true } } }, // profileImage 추가됨
     });
     return teamComment;
   }

@@ -11,6 +11,31 @@ export class CommentController {
     this.commentService = new CommentService();
   }
 
+  public getMyComments = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.user!;
+      const { page, size, sort, type } = req.query;
+
+      const result = await this.commentService.getMyComments(userId, {
+        page: page ? Number(page) : undefined,
+        pageSize: size ? Number(size) : undefined,
+        sort: sort ? String(sort) : undefined,
+        type: type ? String(type).toUpperCase() : undefined,
+      });
+
+      res.status(200).json({
+        message: "내가 작성한 댓글 목록 조회 성공",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   /**
    * GET /posts/:postId/comments - 특정 게시물의 댓글 목록 조회
    */

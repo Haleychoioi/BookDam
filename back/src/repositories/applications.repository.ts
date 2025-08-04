@@ -3,7 +3,43 @@
 import prisma from "../utils/prisma";
 import { ApplicationStatus, TeamApplication, Prisma } from "@prisma/client";
 
+type ApplicationWithPostInfo = TeamApplication & {
+  post: {
+    postId: number;
+    title: string;
+  };
+};
+
 export class ApplicationRepository {
+  public async deleteById(applicationId: number): Promise<void> {
+    await prisma.teamApplication.delete({
+      where: { applicationId: applicationId },
+    });
+  }
+
+  public async findManyByUserId(
+    userId: number
+  ): Promise<ApplicationWithPostInfo[]> {
+    const applications = await prisma.teamApplication.findMany({
+      where: {
+        userId: userId,
+      },
+      include: {
+        post: {
+          select: {
+            postId: true,
+            title: true,
+          },
+        },
+      },
+      orderBy: {
+        appliedAt: "desc",
+      },
+    });
+
+    return applications as ApplicationWithPostInfo[];
+  }
+
   /**
    * 새로운 팀 지원서 생성
    * @param postId

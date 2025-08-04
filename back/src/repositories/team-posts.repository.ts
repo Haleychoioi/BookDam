@@ -4,6 +4,19 @@ import prisma from "../utils/prisma";
 import { TeamPost, TeamPostType, Prisma } from "@prisma/client";
 
 export class TeamPostRepository {
+  public async findByUserId(userId: number): Promise<TeamPost[]> {
+    return prisma.teamPost.findMany({
+      where: { userId: userId },
+      include: {
+        user: { select: { nickname: true, profileImage: true } },
+        _count: { select: { comments: true } },
+        // 어느 팀의 게시글인지 알 수 있도록 팀 정보를 포함합니다.
+        team: { select: { teamId: true, postTitle: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
   /**
    * 특정 커뮤니티 ID에 해당하는 팀 게시물 목록 조회
    * @param communityId

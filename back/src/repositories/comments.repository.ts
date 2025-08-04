@@ -1,7 +1,7 @@
 // src/repositories/comments.repository.ts
 
 import prisma from "../utils/prisma";
-import { Comment, Prisma } from "@prisma/client";
+import { Comment, Prisma, PostType } from "@prisma/client";
 
 // Prisma의 findUnique/findMany 타입
 // Comment 모델에 user (nickname만 포함), replies (Comment와 user 포함) 관계가 포함된 형태
@@ -10,7 +10,52 @@ type CommentWithRelations = Comment & {
   replies: (Comment & { user: { nickname: string } | null })[];
 };
 
+type CommentWithPost = Comment & {
+  post: {
+    postId: number;
+    title: string;
+    type: PostType;
+  } | null;
+};
+
 export class CommentRepository {
+  public async findByUserId(
+    userId: number,
+    type?: PostType
+  ): Promise<CommentWithPost[]> {
+    const where: Prisma.CommentWhereInput = {
+      userId: userId,
+    };
+
+    if (type) {
+      where.post = {
+        type: type,
+      };
+    }
+
+    const comments = await prisma.comment.findMany({
+      where,
+      include: {
+        post: {
+          select: {
+            postId: true,
+            title: true,
+            type: true,
+          },
+        },
+        user: {
+          // ✨ 이 부분에 user include 추가 ✨
+          select: { nickname: true, profileImage: true },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return comments as CommentWithPost[];
+  }
+
   /**
    * 특정 게시물 ID에 해당하는 댓글 목록 조회
    * 최상위 댓글, 1단계 대댓글
@@ -34,13 +79,13 @@ export class CommentRepository {
       take: pageSize,
       include: {
         user: {
-          select: { nickname: true },
+          select: { nickname: true, profileImage: true }, // profileImage 추가됨
         },
         replies: {
           // 대댓글 포함 (1단계만)
           orderBy: { createdAt: "asc" },
           include: {
-            user: { select: { nickname: true } },
+            user: { select: { nickname: true, profileImage: true } }, // 대댓글에도 profileImage 추가됨
           },
         },
       },
@@ -132,9 +177,9 @@ export class CommentRepository {
     const comment = await prisma.comment.findUnique({
       where: { commentId: commentId },
       include: {
-        user: { select: { nickname: true } },
+        user: { select: { nickname: true, profileImage: true } }, // profileImage 추가됨
         replies: {
-          include: { user: { select: { nickname: true } } },
+          include: { user: { select: { nickname: true, profileImage: true } } }, // 대댓글에도 profileImage 추가됨
         },
       },
     });
