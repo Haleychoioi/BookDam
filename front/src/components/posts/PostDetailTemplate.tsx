@@ -64,18 +64,21 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
   const getAuthorProfileImage = (p: Post | TeamPost | undefined): string => {
     // currentUserProfile이 있고, 현재 사용자가 작성자일 경우 currentUserProfile 이미지 사용
     if (isPostAuthor && currentUserProfile?.profileImage) {
-      return `${currentUserProfile.profileImage}?${new Date().getTime()}`; // 캐시 무력화도 추가
+      // return `${currentUserProfile.profileImage}?${new Date().getTime()}`; // 캐시 무력화 코드 제거
+      return currentUserProfile.profileImage;
     }
     if (!p) return `${DEFAULT_AVATAR_BASE_URL}Guest`;
     if (p.user?.profileImage) {
-      // 게시물 데이터에 포함된 프로필 이미지 사용 (캐시 무력화)
-      return `${p.user.profileImage}?${new Date().getTime()}`;
+      // 게시물 데이터에 포함된 프로필 이미지 사용 (캐시 무력화 코드 제거)
+      // return `${p.user.profileImage}?${new Date().getTime()}`;
+      return p.user.profileImage;
     }
     // 기본값으로 닉네임 기반 Dicebear 아바타 사용
     return `${DEFAULT_AVATAR_BASE_URL}${encodeURIComponent(
       getAuthorNickname(p)
     )}`;
   };
+
   const isModified = post?.updatedAt && post.updatedAt !== post.createdAt;
 
   const displayTitle = post?.title || "게시물 없음";
