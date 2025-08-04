@@ -1,16 +1,22 @@
 // src/pages/mypage/UserLeavePage.tsx
+
 import { useState } from "react";
+import { useAuth } from "../../hooks/useAuth";
+import { useToast } from "../../hooks/useToast";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import Button from "../../components/common/Button";
-import { useAuth } from "../../hooks/useAuth"; // useAuth 훅 임포트
 
 const UserLeavePage: React.FC = () => {
-  const { deleteUser, loading } = useAuth(); // useAuth 훅에서 deleteUser와 loading 가져오기
+  const { deleteUser, loading } = useAuth();
+  const { showToast } = useToast(); // useToast 훅 사용
   const [confirmText, setConfirmText] = useState("");
 
   const handleDeleteAccount = async () => {
     if (confirmText !== "회원 탈퇴") {
-      alert("회원 탈퇴를 진행하려면 '회원 탈퇴'를 정확히 입력해주세요.");
+      showToast(
+        "회원 탈퇴를 진행하려면 '회원 탈퇴'를 정확히 입력해주세요.",
+        "warn"
+      );
       return;
     }
 
@@ -22,15 +28,10 @@ const UserLeavePage: React.FC = () => {
       return;
     }
 
-    // useAuth 훅의 deleteUser 함수 호출
     const success = await deleteUser();
-
     if (success) {
-      // deleteUser 함수 내부에서 이미 로그아웃 처리 및 메시지, 페이지 이동을 담당합니다.
-      // 여기서는 추가적인 UI 초기화만 진행합니다.
       setConfirmText("");
     }
-    // 실패 메시지는 useAuth 훅에서 alert로 처리합니다.
   };
 
   return (
@@ -82,7 +83,7 @@ const UserLeavePage: React.FC = () => {
             <Button
               type="button"
               onClick={handleDeleteAccount}
-              disabled={loading || confirmText !== "회원 탈퇴"} // 로딩 중이거나 텍스트 불일치 시 버튼 비활성화
+              disabled={loading || confirmText !== "회원 탈퇴"}
               className="bg-red-500 hover:bg-red-600 text-white"
             >
               {loading ? "탈퇴 처리 중..." : "회원 탈퇴하기"}

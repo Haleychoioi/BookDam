@@ -1,12 +1,14 @@
+// src/pages/books/BookSearchResultPage.tsx
+
 import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "../../hooks/useToast";
 
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
 import BookGridDisplay from "../../components/bookResults/BookGridDisplay";
 import BookCategoryFilter from "../../components/bookResults/BookCategoryFilter";
-
 import { searchBooks } from "../../api/books";
 
 const categories = [
@@ -27,6 +29,7 @@ const categories = [
 const BookSearchResultPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const queryParams = useMemo(() => {
     return new URLSearchParams(location.search);
@@ -79,10 +82,15 @@ const BookSearchResultPage: React.FC = () => {
   }, [initialSearchQuery, currentSearchTerm]);
 
   const handleSearchSubmit = (term: string) => {
-    setCurrentSearchTerm(term);
+    const processedSearchTerm = term.trim();
+    if (!processedSearchTerm) {
+      showToast("검색어를 입력해주세요.", "warn");
+      return;
+    }
+    setCurrentSearchTerm(processedSearchTerm);
     setCurrentPage(1);
     setActiveCategory(null);
-    navigate(`/books/search?q=${encodeURIComponent(term)}`);
+    navigate(`/books/search?q=${encodeURIComponent(processedSearchTerm)}`);
   };
 
   const handleCategoryClick = (category: string) => {
@@ -107,12 +115,11 @@ const BookSearchResultPage: React.FC = () => {
       </div>
 
       <div className="container mx-auto px-4 lg:px-20 xl:px-32 mb-16">
-        {/* ✨ BookCategoryFilter에 max-w-3xl과 mx-auto 추가하여 너비를 제한하고 중앙 정렬합니다. ✨ */}
         <BookCategoryFilter
           categories={categories}
           activeCategory={activeCategory}
           onCategoryClick={handleCategoryClick}
-          className="max-w-3xl mx-auto" // Added classes here
+          className="max-w-3xl mx-auto"
         />
       </div>
 

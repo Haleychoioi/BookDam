@@ -1,10 +1,9 @@
 // src/pages/HomePage.tsx
 
+import { useQuery } from "@tanstack/react-query";
 import HomeHeroSection from "../components/home/HomeHeroSection";
 import RecruitingCommunityList from "../components/home/RecruitingCommunityList";
 import BookCarousel from "../components/bookDetail/BookCarousel";
-
-import { useQuery } from "@tanstack/react-query";
 import {
   fetchBestsellers,
   fetchNewBooks,
@@ -50,7 +49,6 @@ const HomePage: React.FC = () => {
       <HomeHeroSection />
       <RecruitingCommunityList />
 
-      {/* 베스트셀러 캐러셀 */}
       <section className="py-8">
         {isLoadingBestsellers ? (
           <p className="text-center text-gray-600">베스트셀러 로딩 중...</p>
@@ -68,13 +66,12 @@ const HomePage: React.FC = () => {
         )}
       </section>
 
-      {/* 신간 도서 캐러셀 */}
       <section className="py-8">
         {isLoadingNewBooks ? (
           <p className="text-center text-gray-600">신간 도서 로딩 중...</p>
         ) : isErrorNewBooks ? (
           <p className="text-center text-red-600">
-            오류:{" "}
+            오류:
             {errorNewBooks?.message || "신간 도서를 불러오는 데 실패했습니다."}
           </p>
         ) : (
@@ -85,13 +82,12 @@ const HomePage: React.FC = () => {
         )}
       </section>
 
-      {/* 주목할 신간 캐러셀 */}
       <section className="py-8">
         {isLoadingSpecialNewBooks ? (
           <p className="text-center text-gray-600">주목할 신간 로딩 중...</p>
         ) : isErrorSpecialNewBooks ? (
           <p className="text-center text-red-600">
-            오류:{" "}
+            오류:
             {errorSpecialNewBooks?.message ||
               "주목할 신간을 불러오는 데 실패했습니다."}
           </p>

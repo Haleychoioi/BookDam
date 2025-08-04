@@ -1,23 +1,29 @@
+// src/components/bookDetail/BookCarousel.tsx
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import type { BookSummary } from "../../types"; // 'Book' 대신 'BookSummary'를 임포트합니다.
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../hooks/useAuth";
+import { getBookDetail } from "../../api/books";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+
+import type { BookSummary } from "../../types";
 
 interface BookCarouselProps {
   title: string;
-  books: BookSummary[]; // 'Book' 대신 'BookSummary'를 사용합니다.
+  books: BookSummary[];
 }
 
 const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
-  const [currentIndex, setCurrentIndex] = useState(0); // 현재 캐러셀의 시작 인덱스
+  const [currentIndex, setCurrentIndex] = useState(0);
   const itemsPerPage = 4;
+  const queryClient = useQueryClient();
+  const { isLoggedIn } = useAuth();
 
-  // 이전 버튼 클릭 핸들러
   const handlePrev = () => {
     setCurrentIndex((prevIndex) => Math.max(0, prevIndex - itemsPerPage));
   };
 
-  // 다음 버튼 클릭 핸들러
   const handleNext = () => {
     setCurrentIndex((prevIndex) =>
       Math.min(books.length - itemsPerPage, prevIndex + itemsPerPage)
@@ -26,9 +32,16 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
 
   const visibleBooks = books.slice(currentIndex, currentIndex + itemsPerPage);
 
-  // 캐러셀이 슬라이딩 가능할 만큼 충분한 책이 없는 경우 비활성화
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex + itemsPerPage < books.length;
+
+  const prefetchBookDetail = (itemId: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ["bookDetail", itemId, isLoggedIn],
+      queryFn: () => getBookDetail(itemId),
+      staleTime: 1000 * 60 * 5,
+    });
+  };
 
   return (
     <div className="mb-16">
@@ -44,13 +57,13 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
           <FaChevronLeft className="w-5 h-5 text-gray-500" />
         </button>
 
-        {/* 책 목록 */}
         <div className="flex justify-center space-x-8 ">
           {visibleBooks.map((book, index) => (
             <Link
               key={book.isbn13 || index}
               to={`/books/${book.isbn13}`}
               className="w-60 h-80 flex-shrink-0 flex flex-col items-center"
+              onMouseEnter={() => prefetchBookDetail(book.isbn13)}
             >
               <img
                 src={
@@ -60,13 +73,11 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
                 alt={book.title}
                 className="w-4/5 h-64 object-cover rounded-md mb-4 flex-grow"
               />
-
               <p className="text-sm font-medium text-gray-800 text-center px-2 w-full truncate">
                 {book.title}
               </p>
             </Link>
           ))}
-
           {visibleBooks.length < itemsPerPage &&
             Array(itemsPerPage - visibleBooks.length)
               .fill(0)

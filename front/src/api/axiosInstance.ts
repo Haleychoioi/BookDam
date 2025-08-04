@@ -1,20 +1,20 @@
+// src/api/axiosInstance.ts
+
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:3000"; // env 파일로 분리
-
-const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-axiosInstance.interceptors.request.use(
+apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("jwtToken");
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`; // 백엔드 authenticate-middleware가 Bearer 토큰을 기대
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -23,19 +23,17 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-axiosInstance.interceptors.response.use(
+apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 백엔드 error-handing-middleware에서 보낸 errorMessage를 활용
     if (
       error.response &&
       error.response.data &&
       error.response.data.errorMessage
     ) {
       console.error("API Error:", error.response.data.errorMessage);
-      alert(error.response.data.errorMessage); // 사용자에게 에러 메시지 표시
+      alert(error.response.data.errorMessage);
 
-      // 토큰 만료 등 로그인 필요 에러 시 리디렉션
       if (error.response.data.errorMessage === "로그인을 해주세요") {
         localStorage.removeItem("jwtToken");
         localStorage.removeItem("userId");
@@ -49,4 +47,4 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export default axiosInstance;
+export default apiClient;

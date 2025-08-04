@@ -1,19 +1,18 @@
 // src/components/home/RecruitingCommunityList.tsx
 
 import { useState } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useAuth } from "../../hooks/useAuth";
 import Button from "../common/Button";
 import ApplyToCommunityModal from "../modals/ApplyToCommunityModal";
-import type { Community } from "../../types";
-import { useQuery } from "@tanstack/react-query";
-import { fetchCommunities } from "../../api/communities";
-import { useAuth } from "../../hooks/useAuth";
 import { FaUserFriends } from "react-icons/fa";
+import { fetchCommunities } from "../../api/communities";
 
-const initialDisplayCount = 6;
-const loadMoreIncrement = 3;
+import type { Community } from "../../types";
+
+const itemsPerPage = 6;
 
 const RecruitingCommunityList: React.FC = () => {
-  const [currentLimit, setCurrentLimit] = useState(initialDisplayCount);
   const { currentUserProfile } = useAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,30 +22,42 @@ const RecruitingCommunityList: React.FC = () => {
   const [listError, setListError] = useState<string | null>(null);
 
   const {
-    data: communitiesData,
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     isLoading,
-    isFetching,
     isError,
     error,
-  } = useQuery<{ communities: Community[]; totalResults: number }, Error>({
-    queryKey: ["allCommunities", currentLimit, currentUserProfile?.userId],
-    queryFn: ({ queryKey }) => {
-      const [, limit, userId] = queryKey;
-      return fetchCommunities(1, limit as number, "latest", userId as number);
+  } = useInfiniteQuery({
+    queryKey: ["allCommunities", currentUserProfile?.userId],
+    queryFn: ({ pageParam = 1 }) => {
+      return fetchCommunities(
+        pageParam,
+        itemsPerPage,
+        "latest",
+        currentUserProfile?.userId
+      );
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      const nextPage = lastPage.communities.length
+        ? allPages.length + 1
+        : undefined;
+      return nextPage;
     },
     staleTime: 1000 * 60,
-    placeholderData: (previousData) => previousData,
   });
 
-  const communities = communitiesData?.communities || [];
-  const totalResults = communitiesData?.totalResults || 0;
+  const communities = data?.pages.flatMap((page) => page.communities) || [];
 
   const handleLoadMore = () => {
-    setCurrentLimit((prevLimit) => prevLimit + loadMoreIncrement);
+    if (hasNextPage) {
+      fetchNextPage();
+    }
   };
 
   const handleJoinClick = (community: Community) => {
-    // ✨ 이미 신청했거나 호스트인 경우 모달 열지 않음 ✨
     if (
       community.hasApplied ||
       currentUserProfile?.userId === community.hostId
@@ -69,24 +80,6 @@ const RecruitingCommunityList: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  const allItemsLoaded = communities.length >= totalResults;
-
-  if (isLoading && !isFetching) {
-    return (
-      <section className="container mx-auto py-12 px-4 text-center text-gray-600">
-        커뮤니티 목록을 불러오는 중...
-      </section>
-    );
-  }
-
-  if (isError) {
-    return (
-      <section className="container mx-auto py-12 px-4 text-center text-red-600">
-        오류: {error?.message || "커뮤니티 목록을 불러오는 데 실패했습니다."}
-      </section>
-    );
-  }
-
   return (
     <section className="container mx-auto py-12 px-4">
       <h2 className="text-3xl font-bold text-gray-800 mb-8">
@@ -104,8 +97,17 @@ const RecruitingCommunityList: React.FC = () => {
       )}
 
       <div className="space-y-6">
-        {communities.length === 0 && !isLoading && !isFetching ? (
+        {isLoading && !isFetchingNextPage ? (
           <p className="text-center text-gray-500 py-10">
+            커뮤니티 목록을 불러오는 중...
+          </p>
+        ) : isError ? (
+          <p className="text-center text-red-500 py-10">
+            오류:{" "}
+            {error?.message || "커뮤니티 목록을 불러오는 데 실패했습니다."}
+          </p>
+        ) : communities.length === 0 ? (
+          <p className="col-span-full text-center text-gray-500 py-10">
             현재 모집 중인 커뮤니티가 없습니다.
           </p>
         ) : (
@@ -155,18 +157,18 @@ const RecruitingCommunityList: React.FC = () => {
         )}
       </div>
 
-      {isFetching && communities.length > 0 && (
+      {isFetchingNextPage && (
         <div className="text-center mt-4 text-gray-500">
           더 많은 커뮤니티를 불러오는 중...
         </div>
       )}
 
-      {!allItemsLoaded && (
+      {!isLoading && !isError && hasNextPage && (
         <div className="text-center mt-10">
           <Button
             onClick={handleLoadMore}
             className="px-8 py-3 text-lg"
-            disabled={isFetching}
+            disabled={isFetchingNextPage}
           >
             더보기
           </Button>

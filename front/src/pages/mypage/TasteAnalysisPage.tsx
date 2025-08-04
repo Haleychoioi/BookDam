@@ -1,9 +1,10 @@
 // src/pages/mypage/TasteAnalysisPage.tsx
 
-import React, { useEffect, useState } from "react";
-import type { LibraryStats } from "../../types"; // LibraryStats는 src/types/index.ts에 통합됨
-import apiClient from "../../api/apiClient";
+import { useEffect, useState } from "react";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
+import apiClient from "../../api/apiClient";
+
+import type { LibraryStats } from "../../types";
 
 const TasteAnalysisPage: React.FC = () => {
   const [data, setData] = useState<LibraryStats | null>(null);
@@ -26,17 +27,15 @@ const TasteAnalysisPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-10 space-y-12">
-      <section className="container mx-auto py-12 px-4">
+      <section className="container mx-auto">
         <MyPageHeader
           title="독서 취향 분석"
           description="지금까지의 서재 활동을 바탕으로 나만의 독서 취향을 확인할 수 있습니다."
         />
       </section>
 
-      {/* 로딩 중일 때만 표시 */}
       {loading && <p className="text-center mt-10">로딩 중...</p>}
 
-      {/* 데이터는 있지만 책이 없을 때 */}
       {!loading && data && data.totalBooks === 0 && (
         <p className="text-center mt-10 text-gray-500 text-lg">
           아직 독서 기록이 없어요 😌 <br />
@@ -44,60 +43,75 @@ const TasteAnalysisPage: React.FC = () => {
         </p>
       )}
 
-      {/* 데이터가 있고 책도 있을 때 → 기존 UI 전부 포함 */}
       {!loading && data && data.totalBooks > 0 && (
         <div className="space-y-12">
-          {/* 1. 기본 통계 */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">📚 기본 통계</h2>
+          <section className="p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">
+              📚 기본 통계
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg">
-              <div className="p-4 bg-blue-50 rounded-lg shadow">
-                총 읽은 책: {data.totalBooks}권
+              <div className="p-5 bg-blue-50 text-blue-800 rounded-lg shadow-sm">
+                <span className="block text-sm text-blue-600 font-semibold mb-1">
+                  총 읽은 책
+                </span>
+                <span className="text-2xl font-bold">{data.totalBooks}권</span>
               </div>
-              <div className="p-4 bg-yellow-50 rounded-lg shadow">
-                평균 평점: {data.overallAverageRating.toFixed(1)}점
+              <div className="p-5 bg-yellow-50 text-yellow-800 rounded-lg shadow-sm">
+                <span className="block text-sm text-yellow-600 font-semibold mb-1">
+                  평균 평점
+                </span>
+                <span className="text-2xl font-bold">
+                  {data.overallAverageRating.toFixed(1)}점
+                </span>
               </div>
             </div>
           </section>
 
-          {/* 2. 평점 분포 */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">⭐ 평점 분포</h2>
-            <div className="flex gap-4 items-end h-40">
-              {data.ratingDistribution.map(
-                (item: {
-                  rating: number;
-                  count: number;
-                  percentage: number;
-                }) => (
-                  <div
-                    key={item.rating}
-                    className="flex flex-col items-center text-sm w-12"
-                  >
+          <section className="p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">
+              ⭐ 평점 분포
+            </h2>
+            <div className="flex justify-center items-end h-40 max-w-lg mx-auto py-4">
+              {data.ratingDistribution
+                .sort((a, b) => a.rating - b.rating)
+                .map(
+                  (item: {
+                    rating: number;
+                    count: number;
+                    percentage: number;
+                  }) => (
                     <div
-                      className="bg-indigo-400 w-full rounded-t"
-                      style={{ height: `${item.percentage * 1.5}px` }}
-                    />
-                    <span className="mt-2">{item.rating}점</span>
-                    <span className="text-gray-500 text-xs">
-                      {item.count}권
-                    </span>
-                  </div>
-                )
-              )}
+                      key={item.rating}
+                      className="flex flex-col items-center text-sm w-1/5 max-w-[50px] mx-1"
+                    >
+                      <div
+                        className="bg-indigo-400 w-full rounded-t-md relative flex items-center justify-center text-white font-bold"
+                        style={{ height: `${item.percentage * 1.2}px` }}
+                      >
+                        {item.count > 0 ? `${item.count}` : ""}
+                      </div>
+                      <span className="mt-2 text-gray-700 font-medium">
+                        {item.rating}점
+                      </span>
+                      <span className="text-gray-500 text-xs">
+                        {item.percentage}%
+                      </span>
+                    </div>
+                  )
+                )}
             </div>
           </section>
 
-          {/* 3~5. 선호 카테고리 / 작가 / 출판사 */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">
+          <section className="p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">
               🏆 선호 카테고리 / 작가 / 출판사
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* 선호 카테고리 */}
-              <div>
-                <h3 className="text-lg font-semibold mb-2">📗 선호 카테고리</h3>
-                <ul className="space-y-1 text-sm">
+              <div className="p-5 bg-green-50 rounded-lg shadow-sm">
+                <h3 className="text-lg font-semibold mb-3 text-green-800">
+                  📗 선호 카테고리
+                </h3>
+                <ul className="space-y-2 text-sm">
                   {data.preferredCategories.map(
                     (
                       item: {
@@ -108,19 +122,27 @@ const TasteAnalysisPage: React.FC = () => {
                       },
                       idx: number
                     ) => (
-                      <li key={idx} className="border p-2 rounded bg-green-50">
-                        {item.categoryName} ({item.count}권, 평점{" "}
-                        {item.averageRating.toFixed(1)}, {item.percentage}%)
+                      <li
+                        key={idx}
+                        className="p-3 bg-white rounded-md shadow-xs flex justify-between items-center text-gray-700"
+                      >
+                        <span>
+                          {item.categoryName} ({item.count}권)
+                        </span>
+                        <span className="font-bold text-green-600">
+                          {item.averageRating.toFixed(1)}점 ({item.percentage}%)
+                        </span>
                       </li>
                     )
                   )}
                 </ul>
               </div>
 
-              {/* 선호 작가 */}
-              <div>
-                <h3 className="text-lg font-semibold mb-2">✍️ 선호 작가</h3>
-                <ul className="space-y-1 text-sm">
+              <div className="p-5 bg-orange-50 rounded-lg shadow-sm">
+                <h3 className="text-lg font-semibold mb-3 text-orange-800">
+                  ✍️ 선호 작가
+                </h3>
+                <ul className="space-y-2 text-sm">
                   {data.preferredAuthors.map(
                     (
                       item: {
@@ -130,19 +152,27 @@ const TasteAnalysisPage: React.FC = () => {
                       },
                       idx: number
                     ) => (
-                      <li key={idx} className="border p-2 rounded bg-orange-50">
-                        {item.author} ({item.count}권, 평점{" "}
-                        {item.averageRating.toFixed(1)})
+                      <li
+                        key={idx}
+                        className="p-3 bg-white rounded-md shadow-xs flex justify-between items-center text-gray-700"
+                      >
+                        <span>
+                          {item.author} ({item.count}권)
+                        </span>
+                        <span className="font-bold text-orange-600">
+                          {item.averageRating.toFixed(1)}점
+                        </span>
                       </li>
                     )
                   )}
                 </ul>
               </div>
 
-              {/* 선호 출판사 */}
-              <div>
-                <h3 className="text-lg font-semibold mb-2">🏢 선호 출판사</h3>
-                <ul className="space-y-1 text-sm">
+              <div className="p-5 bg-purple-50 rounded-lg shadow-sm">
+                <h3 className="text-lg font-semibold mb-3 text-purple-800">
+                  🏢 선호 출판사
+                </h3>
+                <ul className="space-y-2 text-sm">
                   {data.preferredPublishers.map(
                     (
                       item: {
@@ -152,9 +182,16 @@ const TasteAnalysisPage: React.FC = () => {
                       },
                       idx: number
                     ) => (
-                      <li key={idx} className="border p-2 rounded bg-purple-50">
-                        {item.publisher} ({item.count}권, 평점{" "}
-                        {item.averageRating.toFixed(1)})
+                      <li
+                        key={idx}
+                        className="p-3 bg-white rounded-md shadow-xs flex justify-between items-center text-gray-700"
+                      >
+                        <span>
+                          {item.publisher} ({item.count}권)
+                        </span>
+                        <span className="font-bold text-purple-600">
+                          {item.averageRating.toFixed(1)}점
+                        </span>
                       </li>
                     )
                   )}
@@ -163,43 +200,56 @@ const TasteAnalysisPage: React.FC = () => {
             </div>
           </section>
 
-          {/* 6. 전체 카테고리 통계 */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">📘 전체 카테고리 통계</h2>
-            <table className="w-full border text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="p-2 border">카테고리</th>
-                  <th className="p-2 border">권수</th>
-                  <th className="p-2 border">평균 평점</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.allCategoryStats
-                  .sort(
-                    (a: { count: number }, b: { count: number }) =>
-                      b.count - a.count
-                  )
-                  .map(
-                    (
-                      item: {
-                        categoryName: string;
-                        count: number;
-                        averageRating: number;
-                      },
-                      idx: number
-                    ) => (
-                      <tr key={idx} className="text-center">
-                        <td className="p-2 border">{item.categoryName}</td>
-                        <td className="p-2 border">{item.count}</td>
-                        <td className="p-2 border">
-                          {item.averageRating.toFixed(1)}
-                        </td>
-                      </tr>
+          <section className="p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">
+              📘 전체 카테고리 통계
+            </h2>
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      카테고리
+                    </th>
+                    <th className="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      권수
+                    </th>
+                    <th className="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      평균 평점
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {data.allCategoryStats
+                    .sort(
+                      (a: { count: number }, b: { count: number }) =>
+                        b.count - a.count
                     )
-                  )}
-              </tbody>
-            </table>
+                    .map(
+                      (
+                        item: {
+                          categoryName: string;
+                          count: number;
+                          averageRating: number;
+                        },
+                        idx: number
+                      ) => (
+                        <tr key={idx} className="text-center">
+                          <td className="p-3 whitespace-nowrap text-gray-700 font-medium">
+                            {item.categoryName}
+                          </td>
+                          <td className="p-3 whitespace-nowrap text-gray-700">
+                            {item.count}
+                          </td>
+                          <td className="p-3 whitespace-nowrap text-gray-700">
+                            {item.averageRating.toFixed(1)}
+                          </td>
+                        </tr>
+                      )
+                    )}
+                </tbody>
+              </table>
+            </div>
           </section>
         </div>
       )}

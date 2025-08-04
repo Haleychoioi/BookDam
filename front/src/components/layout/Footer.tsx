@@ -7,19 +7,19 @@ const Footer: React.FC = () => {
         <hr className="border-t border-gray-300 w-full mb-8" />
 
         <div className="flex justify-start w-full max-w-5xl space-x-12 my-12 text-lg font-medium">
-          <Link to="/mobile-app" className="hover:text-main">
+          <Link to="/" className="hover:text-main">
             Mobile app
           </Link>
-          <Link to="/communities" className="hover:text-main">
+          <Link to="/" className="hover:text-main">
             Community
           </Link>
-          <Link to="/company" className="hover:text-main">
+          <Link to="/" className="hover:text-main">
             Company
           </Link>
-          <Link to="/help-desk" className="hover:text-main">
+          <Link to="/" className="hover:text-main">
             Help desk
           </Link>
-          <Link to="/blog" className="hover:text-main">
+          <Link to="/" className="hover:text-main">
             Blog
           </Link>
         </div>
@@ -43,7 +43,7 @@ const Footer: React.FC = () => {
               >
                 hello@booktalk.kr
               </a>
-              | 개인정보보호책임자: 이덕서 | 주소: 서울특별시 강남구 테헤란로
+              | 개인정보보호책임자: 김산삼 | 주소: 서울특별시 강남구 테헤란로
               152, 7층
             </p>
             <p>

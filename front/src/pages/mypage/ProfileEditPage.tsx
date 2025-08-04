@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import MyPageHeader from "../../components/mypage/MyPageHeader";
-import Button from "../../components/common/Button";
 import { useAuth } from "../../hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "../../hooks/useToast";
+import MyPageHeader from "../../components/mypage/MyPageHeader";
+import Button from "../../components/common/Button";
 
 const defaultProfileImage = "https://api.dicebear.com/8.x/identicon/svg?seed=";
 
@@ -15,6 +16,7 @@ const ProfileEditPage: React.FC = () => {
 
   const { currentUserProfile, loading, error, updateProfile } = useAuth();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const [currentNickname, setCurrentNickname] = useState<string>("");
   const [currentIntroduction, setCurrentIntroduction] = useState<string>("");
@@ -96,11 +98,11 @@ const ProfileEditPage: React.FC = () => {
       currentNickname.trim().length < 2 ||
       currentNickname.trim().length > 10
     ) {
-      alert("닉네임은 2자 이상 10자 이내로 입력해주세요.");
+      showToast("닉네임은 2자 이상 10자 이내로 입력해주세요.", "error");
       return;
     }
     if (currentIntroduction.trim().length > 100) {
-      alert("자기소개는 100자 이내로 입력해주세요.");
+      showToast("자기소개는 100자 이내로 입력해주세요.", "error");
       return;
     }
 
@@ -123,11 +125,12 @@ const ProfileEditPage: React.FC = () => {
       !isIntroductionChanged &&
       !isImageActuallyChanged
     ) {
-      alert("변경할 내용이 없습니다.");
+      showToast("변경할 내용이 없습니다.", "info");
       return;
     }
 
     if (!window.confirm("정말로 정보를 수정하시겠습니까?")) {
+      // confirm 유지
       return;
     }
 
@@ -143,15 +146,12 @@ const ProfileEditPage: React.FC = () => {
 
     const success = await updateProfile(formData);
     if (success) {
-      // 프로필 수정 성공 후 관련 쿼리 무효화하여 데이터 다시 불러오기
       queryClient.invalidateQueries({ queryKey: ["allPosts"] });
       queryClient.invalidateQueries({ queryKey: ["teamPosts"] });
       queryClient.invalidateQueries({ queryKey: ["myPosts"] });
       queryClient.invalidateQueries({ queryKey: ["myComments"] });
-      // 개별 게시글 및 팀 게시글 상세 정보 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ["post"] }); // 모든 개별 게시글 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ["teamPost"] }); // 모든 개별 팀 게시글 쿼리 무효화
-      // 다른 프로필 이미지를 사용하는 페이지가 있다면 해당 쿼리 키도 추가
+      queryClient.invalidateQueries({ queryKey: ["post"] });
+      queryClient.invalidateQueries({ queryKey: ["teamPost"] });
     }
   };
 

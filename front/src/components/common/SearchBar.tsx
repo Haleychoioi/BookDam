@@ -1,5 +1,8 @@
+// src/components/common/SearchBar.tsx
+
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../../hooks/useToast";
 import Button from "../common/Button";
 
 interface SearchBarProps {
@@ -11,13 +14,14 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({
   initialQuery = "",
-  placeholder = "검색어를 입력해주세요", // ✨ placeholder 유지 ✨
+  placeholder = "검색어를 입력해주세요",
   className = "",
   onSearch,
 }) => {
   const [searchTerm, setSearchTerm] = useState(initialQuery);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     setSearchTerm(initialQuery);
@@ -43,15 +47,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
   }, []);
 
   const executeSearch = () => {
-    const processedSearchTerm = searchTerm.replace(/\s/g, ""); // ✨ 모든 공백 제거 로직 유지 ✨
+    const processedSearchTerm = searchTerm.replace(/\s/g, "");
 
-    // ✨ 검색어가 비어있을 때만 alert를 띄우고 중단 ✨
     if (processedSearchTerm.length === 0) {
-      alert("검색어를 입력해주세요.");
+      showToast("검색어를 입력해주세요.", "warn");
       return;
     }
 
-    // 1글자 이상이면 모두 검색 실행
     if (onSearch) {
       onSearch(processedSearchTerm);
     } else {
@@ -72,7 +74,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
     <div
       className={`flex items-center w-full max-w-3xl mx-auto h-12 ${className}`}
     >
-      {/* 검색 입력 필드 */}
       <input
         ref={inputRef}
         type="text"
@@ -83,8 +84,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         onKeyDown={handleKeyDown}
       />
 
-      {/* 검색 버튼 */}
-      <Button // ✨ Button 컴포넌트 사용 유지 ✨
+      <Button
         onClick={executeSearch}
         bgColor="bg-main"
         textColor="text-white"

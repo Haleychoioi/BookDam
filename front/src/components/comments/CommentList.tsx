@@ -1,7 +1,8 @@
 // src/components/comments/CommentList.tsx
 
-import React, { memo } from "react";
+import { memo } from "react";
 import CommentItem from "./CommentItem";
+
 import type { Comment, TeamComment } from "../../types";
 
 interface CommentListProps {
@@ -23,11 +24,6 @@ const CommentList: React.FC<CommentListProps> = memo(
     onDeleteComment,
   }) => {
     const commentsToRender = comments;
-
-    // ✨ 여기: 컴포넌트가 렌더링될 때마다 이 로그가 찍힙니다. ✨
-    console.log(
-      `[CommentList Render] Depth: ${depth}, Comments count: ${comments.length}`
-    );
 
     return (
       <div>

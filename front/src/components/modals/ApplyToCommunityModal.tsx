@@ -1,10 +1,11 @@
 // src/components/modals/ApplyToCommunityModal.tsx
 
 import { useState, useEffect } from "react";
-import Button from "../common/Button";
-import axios from "axios";
-import { applyToCommunity } from "../../api/communities";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "../../hooks/useToast"; // useToast 훅 임포트
+import axios from "axios";
+import Button from "../common/Button";
+import { applyToCommunity } from "../../api/communities";
 
 interface ApplyToCommunityModalProps {
   isOpen: boolean;
@@ -20,14 +21,13 @@ const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
 }) => {
   const [applicationMessage, setApplicationMessage] = useState("");
   const [internalError, setInternalError] = useState<string | null>(null);
-  const [isApplicationSuccessful, setIsApplicationSuccessful] = useState(false);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
       setApplicationMessage("");
       setInternalError(null);
-      setIsApplicationSuccessful(false);
     }
   }, [isOpen]);
 
@@ -48,15 +48,12 @@ const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
     try {
       await applyToCommunity(communityId, applicationMessage);
 
-      setIsApplicationSuccessful(true);
+      showToast("커뮤니티 신청이 성공적으로 처리되었습니다.", "success");
+      onClose();
 
       queryClient.invalidateQueries({ queryKey: ["allCommunities"] });
       queryClient.invalidateQueries({ queryKey: ["bookDetailPageData"] });
       queryClient.invalidateQueries({ queryKey: ["myCommunitiesApplied"] });
-
-      setTimeout(() => {
-        onClose();
-      }, 2000);
     } catch (error: unknown) {
       console.error("커뮤니티 신청 중 오류 발생:", error);
       let errorMessage =
@@ -81,90 +78,67 @@ const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
       }
 
       setInternalError(errorMessage);
-    } finally {
-      // setApplicationMessage("");
     }
   };
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md mx-4">
-        {isApplicationSuccessful ? (
-          <div className="text-center py-8">
-            <h2 className="text-2xl font-bold mb-4 text-green-600">
-              신청 완료!
-            </h2>
-            <p className="text-gray-700">
-              커뮤니티 신청이 성공적으로 처리되었습니다.
-            </p>
+        <>
+          <h2 className="text-2xl font-bold mb-2 text-gray-800">
+            커뮤니티 가입 신청
+          </h2>
+          <p className="font-light ml-6 mb-6">
+            새로운 독서 여정, 지금 이 커뮤니티와 함께 시작해보세요.
+          </p>
+
+          {internalError && (
+            <div
+              className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4"
+              role="alert"
+            >
+              <span className="block sm:inline">{internalError}</span>
+            </div>
+          )}
+
+          <div className="mb-6">
+            <label
+              htmlFor="applicationMessage"
+              className="block text-gray-700 text-md font-medium mb-2"
+            >
+              간단 소개
+            </label>
+            <textarea
+              id="applicationMessage"
+              className="w-full border border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 resize-none font-light"
+              rows={5}
+              placeholder="예시: 안녕하세요! 이 책을 너무 좋아해서 함께 토론하고 싶어 신청합니다."
+              value={applicationMessage}
+              onChange={(e) => setApplicationMessage(e.target.value)}
+            ></textarea>
+          </div>
+
+          <div className="flex justify-end space-x-4">
             <Button
               onClick={onClose}
+              bgColor="bg-gray-300"
+              textColor="text-white"
+              hoverBgColor="hover:bg-gray-400"
+              className="font-normal"
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleSubmit}
               bgColor="bg-main"
               textColor="text-white"
               hoverBgColor="hover:bg-apply"
-              className="font-normal mt-6"
+              className="font-normal"
             >
-              닫기
+              신청하기
             </Button>
           </div>
-        ) : (
-          <>
-            <h2 className="text-2xl font-bold mb-2 text-gray-800">
-              커뮤니티 가입 신청
-            </h2>
-            <p className="font-light ml-6 mb-6">
-              새로운 독서 여정, 지금 이 커뮤니티와 함께 시작해보세요.
-            </p>
-
-            {internalError && (
-              <div
-                className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4"
-                role="alert"
-              >
-                <span className="block sm:inline">{internalError}</span>
-              </div>
-            )}
-
-            <div className="mb-6">
-              <label
-                htmlFor="applicationMessage"
-                className="block text-gray-700 text-md font-medium mb-2"
-              >
-                간단 소개
-              </label>
-              <textarea
-                id="applicationMessage"
-                className="w-full border border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 resize-none font-light"
-                rows={5}
-                placeholder="예시: 안녕하세요! 이 책을 너무 좋아해서 함께 토론하고 싶어 신청합니다."
-                value={applicationMessage}
-                onChange={(e) => setApplicationMessage(e.target.value)}
-              ></textarea>
-            </div>
-
-            <div className="flex justify-end space-x-4">
-              <Button
-                onClick={onClose}
-                bgColor="bg-gray-300"
-                textColor="text-white"
-                hoverBgColor="hover:bg-gray-400"
-                className="font-normal"
-              >
-                취소
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                bgColor="bg-main"
-                textColor="text-white"
-                hoverBgColor="hover:bg-apply"
-                className="font-normal"
-                disabled={isApplicationSuccessful}
-              >
-                {isApplicationSuccessful ? "신청 완료" : "신청하기"}
-              </Button>
-            </div>
-          </>
-        )}
+        </>
       </div>
     </div>
   );

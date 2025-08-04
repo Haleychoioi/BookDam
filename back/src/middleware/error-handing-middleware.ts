@@ -174,7 +174,7 @@ export default function (
       });
 
     case "LeaderCannotWithdraw":
-      return res.send({
+      return res.status(403).json({
         errorMessage: "커뮤니티 팀장은 커뮤니티를 삭제해야 탈퇴할 수 있습니다.",
       });
 

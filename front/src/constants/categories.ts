@@ -1,4 +1,5 @@
 // src.zip/constants/categories.ts
+
 export const CATEGORY_MAPPING = {
   "소설/시/희곡": "소설",
   에세이: "에세이",

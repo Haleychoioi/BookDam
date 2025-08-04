@@ -1,20 +1,18 @@
 // src/components/mypage/MyCommentsDisplay.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchMyComments } from "../../api/comments";
-import type { MyCommentsResponse } from "../../api/comments";
 import { useAuth } from "../../hooks/useAuth";
-import type { Comment, TeamComment } from "../../types";
 import { formatKoreanDateTime } from "../../utils/dateFormatter";
 import Pagination from "../common/Pagination";
+import { fetchMyComments } from "../../api/comments";
+import type { MyCommentsResponse } from "../../api/comments";
 
-import { Link } from "react-router-dom";
+import type { Comment, TeamComment } from "../../types";
 
 const COMMENTS_PER_PAGE = 10;
 
-// Comment가 TeamComment 타입인지 확인하는 헬퍼 함수
-// 서비스에서 이미 필터링되고 평탄화된 데이터를 받으므로, 이 헬퍼는 단순히 타입을 구분하는 역할만 합니다.
 function isTeamComment(comment: Comment | TeamComment): comment is TeamComment {
   return (comment as TeamComment).teamPostId !== undefined;
 }
@@ -40,8 +38,6 @@ const MyCommentsDisplay: React.FC = () => {
     staleTime: 5 * 60 * 1000,
     placeholderData: (previousData) => previousData,
   });
-
-  console.log("MyCommentsDisplay - useQuery data:", data); // 디버깅 로그 유지
 
   const comments = data?.data?.comments || [];
   const totalPages = data?.data?.pagination?.totalPages || 1;
@@ -97,10 +93,8 @@ const MyCommentsDisplay: React.FC = () => {
             const commentIdOrTeamCommentId = isTeamComment(comment)
               ? comment.teamPostId
               : comment.commentId;
-            let postLink = ""; // 댓글이 이동할 게시물 링크
+            let postLink = "";
 
-            // 서비스에서 이미 필터링되고 평탄화된 데이터를 받으므로, 조건 검사를 단순화합니다.
-            // comment.postTitle은 서비스에서 이미 null이 아닌 경우에만 설정됩니다.
             if (
               isTeamComment(comment) &&
               comment.communityId &&
@@ -111,8 +105,7 @@ const MyCommentsDisplay: React.FC = () => {
               postLink = `/posts/${comment.postId}`;
             }
 
-            // 게시물 제목 표시 (postTitle은 서비스에서 이미 평탄화되어 제공됩니다)
-            const postTitleDisplay = comment.postTitle || "삭제된 게시글"; // 게시글 제목이 없으면 '삭제된 게시글'로 표시
+            const postTitleDisplay = comment.postTitle || "삭제된 게시글";
             const postTypeDisplay = comment.postType
               ? ` (${
                   comment.postType === "TEAM" ? "팀 게시글" : "일반 게시글"
@@ -124,8 +117,7 @@ const MyCommentsDisplay: React.FC = () => {
                 key={commentIdOrTeamCommentId}
                 className="p-4 border rounded-lg shadow-sm bg-white"
               >
-                {/* ✨ 링크가 유효한 경우 전체 항목을 Link로 감쌉니다. ✨ */}
-                {postLink ? ( // postLink가 유효할 때만 Link 컴포넌트 사용
+                {postLink ? (
                   <Link to={postLink} className="block hover:text-blue-600">
                     <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">
                       {postTitleDisplay}
@@ -136,7 +128,6 @@ const MyCommentsDisplay: React.FC = () => {
                     </p>
                   </Link>
                 ) : (
-                  // postLink가 유효하지 않으면 Link 없이 텍스트만 표시
                   <>
                     <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">
                       {postTitleDisplay}

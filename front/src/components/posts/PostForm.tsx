@@ -1,12 +1,12 @@
 // src/components/posts/PostForm.tsx
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useToast } from "../../hooks/useToast";
 import Button from "../common/Button";
 
 import MDEditor from "@uiw/react-md-editor";
 import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
-
 import remarkGfm from "remark-gfm";
 
 import { PostType, TeamPostType } from "../../types";
@@ -46,6 +46,8 @@ const PostWriteTemplate: React.FC<PostWriteTemplateProps> = ({
     isCommunityPost ? TeamPostType.DISCUSSION : PostType.GENERAL
   );
 
+  const { showToast } = useToast();
+
   useEffect(() => {
     if (initialData) {
       setTitle(initialData.title || "");
@@ -69,13 +71,12 @@ const PostWriteTemplate: React.FC<PostWriteTemplateProps> = ({
   };
 
   const handleSubmitClick = () => {
-    // ✨ 유효성 검사 추가 ✨
     if (title.trim().length === 0) {
-      alert("제목을 입력해주세요.");
+      showToast("제목을 입력해주세요.", "warn");
       return;
     }
     if (content.trim().length === 0) {
-      alert("내용을 입력해주세요.");
+      showToast("내용을 입력해주세요.", "warn");
       return;
     }
 

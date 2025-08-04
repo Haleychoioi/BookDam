@@ -1,23 +1,27 @@
 // src/pages/mypage/MyCommunitiesRecruitingPage.tsx
 
 import { useState, useEffect, useMemo } from "react";
-import MyPageHeader from "../../components/mypage/MyPageHeader"; // ✨ 수정: MyPageHeader로 경로 통일 ✨
-import RecruitingCommunityCard from "../../components/mypage/RecruitingCommunityCard";
-import Pagination from "../../components/common/Pagination";
-import type { Community } from "../../types";
-import {
-  fetchMyRecruitingCommunities, // 내가 모집 중인 커뮤니티 API
-  updateCommunityDetails,
-  endRecruitment, // ✨ 추가: endRecruitment API 임포트 ✨
-  fetchMyEndedCommunities, // ✨ 추가: fetchMyEndedCommunities API 임포트 ✨
-} from "../../api/communities";
-import EditCommunityModal from "../../components/modals/EditCommunityModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../hooks/useAuth";
+import { useToast } from "../../hooks/useToast";
+import MyPageHeader from "../../components/mypage/MyPageHeader";
+import RecruitingCommunityCard from "../../components/mypage/RecruitingCommunityCard";
+import Pagination from "../../components/common/Pagination";
+import EditCommunityModal from "../../components/modals/EditCommunityModal";
+import {
+  fetchMyRecruitingCommunities,
+  updateCommunityDetails,
+  endRecruitment,
+  fetchMyEndedCommunities,
+  cancelRecruitment,
+} from "../../api/communities";
+
+import type { Community } from "../../types";
 
 const MyCommunitiesRecruitingPage: React.FC = () => {
   const { currentUserProfile, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<"모집중" | "모집종료" | "전체">(
     "전체"
@@ -29,12 +33,16 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
   const [selectedCommunityToEdit, setSelectedCommunityToEdit] =
     useState<Community | null>(null);
 
+  const [endRecruitmentError, setEndRecruitmentError] = useState<string | null>(
+    null
+  );
+
   const {
     data: fetchedCommunities,
     isLoading: isLoadingCommunities,
     isError: isErrorCommunities,
     error: communitiesError,
-    // refetch, // ✨ 제거: 이제 직접 refetch를 사용하지 않고 queryClient.invalidateQueries를 사용합니다. ✨
+    refetch,
   } = useQuery<Community[], Error>({
     queryKey: [
       "myRecruitingCommunities",
@@ -42,9 +50,11 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
       currentUserProfile?.userId,
     ],
     queryFn: async () => {
-      if (!currentUserProfile) {
+      const currentUserId = currentUserProfile?.userId;
+      if (!currentUserId) {
         throw new Error("로그인이 필요합니다.");
       }
+
       let communities: Community[] = [];
       if (activeTab === "모집중" || activeTab === "전체") {
         const recruiting = await fetchMyRecruitingCommunities();
@@ -55,12 +65,10 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
         communities = [...communities, ...ended];
       }
 
-      // '전체' 탭일 때는 중복 제거 (만약 같은 커뮤니티가 여러 상태에 걸쳐 조회될 경우)
       if (activeTab === "전체") {
         const uniqueCommunities = Array.from(
           new Map(communities.map((item) => [item.id, item])).values()
         );
-        // createdAt 기준으로 정렬
         uniqueCommunities.sort(
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -68,7 +76,6 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
         return uniqueCommunities;
       }
 
-      // 각 탭에 맞게 필터링 (api에서 이미 필터링되어 오지만, 혹시 모를 경우를 대비)
       if (activeTab === "모집중") {
         return communities.filter((comm) => comm.status === "모집중");
       } else if (activeTab === "모집종료") {
@@ -83,6 +90,7 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
+    setEndRecruitmentError(null);
   }, [activeTab]);
 
   const updateCommunityMutation = useMutation<
@@ -101,49 +109,72 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
     mutationFn: ({ communityId, updateData }) =>
       updateCommunityDetails(communityId, updateData),
     onSuccess: () => {
-      alert("커뮤니티 정보가 성공적으로 업데이트되었습니다.");
+      showToast("커뮤니티 정보가 성공적으로 업데이트되었습니다.", "success");
       queryClient.invalidateQueries({ queryKey: ["myRecruitingCommunities"] });
     },
     onError: (err: Error) => {
       const errorMessage =
         err.message || "커뮤니티 정보 업데이트 중 오류가 발생했습니다.";
-      alert(errorMessage);
+      showToast(errorMessage, "error");
     },
   });
 
-  // const cancelRecruitmentMutation = useMutation<void, Error, string>({ // ✨ 제거: 이 뮤테이션은 더 이상 직접 사용되지 않습니다. ✨
-  //   mutationFn: cancelRecruitment,
-  //   onSuccess: () => {
-  //     alert("모집이 성공적으로 종료되었습니다.");
-  //     queryClient.invalidateQueries({ queryKey: ["myRecruitingCommunities"] });
-  //   },
-  //   onError: (err: Error) => {
-  //     const errorMessage = err.message || "모집 종료 중 오류가 발생했습니다.";
-  //     alert(errorMessage);
-  //   },
-  // });
+  const endRecruitmentMutation = useMutation<void, Error, string>({
+    mutationFn: (communityId) => endRecruitment(communityId),
+    onSuccess: () => {
+      showToast("커뮤니티 모집이 성공적으로 종료되었습니다.", "success");
+      queryClient.invalidateQueries({ queryKey: ["myRecruitingCommunities"] });
+      refetch();
+    },
+    onError: (err) => {
+      console.error("모집 종료 중 오류 발생:", err);
+      let errorMessage = "모집 종료 중 오류가 발생했습니다. 다시 시도해주세요.";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setEndRecruitmentError(errorMessage);
+      showToast(errorMessage, "error");
+    },
+  });
 
-  const handleEndRecruitment = async (communityId: string) => {
+  const cancelRecruitmentMutation = useMutation<void, Error, string>({
+    mutationFn: (communityId) => cancelRecruitment(communityId),
+    onSuccess: () => {
+      showToast("커뮤니티 모집이 성공적으로 취소되었습니다.", "success");
+      queryClient.invalidateQueries({ queryKey: ["myRecruitingCommunities"] });
+      queryClient.invalidateQueries({ queryKey: ["appliedCommunities"] });
+      refetch();
+    },
+    onError: (err) => {
+      console.error("모집 취소 중 오류 발생:", err);
+      let errorMessage = "모집 취소 중 오류가 발생했습니다. 다시 시도해주세요.";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setEndRecruitmentError(errorMessage);
+      showToast(errorMessage, "error");
+    },
+  });
+
+  const handleEndRecruitment = (communityId: string) => {
+    setEndRecruitmentError(null);
     if (
       window.confirm(
         "정말로 이 커뮤니티 모집을 종료하시겠습니까? (모집 종료 시 모집중인 커뮤니티 목록에서 사라집니다.)"
       )
     ) {
-      try {
-        await endRecruitment(communityId); // 새로운 API 함수 호출
-        alert("커뮤니티 모집이 성공적으로 종료되었습니다.");
-        queryClient.invalidateQueries({
-          queryKey: ["myRecruitingCommunities"],
-        }); // 쿼리 무효화하여 목록 새로고침
-      } catch (err: unknown) {
-        console.error("모집 종료 중 오류 발생:", err);
-        let errorMessage =
-          "모집 종료 중 오류가 발생했습니다. 다시 시도해주세요.";
-        if (err instanceof Error) {
-          errorMessage = err.message;
-        }
-        alert(errorMessage);
-      }
+      endRecruitmentMutation.mutate(communityId);
+    }
+  };
+
+  const handleCancelRecruitment = (communityId: string) => {
+    setEndRecruitmentError(null);
+    if (
+      window.confirm(
+        "정말로 이 커뮤니티 모집을 취소하시겠습니까? (모든 신청 정보와 모집글이 사라집니다.)"
+      )
+    ) {
+      cancelRecruitmentMutation.mutate(communityId);
     }
   };
 
@@ -153,7 +184,9 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
   const paginatedCommunities = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return fetchedCommunities?.slice(startIndex, endIndex) || [];
+    return (fetchedCommunities || [])
+      .filter((community): community is Community => community != null)
+      .slice(startIndex, endIndex);
   }, [fetchedCommunities, currentPage, itemsPerPage]);
 
   const handlePageChange = (page: number) => {
@@ -214,6 +247,30 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
         description="여기에서 당신이 모집 중인 커뮤니티의 현황을 확인하고 관리할 수 있습니다. 다양한 주제의 커뮤니티에서 활동해보세요."
       />
 
+      {endRecruitmentError && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6"
+          role="alert"
+        >
+          <strong className="font-bold">오류: </strong>
+          <span className="block sm:inline">{endRecruitmentError}</span>
+          <button
+            onClick={() => setEndRecruitmentError(null)}
+            className="absolute top-0 bottom-0 right-0 px-4 py-3 text-red-700"
+          >
+            <svg
+              className="fill-current h-6 w-6"
+              role="button"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+            >
+              <title>Close</title>
+              <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       <div className="flex border-b border-gray-200 mb-6">
         <button
           onClick={() => handleTabChange("전체")}
@@ -255,6 +312,7 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
               community={community}
               onEndRecruitment={handleEndRecruitment}
               onEditCommunity={handleEditCommunityClick}
+              onCancelRecruitment={handleCancelRecruitment}
             />
           ))
         ) : (

@@ -1,9 +1,5 @@
-// src/services/applications.service.ts
+// src/zip/services/applications.service.ts
 
-import { ApplicationRepository } from "../repositories/applications.repository";
-import { CommunityRepository } from "../repositories/communities.repository";
-import { PostRepository } from "../repositories/posts.repository";
-import { TeamMemberRepository } from "../repositories/team-members.repository";
 import {
   ApplicationStatus,
   CommunityStatus,
@@ -11,30 +7,32 @@ import {
   TeamApplication,
   TeamRole,
 } from "@prisma/client";
-import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
+import { CustomError } from "../middleware/error-handing-middleware";
 
-// ApplicationService의 CustomError 문제를 임시로 해결하기 위한 타입 단언 (최후의 수단)
-// import * as ErrorMiddleware from "../middleware/error-handing-middleware";
-// const CustomError = ErrorMiddleware.CustomError;
+import { ApplicationWithPostInfo } from "../repositories/applications.repository";
 
-type ApplicationWithPostInfo = TeamApplication & {
-  post: {
-    postId: number;
-    title: string;
-  };
-};
+import { ApplicationRepository } from "../repositories/applications.repository";
+import { CommunityRepository } from "../repositories/communities.repository";
+import { PostRepository } from "../repositories/posts.repository"; // ✨ 추가 임포트 ✨
+import { TeamMemberRepository } from "../repositories/team-members.repository"; // ✨ 추가 임포트 ✨
+import { TeamPostRepository } from "../repositories/team-posts.repository";
+import { TeamCommentRepository } from "../repositories/team-comments.repository";
 
 export class ApplicationService {
   private applicationRepository: ApplicationRepository;
   private communityRepository: CommunityRepository;
-  private postRepository: PostRepository;
-  private teamMemberRepository: TeamMemberRepository;
+  private postRepository: PostRepository; // ✨ 추가: PostRepository 인스턴스 ✨
+  private teamMemberRepository: TeamMemberRepository; // ✨ 추가: TeamMemberRepository 인스턴스 ✨
+  private teamPostRepository: TeamPostRepository;
+  private teamCommentRepository: TeamCommentRepository;
 
   constructor() {
     this.applicationRepository = new ApplicationRepository();
     this.communityRepository = new CommunityRepository();
-    this.postRepository = new PostRepository();
-    this.teamMemberRepository = new TeamMemberRepository();
+    this.postRepository = new PostRepository(); // ✨ 초기화 ✨
+    this.teamMemberRepository = new TeamMemberRepository(); // ✨ 초기화 ✨
+    this.teamPostRepository = new TeamPostRepository();
+    this.teamCommentRepository = new TeamCommentRepository();
   }
 
   public async getMyApplications(
@@ -43,7 +41,38 @@ export class ApplicationService {
     const applications = await this.applicationRepository.findManyByUserId(
       userId
     );
-    return applications;
+
+    // ✨ 각 신청서에 연결된 커뮤니티의 현재 멤버 수 및 최대 멤버 수 정보를 추가합니다. ✨
+    const enrichedApplications = await Promise.all(
+      applications.map(async (app) => {
+        if (app.post && app.post.team) {
+          const communityId = app.post.team.teamId;
+          const postId = app.post.postId; // post ID를 가져옵니다.
+
+          // 현재 멤버 수 조회
+          const currentMembers =
+            await this.teamMemberRepository.countMembersByTeamId(communityId);
+          // 모집글 (Post)에서 maxMembers 조회
+          const recruitmentPost = await this.postRepository.findById(postId);
+          const maxMembers = recruitmentPost?.maxMembers || 0; // maxMembers는 Post에 있습니다.
+
+          return {
+            ...app,
+            post: {
+              ...app.post,
+              team: {
+                // team 객체를 확장합니다.
+                ...app.post.team,
+                currentMembers: currentMembers, // 계산된 멤버 수 추가
+                maxMembers: maxMembers, // 조회된 최대 멤버 수 추가
+              },
+            },
+          };
+        }
+        return app; // post나 team이 없는 경우 원본 그대로 반환
+      })
+    );
+    return enrichedApplications;
   }
 
   public async cancelApplication(applicationId: number, userId: number) {
@@ -64,13 +93,6 @@ export class ApplicationService {
     await this.applicationRepository.deleteById(applicationId);
   }
 
-  /**
-   * 커뮤니티 가입 신청
-   * @param communityId
-   * @param applicationData
-   * @returns
-   * @throws CustomError 커뮤니티를 찾을 수 없을 때, 모집 중이 아닐 때, 중복 신청일 때, 모집 인원 초과일 때
-   */
   public async createApplication(
     communityId: number,
     applicationData: { userId: number; applicationMessage: string }
@@ -79,7 +101,6 @@ export class ApplicationService {
     if (!community) {
       throw new CustomError(404, "Community not found");
     }
-    // ✨ 커뮤니티 상태 로그 추가 ✨
     console.log(
       `ApplicationService: Community ID ${communityId} status is ${community.status}`
     );
@@ -88,7 +109,6 @@ export class ApplicationService {
       throw new CustomError(400, "This community is not currently recruiting.");
     }
 
-    // 중복 신청 방지
     const existingApplication =
       await this.applicationRepository.findByUserIdAndPostId(
         applicationData.userId,
@@ -98,7 +118,6 @@ export class ApplicationService {
       throw new CustomError(409, "You have already applied to this community.");
     }
 
-    // 모집 인원 초과 여부 확인
     const recruitmentPost = await this.postRepository.findById(
       community.postId
     );
@@ -109,7 +128,7 @@ export class ApplicationService {
       );
     }
     const currentMembersCount =
-      await this.teamMemberRepository.countMembersByTeamId(communityId); // 현재 멤버 수
+      await this.teamMemberRepository.countMembersByTeamId(communityId);
     if (
       recruitmentPost.maxMembers &&
       currentMembersCount >= recruitmentPost.maxMembers
@@ -124,13 +143,6 @@ export class ApplicationService {
     return true;
   }
 
-  /**
-   * 특정 모집 커뮤니티의 신청자 목록 상세 조회
-   * @param communityId
-   * @param requestingUserId
-   * @returns
-   * @throws
-   */
   public async findApplicantsByCommunity(
     communityId: number,
     requestingUserId: number
@@ -140,7 +152,6 @@ export class ApplicationService {
       throw new CustomError(404, "Community not found");
     }
 
-    // 요청 userId가 해당 커뮤니티의 팀장인지 확인 (권한 검증)
     const teamMember = await this.teamMemberRepository.findByUserIdAndTeamId(
       requestingUserId,
       communityId
@@ -155,22 +166,12 @@ export class ApplicationService {
     const applicants = await this.applicationRepository.findManyByCommunityId(
       community.postId
     );
-    // 신청자가 없는 경우 빈 배열 반환 (에러 아님)
     if (!applicants || applicants.length === 0) {
       return [];
     }
     return applicants;
   }
 
-  /**
-   * 신청 수락/거절
-   * @param communityId
-   * @param applicantUserId
-   * @param newStatus - ACCEPTED/REJECTED
-   * @param requestingUserId
-   * @returns
-   * @throws CustomError 커뮤니티를 찾을 수 없을 때, 권한이 없을 때, 지원서를 찾을 수 없을 때, 상태 변경이 유효하지 않을 때
-   */
   public async updateApplicationStatus(
     communityId: number,
     applicantUserId: number,
@@ -182,7 +183,6 @@ export class ApplicationService {
       throw new CustomError(404, "Community not found");
     }
 
-    // 요청 userId가 해당 커뮤니티의 팀장인지 확인 (권한 검증)
     const teamLeader = await this.teamMemberRepository.findByUserIdAndTeamId(
       requestingUserId,
       communityId
@@ -214,7 +214,6 @@ export class ApplicationService {
       newStatus
     );
 
-    // 지원이 수락된 경우, TeamMember 테이블에 추가
     if (newStatus === ApplicationStatus.ACCEPTED) {
       const existingTeamMember =
         await this.teamMemberRepository.findByUserIdAndTeamId(
@@ -230,7 +229,6 @@ export class ApplicationService {
         role: TeamRole.MEMBER,
       });
 
-      // 모집 인원이 꽉 찼다면 커뮤니티 상태를 ACTIVE로 변경
       const recruitmentPost = await this.postRepository.findById(
         community.postId
       );
@@ -263,7 +261,6 @@ export class ApplicationService {
       throw new CustomError(404, "Community not found");
     }
 
-    // 요청 userId가 해당 커뮤니티의 팀장인지 확인 (권한 검증)
     const teamLeader = await this.teamMemberRepository.findByUserIdAndTeamId(
       requestingUserId,
       communityId
@@ -275,11 +272,121 @@ export class ApplicationService {
       );
     }
 
-    // 해당 모집글과 관련된 모든 지원서 삭제
-    await this.applicationRepository.deleteRecruitment(community.postId);
-    await this.postRepository.delete(community.postId);
-    await this.communityRepository.delete(communityId);
+    // 삭제 전 커뮤니티 존재 여부 확인 (나중에 성공 판단에 사용)
+    const wasCommunityInitiallyPresent =
+      (await this.communityRepository.countCommunitiesById(communityId)) > 0;
+    console.log(
+      `[ApplicationService.cancelRecruitment] Starting deletion for communityId: ${communityId}, postId: ${community.postId}. Initially present: ${wasCommunityInitiallyPresent}`
+    );
 
-    return true;
+    try {
+      // 1. TeamComments 삭제
+      const teamPostsInCommunity =
+        await this.teamPostRepository.findManyByCommunityId(communityId, {});
+      console.log(
+        `[ApplicationService.cancelRecruitment] Found ${teamPostsInCommunity.length} team posts in community ${communityId} before comment deletion.`
+      );
+
+      for (const teamPost of teamPostsInCommunity) {
+        const commentsDeleted =
+          await this.teamCommentRepository.deleteManyByTeamPostId(
+            teamPost.teamPostId
+          );
+        console.log(
+          `[ApplicationService.cancelRecruitment] TeamComments deleted for teamPost ${teamPost.teamPostId}: ${commentsDeleted}`
+        );
+      }
+
+      // 2. TeamPosts 삭제
+      const initialTeamPostsCount =
+        await this.teamPostRepository.countPostsByTeamId(communityId);
+      console.log(
+        `[ApplicationService.cancelRecruitment] Found ${initialTeamPostsCount} team posts in community ${communityId} before post deletion.`
+      );
+      const teamPostsDeletedCount =
+        await this.teamPostRepository.deleteManyByTeamId(communityId);
+      console.log(
+        `[ApplicationService.cancelRecruitment] TeamPosts deleted count: ${teamPostsDeletedCount}`
+      );
+
+      // 3. TeamMembers 삭제
+      const initialTeamMembersCount =
+        await this.teamMemberRepository.countMembersByTeamId(communityId);
+      console.log(
+        `[ApplicationService.cancelRecruitment] Found ${initialTeamMembersCount} team members in community ${communityId} before member deletion.`
+      );
+      const teamMembersDeletedCount =
+        await this.teamMemberRepository.deleteManyByTeamId(communityId);
+      console.log(
+        `[ApplicationService.cancelRecruitment] TeamMembers deleted count: ${teamMembersDeletedCount}`
+      );
+
+      // 4. TeamApplications 삭제
+      const initialApplicationsCount =
+        await this.applicationRepository.countApplicationsByPostId(
+          community.postId
+        );
+      console.log(
+        `[ApplicationService.cancelRecruitment] Found ${initialApplicationsCount} applications for postId ${community.postId} before deletion.`
+      );
+      const applicationsDeletedCount =
+        await this.applicationRepository.deleteRecruitment(community.postId);
+      console.log(
+        `[ApplicationService.cancelRecruitment] Applications deleted count: ${applicationsDeletedCount}`
+      );
+
+      // 5. Post (모집글) 삭제
+      await this.postRepository.delete(community.postId);
+      console.log(
+        `[ApplicationService.cancelRecruitment] Recruitment post deleted for postId: ${community.postId}`
+      );
+
+      // 6. TeamCommunity 삭제 (이전 로그에서 0 반환했던 부분)
+      const initialCommunityCount =
+        await this.communityRepository.countCommunitiesById(communityId);
+      console.log(
+        `[ApplicationService.cancelRecruitment] Found ${initialCommunityCount} community records for teamId ${communityId} before community deletion.`
+      );
+      const communityDeletedCount = await this.communityRepository.delete(
+        communityId
+      );
+      console.log(
+        `[ApplicationService.cancelRecruitment] Community deleted count: ${communityDeletedCount}`
+      );
+
+      // ✨ 최종 성공 조건 변경 ✨
+      const isCommunityNowGone =
+        (await this.communityRepository.countCommunitiesById(communityId)) ===
+        0;
+
+      if (wasCommunityInitiallyPresent && isCommunityNowGone) {
+        // 초기에 커뮤니티가 존재했고, 이제 더 이상 존재하지 않는다면 성공으로 간주
+        return true;
+      } else if (communityDeletedCount > 0) {
+        // 또는 명시적인 삭제 카운트가 0보다 크다면 성공 (이중 확인)
+        return true;
+      } else {
+        // 모든 삭제 작업이 0을 반환했고, 커뮤니티가 여전히 존재하거나 애초에 없었던 경우
+        throw new CustomError(
+          404,
+          "모집 취소 실패: 커뮤니티 레코드를 삭제할 수 없습니다. (대상 없음 또는 다른 제약 조건)"
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[ApplicationService.cancelRecruitment] Error during full deletion for community ${communityId}:`,
+        error
+      );
+      if (error instanceof CustomError) {
+        throw error;
+      } else if (error instanceof Error) {
+        throw new CustomError(
+          500,
+          `모집 취소 중 예상치 못한 오류 발생: ${error.message}`
+        );
+      } else {
+        throw new CustomError(500, "모집 취소 중 알 수 없는 오류 발생");
+      }
+    }
   }
 }

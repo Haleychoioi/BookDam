@@ -1,27 +1,78 @@
 // src/pages/posts/PostWritePage.tsx
 
-import React, { useState, useCallback } from "react";
-// useLocation은 더 이상 사용하지 않으므로 제거합니다.
-import { useParams, useNavigate /*, useLocation */ } from "react-router-dom";
-import PostForm from "../../components/posts/PostForm";
-
+import { useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useToast } from "../../hooks/useToast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import PostForm from "../../components/posts/PostForm";
 import { createPost } from "../../api/posts";
 import { createTeamPost } from "../../api/teamPosts";
+
 import type { PostType, TeamPostType } from "../../types";
 
 const PostWritePage: React.FC = () => {
   const { communityId } = useParams<{ communityId?: string }>();
   const navigate = useNavigate();
   const { currentUserProfile, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
   const isCommunityPost = !!communityId;
 
-  // title, content 상태는 PostForm 내부에서 관리하므로 여기서 제거합니다.
-  // const [title, setTitle] = useState("");
-  // const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const createGeneralPostMutation = useMutation({
+    mutationFn: async (formData: { title: string; content: string }) => {
+      const postId = await createPost({
+        title: formData.title,
+        content: formData.content,
+      });
+      return postId;
+    },
+    onSuccess: (postId) => {
+      showToast("게시물이 성공적으로 작성되었습니다.", "success");
+      queryClient.invalidateQueries({ queryKey: ["allPosts"] });
+      navigate(`/posts/${postId}`);
+    },
+    onError: (err: Error) => {
+      showToast(
+        `게시물 작성 중 오류가 발생했습니다: ${
+          err.message || "알 수 없는 오류"
+        }`,
+        "error"
+      );
+    },
+  });
+
+  const createTeamPostMutation = useMutation({
+    mutationFn: async (formData: {
+      title: string;
+      content: string;
+      type?: PostType | TeamPostType;
+    }) => {
+      if (!communityId) {
+        throw new Error("커뮤니티 ID가 없습니다.");
+      }
+      const postId = await createTeamPost(communityId, {
+        title: formData.title,
+        content: formData.content,
+        type: formData.type as TeamPostType,
+      });
+      return postId;
+    },
+    onSuccess: (postId) => {
+      showToast("팀 게시물이 성공적으로 작성되었습니다.", "success");
+      queryClient.invalidateQueries({ queryKey: ["teamPosts", communityId] });
+      navigate(`/communities/${communityId}/posts/${postId}`);
+    },
+    onError: (err: Error) => {
+      showToast(
+        `팀 게시물 작성 중 오류가 발생했습니다: ${
+          err.message || "알 수 없는 오류"
+        }`,
+        "error"
+      );
+    },
+  });
 
   const handlePostSubmit = useCallback(
     async (formData: {
@@ -30,54 +81,26 @@ const PostWritePage: React.FC = () => {
       type?: PostType | TeamPostType;
     }) => {
       if (!currentUserProfile || authLoading) {
-        alert("로그인이 필요합니다.");
+        showToast("로그인이 필요합니다.", "warn");
         navigate("/auth/login");
         return;
       }
 
-      setLoading(true);
-      setError(null);
-
-      try {
-        let postId: string;
-        if (communityId) {
-          postId = await createTeamPost(communityId, {
-            title: formData.title, // formData에서 제목 가져오기
-            content: formData.content, // formData에서 내용 가져오기
-            type: formData.type as TeamPostType,
-          });
-          alert("팀 게시물이 성공적으로 작성되었습니다.");
-          // ✨ 추가: 생성된 게시물 ID 로깅 ✨
-          console.log(`팀 게시물 생성 성공. 게시물 ID: ${postId}`);
-          navigate(`/communities/${communityId}/posts/${postId}`);
-        } else {
-          postId = await createPost({
-            title: formData.title, // formData에서 제목 가져오기
-            content: formData.content, // formData에서 내용 가져오기
-          });
-          alert("게시물이 성공적으로 작성되었습니다.");
-          // ✨ 추가: 생성된 게시물 ID 로깅 ✨
-          console.log(`일반 게시물 생성 성공. 게시물 ID: ${postId}`);
-          navigate(`/posts/${postId}`);
-        }
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          console.error("게시물 작성 실패:", err);
-          setError(err.message || "알 수 없는 오류가 발생했습니다.");
-          alert(
-            `게시물 작성 중 오류가 발생했습니다: ${
-              err.message || "알 수 없는 오류"
-            }`
-          );
-        } else {
-          setError("알 수 없는 오류가 발생했습니다.");
-          alert("게시물 작성 중 알 수 없는 오류가 발생했습니다.");
-        }
-      } finally {
-        setLoading(false);
+      if (isCommunityPost) {
+        createTeamPostMutation.mutate(formData);
+      } else {
+        createGeneralPostMutation.mutate(formData);
       }
     },
-    [communityId, navigate, currentUserProfile, authLoading]
+    [
+      currentUserProfile,
+      authLoading,
+      isCommunityPost,
+      createGeneralPostMutation,
+      createTeamPostMutation,
+      showToast,
+      navigate,
+    ]
   );
 
   const handleCancel = useCallback(() => {
@@ -88,12 +111,19 @@ const PostWritePage: React.FC = () => {
     }
   }, [isCommunityPost, navigate, communityId]);
 
+  const isLoading =
+    createGeneralPostMutation.isPending || createTeamPostMutation.isPending;
+  const error = createGeneralPostMutation.isError
+    ? createGeneralPostMutation.error?.message || "오류 발생"
+    : createTeamPostMutation.isError
+    ? createTeamPostMutation.error?.message || "오류 발생"
+    : null;
+
   return (
     <PostForm
-      // title, onTitleChange, content, onContentChange 프롭은 PostForm 내부에서 관리하므로 제거합니다.
       onSubmit={handlePostSubmit}
       onCancel={handleCancel}
-      loading={loading}
+      loading={isLoading}
       error={error}
       pageTitle={communityId ? "팀 게시물 작성" : "새 게시물 작성"}
       submitButtonText={communityId ? "팀 게시물 등록" : "게시물 등록"}

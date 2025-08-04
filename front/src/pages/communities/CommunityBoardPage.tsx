@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 import BoardTemplate from "../../components/posts/BoardTemplate";
-import type { TeamPost, TeamCommunityWithBookTitle } from "../../types"; // ✨ ApiResponse는 필요 없으므로 제거했습니다. ✨
-
 import { fetchCommunityById } from "../../api/communities";
 import { fetchTeamPosts } from "../../api/teamPosts";
-import { useAuth } from "../../hooks/useAuth";
+
+import type { TeamPost, TeamCommunityWithBookTitle } from "../../types";
 
 const CommunityBoardPage: React.FC = () => {
   const { communityId } = useParams<{ communityId: string }>();
@@ -24,7 +24,6 @@ const CommunityBoardPage: React.FC = () => {
 
   const parsedCommunityId = communityId ? Number(communityId) : NaN;
 
-  // 게시물 상세 정보 및 커뮤니티 데이터 불러오기
   const loadCommunityData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -47,15 +46,12 @@ const CommunityBoardPage: React.FC = () => {
         parsedCommunityId
       );
 
-      // 이제 communityResponse는 data 속성을 가지고 있다는 것을 가정하고 코드를 작성합니다.
       if (communityResponse && communityResponse.data) {
         setCommunityInfo(communityResponse.data);
       } else {
-        // 데이터가 없을 경우 에러 처리
         setError("커뮤니티 데이터를 찾을 수 없습니다.");
       }
 
-      // 게시물 목록 불러오기
       const postsResponse = await fetchTeamPosts(
         String(parsedCommunityId),
         currentPage,
@@ -127,7 +123,6 @@ const CommunityBoardPage: React.FC = () => {
 
   return (
     <BoardTemplate
-      // ✨ communityInfo에 직접 접근하여 postTitle과 bookTitle을 가져옵니다. ✨
       boardTitle={`${communityInfo.postTitle}${
         communityInfo.bookTitle ? ` - ${communityInfo.bookTitle}` : ""
       }`}

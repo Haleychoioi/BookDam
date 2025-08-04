@@ -1,4 +1,7 @@
+// src/components/layout/Header.tsx
+
 import { useState, useEffect } from "react";
+import { useToast } from "../../hooks/useToast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Button from "../common/Button";
 import { FaBars, FaTimes } from "react-icons/fa";
@@ -10,6 +13,7 @@ const Header: React.FC = () => {
   );
   const location = useLocation();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const isMyPagePath = location.pathname.startsWith("/mypage");
 
@@ -21,7 +25,7 @@ const Header: React.FC = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("userId");
     setIsLoggedIn(false);
-    alert("로그아웃 되었습니다.");
+    showToast("로그아웃 되었습니다.", "success");
     window.dispatchEvent(new Event("loginStatusChange"));
     navigate("/");
   };
@@ -29,7 +33,7 @@ const Header: React.FC = () => {
   const handleMyPageClick = (e: React.MouseEvent) => {
     if (!isLoggedIn) {
       e.preventDefault();
-      alert("로그인이 필요한 페이지입니다. 로그인해주세요.");
+      showToast("로그인이 필요한 페이지입니다. 로그인해주세요.", "warn");
       navigate("/auth/login");
     }
   };
@@ -87,7 +91,6 @@ const Header: React.FC = () => {
         <div className="flex-1 hidden md:flex justify-end items-center space-x-4">
           {isLoggedIn ? (
             <>
-              {/* 로그인 후 마이페이지 링크 */}
               <Link
                 to="/mypage"
                 className="text-gray-600 hover:text-main text-base"
@@ -95,7 +98,6 @@ const Header: React.FC = () => {
                 마이페이지
               </Link>
 
-              {/* 데스크톱 로그아웃 버튼 스타일 수정 */}
               <Button
                 onClick={handleLogout}
                 bgColor="bg-transparent"
@@ -126,7 +128,6 @@ const Header: React.FC = () => {
           )}
         </div>
 
-        {/* 모바일 햄버거 메뉴 및 우측 버튼 (모바일 뷰) */}
         <div className="md:hidden flex items-center space-x-2">
           {!isMyPagePath && (
             <button
@@ -143,14 +144,12 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* 모바일 메뉴 */}
       {isMobileMenuOpen && (
         <div className="md:hidden px-4 pt-2 pb-4 shadow-lg border-t border-gray-200">
           <nav>
             <ul className="flex flex-col space-y-2 list-none">
               {isLoggedIn ? (
                 <>
-                  {/* 로그인 후 모바일 메뉴 */}
                   <li>
                     <Link
                       to="/mypage"
@@ -188,7 +187,6 @@ const Header: React.FC = () => {
                     </Link>
                   </li>
                   <li className="border-t border-gray-200 mt-2 pt-2">
-                    {/* 모바일 로그아웃 버튼 스타일 수정 */}
                     <Button
                       onClick={handleLogout}
                       className="block w-full py-2 px-0 text-left"
@@ -203,7 +201,6 @@ const Header: React.FC = () => {
                 </>
               ) : (
                 <>
-                  {/* 로그인 전 모바일 메뉴 */}
                   <li>
                     <Link
                       to="/auth/login"

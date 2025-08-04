@@ -1,40 +1,72 @@
 // src/pages/mypage/MyCommunitiesParticipatingPage.tsx
 
+import { useAuth } from "../../hooks/useAuth";
+import { useToast } from "../../hooks/useToast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import CommunityCard from "../../components/mypage/ParticipatingCommunityCard";
-import type { Community } from "../../types";
-import { useQuery } from "@tanstack/react-query"; // useQuery 임포트
 import {
   fetchParticipatingCommunities,
   leaveOrDeleteCommunity,
-} from "../../api/communities"; // API 함수 임포트
-import { useAuth } from "../../hooks/useAuth"; // currentUserProfile을 위해 useAuth 임포트
+} from "../../api/communities";
+
+import type { Community } from "../../types";
 
 const MyCommunitiesParticipatingPage: React.FC = () => {
-  const { currentUserProfile } = useAuth(); // 사용자 ID를 위해 useAuth 훅 사용
+  const { currentUserProfile } = useAuth();
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
-  // useQuery를 사용하여 커뮤니티 데이터 가져오기
   const {
     data: communities,
     isLoading,
     isError,
     error,
-    refetch,
   } = useQuery<Community[], Error>({
-    queryKey: ["participatingCommunities"],
+    queryKey: ["participatingCommunities", currentUserProfile?.userId],
     queryFn: fetchParticipatingCommunities,
-    staleTime: 1000 * 60, // 1분 동안 데이터 신선하게 유지
+    staleTime: 1000 * 60,
     retry: 1,
-    enabled: !!currentUserProfile, // currentUserProfile이 있을 때만 쿼리 실행
+    enabled: !!currentUserProfile,
   });
 
-  // 커뮤니티 탈퇴 또는 삭제 핸들러
-  const handleLeaveOrDelete = async (
+  const leaveOrDeleteMutation = useMutation<
+    void,
+    Error,
+    { communityId: string; role: "host" | "member" }
+  >({
+    mutationFn: ({ communityId }) => leaveOrDeleteCommunity(communityId),
+    onSuccess: (_, { role }) => {
+      showToast(
+        `${
+          role === "host"
+            ? "커뮤니티를 성공적으로 삭제하였습니다."
+            : "커뮤니티에서 성공적으로 탈퇴하였습니다."
+        }`,
+        "success"
+      );
+
+      queryClient.invalidateQueries({
+        queryKey: ["participatingCommunities", currentUserProfile?.userId],
+      });
+    },
+    onError: (err: unknown) => {
+      console.error("커뮤니티 처리 중 오류 발생:", err);
+      let errorMessage =
+        "커뮤니티 처리 중 오류가 발생했습니다. 다시 시도해주세요.";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      showToast(errorMessage, "error");
+    },
+  });
+
+  const handleLeaveOrDelete = (
     communityId: string,
     role: "host" | "member"
   ) => {
     if (!currentUserProfile) {
-      alert("로그인이 필요합니다.");
+      showToast("로그인이 필요합니다.", "warn");
       return;
     }
 
@@ -47,26 +79,7 @@ const MyCommunitiesParticipatingPage: React.FC = () => {
         }`
       )
     ) {
-      try {
-        await leaveOrDeleteCommunity(communityId); // 실제 API 호출
-        alert(
-          `${
-            role === "host"
-              ? "커뮤니티를 성공적으로 삭제하였습니다."
-              : "커뮤니티에서 성공적으로 탈퇴하였습니다."
-          }`
-        );
-        refetch(); // 작업 성공 후 목록 새로고침
-      } catch (err: unknown) {
-        console.error("커뮤니티 처리 중 오류 발생:", err);
-        let errorMessage =
-          "커뮤니티 처리 중 오류가 발생했습니다. 다시 시도해주세요.";
-        if (err instanceof Error) {
-          // 에러 메시지가 CustomError 등 백엔드에서 온 메시지일 경우 활용
-          errorMessage = err.message;
-        }
-        alert(errorMessage);
-      }
+      leaveOrDeleteMutation.mutate({ communityId, role });
     }
   };
 
@@ -85,7 +98,6 @@ const MyCommunitiesParticipatingPage: React.FC = () => {
     );
   }
 
-  // 데이터가 없거나 비어있는 경우 (isLoading이 false이고 communities가 비어있는 경우)
   if (!communities || communities.length === 0) {
     return (
       <div className="p-6">

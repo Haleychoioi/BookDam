@@ -297,4 +297,11 @@ export class CommunityRepository {
       orderBy: { createdAt: "desc" },
     });
   }
+
+  public async countCommunitiesById(teamId: number): Promise<number> {
+    const count = await prisma.teamCommunity.count({
+      where: { teamId: teamId },
+    });
+    return count;
+  }
 }

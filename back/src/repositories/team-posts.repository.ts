@@ -1,30 +1,21 @@
-// src/repositories/team-posts.repository.ts
+// src/zip/repositories/team-posts.repository.ts
 
 import prisma from "../utils/prisma";
 import { TeamPost, TeamPostType, Prisma } from "@prisma/client";
 
 export class TeamPostRepository {
-
   public async findByUserId(userId: number): Promise<TeamPost[]> {
     return prisma.teamPost.findMany({
       where: { userId: userId },
       include: {
         user: { select: { nickname: true, profileImage: true } },
         _count: { select: { comments: true } },
-        // 어느 팀의 게시글인지 알 수 있도록 팀 정보를 포함합니다.
         team: { select: { teamId: true, postTitle: true } },
       },
       orderBy: { createdAt: "desc" },
     });
   }
 
-  /**
-   * 특정 커뮤니티 ID에 해당하는 팀 게시물 목록 조회
-   * @param communityId
-   * @param query
-   * @returns
-   * @remarks
-   */
   public async findManyByCommunityId(
     communityId: number,
     query: { page?: number; pageSize?: number; sort?: string }
@@ -60,13 +51,6 @@ export class TeamPostRepository {
     return teamPosts;
   }
 
-  /**
-   * 새로운 팀 게시물 생성
-   * @param communityId
-   * @param postData
-   * @returns
-   * @remarks
-   */
   public async create(
     communityId: number,
     postData: {
@@ -85,14 +69,6 @@ export class TeamPostRepository {
     return newTeamPost;
   }
 
-  /**
-   * 특정 팀 게시물 업데이트
-   * @param communityId
-   * @param teamPostId
-   * @param updateData
-   * @returns
-   * @remarks
-   */
   public async update(
     communityId: number,
     teamPostId: number,
@@ -108,13 +84,6 @@ export class TeamPostRepository {
     return updatedTeamPost;
   }
 
-  /**
-   * 특정 팀 게시물 삭제
-   * @param communityId
-   * @param teamPostId
-   * @returns
-   * @remarks P
-   */
   public async delete(communityId: number, teamPostId: number): Promise<void> {
     await prisma.teamPost.delete({
       where: {
@@ -124,12 +93,6 @@ export class TeamPostRepository {
     });
   }
 
-  /**
-   * 특정 팀 게시물 ID로 상세 정보 조회
-   * @param teamPostId
-   * @returns
-   * @remarks
-   */
   public async findById(teamPostId: number): Promise<TeamPost | null> {
     const teamPost = await prisma.teamPost.findUnique({
       where: { teamPostId: teamPostId },
@@ -142,7 +105,6 @@ export class TeamPostRepository {
           include: {
             user: { select: { nickname: true } },
             replies: {
-              // 대댓글 포함 (1단계만)
               include: { user: { select: { nickname: true } } },
             },
           },
@@ -150,5 +112,20 @@ export class TeamPostRepository {
       },
     });
     return teamPost;
+  }
+
+  // ✨ 추가: 특정 팀의 모든 팀 게시물 삭제 ✨
+  public async deleteManyByTeamId(teamId: number): Promise<number> {
+    const result = await prisma.teamPost.deleteMany({
+      where: { teamId: teamId },
+    });
+    return result.count;
+  }
+
+  public async countPostsByTeamId(teamId: number): Promise<number> {
+    const count = await prisma.teamPost.count({
+      where: { teamId: teamId },
+    });
+    return count;
   }
 }

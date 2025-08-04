@@ -1,19 +1,11 @@
 // src/pages/AboutPage.tsx
 
-import {
-  IoSearchOutline,
-  IoBookmarkOutline,
-  IoMailOutline,
-  IoCallOutline,
-  IoLocationOutline,
-} from "react-icons/io5";
+import { IoSearchOutline, IoBookmarkOutline } from "react-icons/io5";
 import { LuLayoutDashboard } from "react-icons/lu";
 
 const AboutPage: React.FC = () => {
   return (
     <div>
-      {" "}
-      {/* <--- 이 <div> 태그가 라인 17에 해당합니다. */}
       <section id="vision" className="container mx-auto py-12 px-20 mt-10">
         <h1 className="text-3xl font-bold mb-8">우리의 비전</h1>
         <p className="text-lg mb-40">
@@ -24,7 +16,7 @@ const AboutPage: React.FC = () => {
           <div className="md:w-1/2 mr-12">
             <div className="w-full h-60 flex items-center justify-center rounded-lg">
               <img
-                src="/BookCommunity.jpg"
+                src="/BookCommunity.png"
                 className="w-full h-60 object-cover rounded-lg shadow"
               />
             </div>
@@ -77,43 +69,7 @@ const AboutPage: React.FC = () => {
           </div>
         </div>
       </section>
-      {/* <section id="review" className="container mx-auto py-12 px-4">
-      <h2 className="text-2xl font-bold mb-4">고객 후기</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white shadow p-4 rounded-md">
-            <p className="text-sm text-gray-700">⭐️⭐️⭐️⭐️⭐️</p>
-            <p className="font-semibold mt-4">"이곳에서 독서의 즐거움을 다시 찾았어요!"</p>
-            <p className="text-sm text-gray-500 mt-1">김책덕, 독서 애호가</p>
-          </div>
-        ))}
-      </div>
-    </section> */}
-      <section id="info" className="container mx-auto py-12 px-20">
-        <div className="flex justify-around mb-4">
-          <div className="text-center">
-            <IoMailOutline size={32} className="mx-auto" />
-            <h3 className="text-xl font-bold mt-4 mb-4">이메일</h3>
-            <p>플랫폼 관련 문의는 아래 이메일로 연락해 주세요.</p>
-            <a href="mailto:contact@bookplatform.com">
-              contact@bookplatform.com
-            </a>
-          </div>
-          <div className="text-center">
-            <IoCallOutline size={32} className="mx-auto" />
-            <h3 className="text-xl font-bold mt-4 mb-4">전화</h3>
-            <p>전화 문의는 언제든지 가능합니다.</p>
-            <p>+82 (2) 1234-5678</p>
-          </div>
-          <div className="text-center">
-            <IoLocationOutline size={32} className="mx-auto" />
-            <h3 className="text-xl font-bold mt-4 mb-4">사무실</h3>
-            <p>우리 사무실은 언제든지 방문 가능합니다.</p>
-            <p>서울특별시 강남구 123번지</p>
-          </div>
-        </div>
-      </section>
-    </div> /* <--- 이 닫는 </div> 태그가 해당합니다. */
+    </div>
   );
 };
 

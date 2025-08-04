@@ -1,9 +1,8 @@
 // src/api/mypage.ts
 
 import apiClient from "./apiClient";
-import type { Post, Comment, CommunityHistoryEntry } from "../types"; // ✨ CommunityHistoryEntry 임포트 추가 ✨
+import type { Post, Comment, CommunityHistoryEntry } from "../types";
 
-// 위시리스트 응답 타입 (실제 백엔드 응답에 맞춰 수정)
 interface WishlistResponseData {
   data: {
     wishListId: number;
@@ -19,8 +18,7 @@ interface WishlistResponseData {
   }[];
 }
 
-// 내 서재 응답 타입 (실제 백엔드 응답에 맞춰 수정)
-interface MyLibraryResponseData {
+export interface MyLibraryResponseData {
   data: {
     libraryId: number;
     status: "WANT_TO_READ" | "READING" | "COMPLETED";
@@ -46,14 +44,11 @@ interface MyLibraryResponseData {
   };
 }
 
-// 도서 상세에서 '서재 추가' 시 필요한 요청 바디
 interface UpsertMyLibraryRequest {
   isbn13: string;
   status: "WANT_TO_READ" | "READING" | "COMPLETED";
   myRating?: number | null;
 }
-
-// 기존 fetchMyPosts, fetchMyComments 함수는 유지
 
 export const fetchMyPosts = async (
   page: number,
@@ -86,7 +81,6 @@ export const fetchMyComments = async (
   }
 };
 
-// 1. 위시리스트 조회
 export const fetchWishlist = async (): Promise<
   WishlistResponseData["data"]
 > => {
@@ -101,7 +95,6 @@ export const fetchWishlist = async (): Promise<
   }
 };
 
-// 2. 위시리스트 추가
 export const addWish = async (isbn13: string) => {
   try {
     const response = await apiClient.post(`/mypage/wishlist`, { isbn13 });
@@ -112,7 +105,6 @@ export const addWish = async (isbn13: string) => {
   }
 };
 
-// 3. 위시리스트 삭제
 export const removeWish = async (isbn13: string) => {
   try {
     const response = await apiClient.delete(`/mypage/wishlist/${isbn13}`);
@@ -123,7 +115,6 @@ export const removeWish = async (isbn13: string) => {
   }
 };
 
-// 4. 내 서재 목록 조회
 export const fetchMyLibrary = async (
   page: number,
   limit: number,
@@ -142,7 +133,6 @@ export const fetchMyLibrary = async (
   }
 };
 
-// 5. 내 서재에 도서 추가/수정 (Upsert)
 export const upsertBookToMyLibrary = async (
   isbn13: string,
   status: "WANT_TO_READ" | "READING" | "COMPLETED",
@@ -161,7 +151,6 @@ export const upsertBookToMyLibrary = async (
   }
 };
 
-// 6. 내 서재에서 도서 삭제
 export const deleteBookFromMyLibrary = async (isbn13: string) => {
   try {
     const response = await apiClient.delete(`/mypage/my-library/${isbn13}`);
@@ -172,16 +161,15 @@ export const deleteBookFromMyLibrary = async (isbn13: string) => {
   }
 };
 
-// ✨ 새로 추가: 특정 사용자의 커뮤니티 참여 이력 조회 ✨
 export const fetchCommunityHistory = async (
-  userId: string // API는 userId를 string으로 받음
+  userId: string
 ): Promise<CommunityHistoryEntry[]> => {
   try {
     const response = await apiClient.get<{
       status: string;
       message: string;
       data: CommunityHistoryEntry[];
-    }>(`/mypage/users/${userId}/community-history`); // 백엔드 라우트에 맞춤
+    }>(`/mypage/users/${userId}/community-history`);
     return response.data.data;
   } catch (error) {
     console.error("Failed to fetch community history:", error);

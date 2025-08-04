@@ -14,9 +14,12 @@ import {
   TeamRole,
   RecruitmentStatus,
   ApplicationStatus,
-  TeamApplication, // ✨ TeamApplication 임포트 추가 ✨
+  TeamApplication,
 } from "@prisma/client";
 import { CustomError } from "../middleware/error-handing-middleware";
+
+// ✨ prisma 클라이언트를 직접 import 합니다. (없다면 추가)
+import prisma from "../utils/prisma";
 
 // CommunityWithMemberInfo 인터페이스를 이 파일 내부에 정의합니다.
 interface CommunityWithMemberInfo extends TeamCommunity {
@@ -94,18 +97,34 @@ export class CommunityService {
     userId: number,
     teamId: number
   ): Promise<string> {
+    console.log(
+      `[leaveOrDeleteCommunity] User ${userId} attempting action on community ${teamId}`
+    );
     const membership = await this.teamMemberRepository.findByUserIdAndTeamId(
       userId,
       teamId
     );
 
     if (!membership) {
+      console.log(
+        `[leaveOrDeleteCommunity] No membership found for user ${userId} in community ${teamId}. Throwing 404.`
+      );
       throw new CustomError(404, "가입되지 않은 커뮤니티입니다.");
     }
 
+    console.log(
+      `[leaveOrDeleteCommunity] Membership found: Role = ${membership.role}`
+    );
+
     if (membership.role === TeamRole.LEADER) {
-      const community = await this.communityRepository.findById(teamId);
+      console.log(
+        `[leaveOrDeleteCommunity] User is LEADER. Calling cancelRecruitment.`
+      );
+      // 이 부분에서 applicationsService.cancelRecruitment 호출 시 403이 발생할 수 있습니다.
+      const community = await this.communityRepository.findById(teamId); // 이 community 객체의 postId도 중요합니다.
       if (community) {
+        // cancelRecruitment는 내부적으로 다시 권한을 확인합니다.
+        // 여기서 teamId와 userId가 정확히 전달되는지 확인하세요.
         await this.applicationService.cancelRecruitment(
           community.teamId,
           userId
@@ -114,6 +133,10 @@ export class CommunityService {
       await this.communityRepository.delete(teamId);
       return "커뮤니티가 성공적으로 삭제되었습니다.";
     } else {
+      // membership.role === TeamRole.MEMBER
+      console.log(
+        `[leaveOrDeleteCommunity] User is MEMBER. Deleting team member.`
+      );
       await this.teamMemberRepository.delete(userId, teamId);
       return "커뮤니티에서 성공적으로 탈퇴했습니다.";
     }
@@ -163,36 +186,53 @@ export class CommunityService {
     content: string;
     maxMembers: number;
   }): Promise<TeamCommunity> {
-    const user = await this.userRepository.findById(communityData.userId);
-    if (!user) {
-      throw new CustomError(404, "User not found.");
-    }
+    // ✨ 모든 관련 작업을 트랜잭션으로 묶습니다. ✨
+    const newCommunity = await prisma.$transaction(
+      async (prismaTransaction) => {
+        const user = await this.userRepository.findById(communityData.userId);
+        if (!user) {
+          throw new CustomError(404, "User not found.");
+        }
 
-    const recruitmentPost = await this.postRepository.create({
-      userId: communityData.userId,
-      title: communityData.title,
-      content: communityData.content,
-      type: PostType.RECRUITMENT,
-      maxMembers: communityData.maxMembers,
-      recruitmentStatus: RecruitmentStatus.RECRUITING,
+        // 1. 모집글 생성 (prismaTransaction 사용)
+        const recruitmentPost = await prismaTransaction.post.create({
+          data: {
+            userId: communityData.userId,
+            title: communityData.title,
+            content: communityData.content,
+            type: PostType.RECRUITMENT,
+            maxMembers: communityData.maxMembers,
+            recruitmentStatus: RecruitmentStatus.RECRUITING,
+            isbn13: communityData.isbn13,
+          },
+        });
 
-      isbn13: communityData.isbn13,
-    });
+        // 2. 커뮤니티 생성 (prismaTransaction 사용)
+        const createdCommunityEntry =
+          await prismaTransaction.teamCommunity.create({
+            data: {
+              postId: recruitmentPost.postId,
+              isbn13: communityData.isbn13,
+              status: CommunityStatus.RECRUITING,
+              postTitle: recruitmentPost.title,
+              postContent: recruitmentPost.content,
+              postAuthor: user.nickname,
+            },
+          });
 
-    const newCommunity = await this.communityRepository.create({
-      postId: recruitmentPost.postId,
-      isbn13: communityData.isbn13,
-      status: CommunityStatus.RECRUITING,
-      postTitle: recruitmentPost.title,
-      postContent: recruitmentPost.content,
-      postAuthor: user.nickname,
-    });
+        // 3. 호스트(리더)를 팀 멤버로 추가 (prismaTransaction 사용)
+        await prismaTransaction.teamMember.create({
+          data: {
+            userId: communityData.userId,
+            teamId: createdCommunityEntry.teamId,
+            role: TeamRole.LEADER,
+          },
+        });
 
-    await this.teamMemberRepository.create({
-      userId: communityData.userId,
-      teamId: newCommunity.teamId,
-      role: TeamRole.LEADER,
-    });
+        // 트랜잭션이 성공하면 생성된 커뮤니티 엔트리를 반환합니다.
+        return createdCommunityEntry;
+      }
+    );
 
     return newCommunity;
   }
@@ -496,6 +536,9 @@ export class CommunityService {
           await this.teamMemberRepository.countMembersByTeamId(
             community.teamId
           );
+        console.log(
+          `[DEBUG - enrich] Community ID: ${community.teamId}, currentMembers counted: ${currentMembers}`
+        );
 
         const pendingApplicantCount =
           community.recruitmentPost?.applications?.filter(
