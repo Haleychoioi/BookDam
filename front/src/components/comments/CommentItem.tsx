@@ -2,7 +2,7 @@
 
 import { Link } from "react-router-dom";
 import type { Comment, TeamComment } from "../../types";
-import { useState, useRef } from "react"; // ✨ useRef 임포트 ✨
+import { useState, useRef } from "react";
 import CommentInput from "./CommentInput";
 import CommentList from "./CommentList";
 import { formatKoreanDateTime } from "../../utils/dateFormatter";
@@ -42,14 +42,12 @@ const CommentItem: React.FC<CommentItemProps> = ({
   );
   const isAuthor = comment.userId === currentUserId;
 
-  // ✨ 답글 입력창을 위한 ref 생성 ✨
   const replyInputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleReplyClick = () => {
     setShowReplyInput((prev) => {
       const newState = !prev;
       if (newState) {
-        // ✨ 입력창이 나타난 후 포커스되도록 setTimeout 사용 ✨
         setTimeout(() => {
           replyInputRef.current?.focus();
         }, 0);
@@ -129,7 +127,21 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
   const canReply = (comment.depth || 0) < 1;
 
-  const DEFAULT_AVATAR_URL = "https://api.dicebear.com/8.x/identicon/svg?seed="; // Dicebear URL로 변경
+  // Dicebear URL을 직접 사용할 때 유저의 닉네임을 사용하여 고정된 아바타 생성
+  // 백엔드에서 이미 유저의 `profileImage`를 제공하고 있다면 그 URL을 우선 사용합니다.
+  const getProfileImageUrl = (): string => {
+    if (comment.user?.profileImage) {
+      // 백엔드에서 제공하는 이미지가 있다면 그대로 사용.
+      // 만약 백엔드에서 이 URL에 캐시 버스팅을 위한 타임스탬프를 이미 붙이고 있다면, 백엔드 로직 수정이 필요할 수 있습니다.
+      // 여기서는 프론트엔드에서 임의로 캐시 버스팅 파라미터를 추가하지 않습니다.
+      return comment.user.profileImage;
+    }
+    // 프로필 이미지가 없을 경우 닉네임 기반의 Dicebear 아바타를 생성
+    const encodedNickname = encodeURIComponent(
+      comment.user?.nickname || "Guest"
+    );
+    return `https://api.dicebear.com/8.x/identicon/svg?seed=${encodedNickname}`;
+  };
 
   return (
     <OuterWrapper>
@@ -137,12 +149,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center">
             <img
-              src={
-                comment.user?.profileImage ||
-                `${DEFAULT_AVATAR_URL}${encodeURIComponent(
-                  comment.user?.nickname || "Guest"
-                )}`
-              }
+              src={getProfileImageUrl()} // 수정된 헬퍼 함수 사용
               alt={comment.user?.nickname || "작성자"}
               className="w-8 h-8 rounded-full mr-3 object-cover border border-gray-200"
             />
@@ -218,7 +225,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
         {showReplyInput && (
           <div className="mt-4">
             <CommentInput
-              ref={replyInputRef} // ✨ ref 전달 ✨
+              ref={replyInputRef}
               onAddComment={handleReplySubmit}
               placeholder="답글을 작성하세요..."
               onCancel={handleCancelReply}

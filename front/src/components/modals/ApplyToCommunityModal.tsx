@@ -10,25 +10,23 @@ interface ApplyToCommunityModalProps {
   isOpen: boolean;
   onClose: () => void;
   communityId: string;
-  onError: (message: string) => void; // ✨ onError 콜백 추가 ✨
+  onError: (message: string) => void;
 }
 
 const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
   isOpen,
   onClose,
   communityId,
-  onError, // ✨ onError prop 받기 ✨
 }) => {
   const [applicationMessage, setApplicationMessage] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [internalError, setInternalError] = useState<string | null>(null);
   const [isApplicationSuccessful, setIsApplicationSuccessful] = useState(false);
   const queryClient = useQueryClient();
 
-  // 모달이 열릴 때마다 상태 초기화
   useEffect(() => {
     if (isOpen) {
       setApplicationMessage("");
-      setError(null);
+      setInternalError(null);
       setIsApplicationSuccessful(false);
     }
   }, [isOpen]);
@@ -36,17 +34,10 @@ const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
-    setError(null);
+    setInternalError(null);
 
     if (applicationMessage.trim().length < 3) {
-      onError("신청 메시지를 3글자 이상 입력해주세요.");
-      onClose();
-      return;
-    }
-
-    if (applicationMessage.trim() === "") {
-      onError("신청 메시지를 입력해주세요.");
-      onClose();
+      setInternalError("신청 메시지를 3글자 이상 입력해주세요.");
       return;
     }
 
@@ -58,7 +49,6 @@ const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
       await applyToCommunity(communityId, applicationMessage);
 
       setIsApplicationSuccessful(true);
-      alert(`커뮤니티에 신청이 완료되었습니다!`);
 
       queryClient.invalidateQueries({ queryKey: ["allCommunities"] });
       queryClient.invalidateQueries({ queryKey: ["bookDetailPageData"] });
@@ -90,10 +80,9 @@ const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
         errorMessage = error.message;
       }
 
-      setError(errorMessage);
-      // 오류 발생 시 모달을 닫지 않음. 사용자가 오류 메시지를 확인할 수 있도록.
+      setInternalError(errorMessage);
     } finally {
-      setApplicationMessage("");
+      // setApplicationMessage("");
     }
   };
 
@@ -127,13 +116,12 @@ const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
               새로운 독서 여정, 지금 이 커뮤니티와 함께 시작해보세요.
             </p>
 
-            {error && (
+            {internalError && (
               <div
-                className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+                className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4"
                 role="alert"
               >
-                <strong className="font-bold">오류: </strong>
-                <span className="block sm:inline">{error}</span>
+                <span className="block sm:inline">{internalError}</span>
               </div>
             )}
 
@@ -155,6 +143,15 @@ const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
             </div>
 
             <div className="flex justify-end space-x-4">
+              <Button
+                onClick={onClose}
+                bgColor="bg-gray-300"
+                textColor="text-white"
+                hoverBgColor="hover:bg-gray-400"
+                className="font-normal"
+              >
+                취소
+              </Button>
               <Button
                 onClick={handleSubmit}
                 bgColor="bg-main"
