@@ -1,7 +1,7 @@
 // src/components/posts/PostDetailTemplate.tsx
 
 import { Link } from "react-router-dom";
-import Button from "../common/Button"; // Button 컴포넌트 임포트
+import Button from "../common/Button";
 import { FaChevronLeft } from "react-icons/fa";
 
 import MDEditor from "@uiw/react-md-editor";
@@ -9,7 +9,7 @@ import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
 import remarkGfm from "remark-gfm";
 
-import type { Post, TeamPost } from "../../types";
+import type { Post, TeamPost, UserProfile } from "../../types"; // ✨ UserProfile 임포트 ✨
 import { formatKoreanDateTime } from "../../utils/dateFormatter";
 
 interface PostDetailTemplateProps {
@@ -25,6 +25,7 @@ interface PostDetailTemplateProps {
   onSavePost: (updatedTitle?: string) => Promise<void>;
   onCancelEdit: () => void;
   isPostAuthor: boolean;
+  currentUserProfile?: UserProfile; // ✨ currentUserProfile prop 타입 UserProfile로 변경 ✨
 }
 
 const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
@@ -40,10 +41,17 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
   onSavePost,
   onCancelEdit,
   isPostAuthor,
+  currentUserProfile, // ✨ prop으로 받기 ✨
 }) => {
-  const DEFAULT_AVATAR_URL = "https://via.placeholder.com/40?text=User";
+  // DEFAULT_AVATAR_URL을 Dicebear URL로 변경
+  const DEFAULT_AVATAR_BASE_URL =
+    "https://api.dicebear.com/8.x/identicon/svg?seed=";
 
   const getAuthorNickname = (p: Post | TeamPost | undefined): string => {
+    // currentUserProfile이 있고, 현재 사용자가 작성자일 경우 currentUserProfile 닉네임 사용
+    if (isPostAuthor && currentUserProfile?.nickname) {
+      return currentUserProfile.nickname;
+    }
     if (!p) return "알 수 없는 작성자";
     if ("postAuthor" in p && typeof p.postAuthor === "string") {
       return p.postAuthor;
@@ -54,11 +62,21 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
   };
 
   const getAuthorProfileImage = (p: Post | TeamPost | undefined): string => {
-    if (!p) return DEFAULT_AVATAR_URL;
+    // currentUserProfile이 있고, 현재 사용자가 작성자일 경우 currentUserProfile 이미지 사용
+    if (isPostAuthor && currentUserProfile?.profileImage) {
+      // return `${currentUserProfile.profileImage}?${new Date().getTime()}`; // 캐시 무력화 코드 제거
+      return currentUserProfile.profileImage;
+    }
+    if (!p) return `${DEFAULT_AVATAR_BASE_URL}Guest`;
     if (p.user?.profileImage) {
+      // 게시물 데이터에 포함된 프로필 이미지 사용 (캐시 무력화 코드 제거)
+      // return `${p.user.profileImage}?${new Date().getTime()}`;
       return p.user.profileImage;
     }
-    return DEFAULT_AVATAR_URL;
+    // 기본값으로 닉네임 기반 Dicebear 아바타 사용
+    return `${DEFAULT_AVATAR_BASE_URL}${encodeURIComponent(
+      getAuthorNickname(p)
+    )}`;
   };
 
   const isModified = post?.updatedAt && post.updatedAt !== post.createdAt;
@@ -110,23 +128,21 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
           <div className="flex justify-end space-x-2">
             {isEditing ? (
               <>
-                {/* 저장 버튼: CommentItem의 저장 버튼 디자인에 맞춤 (bg-main) */}
                 <Button
                   onClick={() => onSavePost()}
-                  bgColor="bg-transparent" // 배경 없음
+                  bgColor="bg-transparent"
                   textColor="text-gray-700"
-                  hoverTextColor="hover:text-main" // 호버 시 텍스트 색상
+                  hoverTextColor="hover:text-main"
                   hoverBgColor="hover:transperent"
                   className="px-4 py-2 rounded text-sm"
                 >
                   저장
                 </Button>
-                {/* 취소 버튼: CommentItem의 취소 버튼 디자인에 맞춤 (bg-gray-300) */}
                 <Button
                   onClick={onCancelEdit}
-                  bgColor="bg-transparent" // 배경 없음
+                  bgColor="bg-transparent"
                   textColor="text-gray-700"
-                  hoverTextColor="hover:text-red-600" // 호버 시 빨간색 텍스트
+                  hoverTextColor="hover:text-red-600"
                   hoverBgColor="hover:transperent"
                   className="px-4 py-2 rounded text-sm"
                 >
@@ -135,23 +151,21 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
               </>
             ) : (
               <>
-                {/* 수정 버튼: CommentItem의 수정 버튼 디자인에 맞춤 (배경 없음, 텍스트 색 변경) */}
                 <Button
                   onClick={onEditPost}
-                  bgColor="bg-transparent" // 배경 없음
+                  bgColor="bg-transparent"
                   textColor="text-gray-700"
-                  hoverTextColor="hover:text-main" // 호버 시 텍스트 색상
+                  hoverTextColor="hover:text-main"
                   hoverBgColor="hover:transperent"
                   className="px-4 py-2 rounded text-sm"
                 >
                   수정
                 </Button>
-                {/* 삭제 버튼: CommentItem의 삭제 버튼 디자인에 맞춤 (배경 없음, 텍스트 색 변경, hover 시 빨간색) */}
                 <Button
                   onClick={onDeletePost}
-                  bgColor="bg-transparent" // 배경 없음
+                  bgColor="bg-transparent"
                   textColor="text-gray-700"
-                  hoverTextColor="hover:text-red-600" // 호버 시 빨간색 텍스트
+                  hoverTextColor="hover:text-red-600"
                   hoverBgColor="hover:transperent"
                   className="px-4 py-2 rounded text-sm"
                 >

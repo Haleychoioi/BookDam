@@ -8,7 +8,7 @@ export class PostController {
   constructor() {
     this.postService = new PostService();
   }
-  
+
   public getMyPosts = async (
     req: Request,
     res: Response,
@@ -33,7 +33,6 @@ export class PostController {
       next(error);
     }
   };
-
 
   /**
    * GET /posts - 전체 게시판 게시물 목록 조회
@@ -80,12 +79,14 @@ export class PostController {
         throw new CustomError(401, "인증된 사용자 ID는 필수입니다.");
       }
 
-      // 필수 필드 유효성 검사
-      if (title === undefined || content === undefined) {
-        throw new CustomError(
-          400,
-          "필수 필드(title, content)가 누락되었습니다."
-        );
+      // ✨ 수정: 필수 필드 유효성 검사 (trim() 추가하여 빈 문자열도 막습니다.) ✨
+      if (
+        !title ||
+        title.trim().length === 0 ||
+        !content ||
+        content.trim().length === 0
+      ) {
+        throw new CustomError(400, "제목과 내용을 모두 입력해주세요.");
       }
 
       const newPost = await this.postService.createPost({
@@ -102,6 +103,9 @@ export class PostController {
       if (error instanceof Error) {
         if (error.message === "User not found") {
           next(new CustomError(404, error.message));
+        } else if (error.message === "제목과 내용을 모두 입력해주세요.") {
+          // ✨ 추가: 400 에러 메시지 처리 ✨
+          next(new CustomError(400, error.message));
         } else {
           next(error);
         }
@@ -226,11 +230,8 @@ export class PostController {
         throw new CustomError(400, "유효한 게시물 ID가 아닙니다.");
       }
 
-      // postService.deletePost가 삭제 성공 시 에러 던지지 않음
-      // 게시물을 찾을 수 없거나 권한이 없는 경우 서비스 계층에서 CustomError
       await this.postService.deletePost(postId, userId);
 
-      // 서비스에서 에러를 던지지 않았다면 삭제 성공
       res.status(200).json({ status: "success", message: "게시물 삭제 완료" });
     } catch (error) {
       if (error instanceof Error) {

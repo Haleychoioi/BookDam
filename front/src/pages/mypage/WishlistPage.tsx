@@ -3,12 +3,12 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import BookGridDisplay from "../../components/bookResults/BookGridDisplay";
 import Pagination from "../../components/common/Pagination";
-import type { Book } from "../../types";
+import type { BookSummary } from "../../types"; // ✨ BookSummary 타입을 명확히 임포트합니다. ✨
 // API 함수 임포트
 import { fetchWishlist, removeWish } from "../../api/mypage";
 
 const WishlistPage: React.FC = () => {
-  const [wishlistBooks, setWishlistBooks] = useState<Book[]>([]);
+  const [wishlistBooks, setWishlistBooks] = useState<BookSummary[]>([]); // ✨ Book[] 대신 BookSummary[]로 타입 변경 ✨
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -21,16 +21,16 @@ const WishlistPage: React.FC = () => {
     try {
       // 실제 API 호출로 대체
       const data = await fetchWishlist(); //
-      // 백엔드 응답 형태에 따라 Book 타입으로 변환 필요
-      const transformedBooks: Book[] = data.map((item) => ({
+      // 백엔드 응답 형태에 따라 BookSummary 타입으로 변환
+      const transformedBooks: BookSummary[] = data.map((item) => ({
         isbn13: item.book.isbn13,
-        coverImage: item.book.cover,
+        cover: item.book.cover, // ✨ coverImage 대신 cover로 속성명 수정 ✨
         title: item.book.title,
-        author: "", // 위시리스트 조회 응답에는 author, publisher, pubDate, description, genre 없음
-        publisher: "",
-        publicationDate: null,
-        description: null,
-        genre: null,
+        author: "", // 위시리스트 조회 응답에는 author 정보가 없으므로 빈 문자열 유지
+        publisher: "", // 위시리스트 조회 응답에는 publisher 정보가 없으므로 빈 문자열 유지
+        pubDate: null, // ✨ publicationDate 대신 pubDate로 속성명 수정 ✨
+        description: null, // 위시리스트 조회 응답에는 description 정보가 없으므로 null 유지
+        category: null, // ✨ genre 대신 category로 속성명 수정 (BookSummary에 맞춤) ✨
       }));
       setWishlistBooks(transformedBooks);
     } catch (err) {
@@ -50,7 +50,7 @@ const WishlistPage: React.FC = () => {
       // bookId를 isbn13으로 변경
       if (confirm(`'${bookTitle}'을(를) 위시리스트에서 삭제하시겠습니까?`)) {
         try {
-          await removeWish(isbn13); //
+          await removeWish(isbn13);
           alert(`'${bookTitle}'이(가) 위시리스트에서 삭제되었습니다.`);
           loadWishlist(); // 삭제 후 목록 새로고침
         } catch (error) {

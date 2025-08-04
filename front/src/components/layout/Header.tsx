@@ -80,7 +80,7 @@ const Header: React.FC = () => {
 
         <div className="flex-grow text-center">
           <Link to="/" className="text-3xl font-script text-gray-800">
-            book
+            bookDam
           </Link>
         </div>
 

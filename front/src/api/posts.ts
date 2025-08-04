@@ -1,7 +1,7 @@
 // src/api/posts.ts
 
 import apiClient from "./apiClient";
-import type { Post } from "../types"; // Post 타입 임포트
+import type { Post, TeamPost } from "../types"; // Post 타입 임포트
 
 // =========================================================
 // 일반 게시물 관련 API
@@ -110,4 +110,31 @@ export const deletePost = async (
     console.error("Failed to delete post:", error);
     throw error;
   }
+};
+
+export interface MyPostsResponse {
+  message: string; // 응답 메시지
+  data: {
+    // 실제 데이터와 페이지네이션 정보가 담긴 중첩된 'data' 객체
+    posts: (Post | TeamPost)[]; // Post와 TeamPost를 모두 포함할 수 있도록 타입 확장
+    pagination: {
+      currentPage: number;
+      pageSize: number;
+      totalCount: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  };
+}
+
+export const fetchMyPosts = async (
+  page: number = 1,
+  pageSize: number = 10,
+  sort: string = "latest"
+): Promise<MyPostsResponse> => {
+  const response = await apiClient.get<MyPostsResponse>(`/mypage/my-posts`, {
+    params: { page, size: pageSize, sort },
+  });
+  return response.data; // apiClient는 T (여기서는 MyPostsResponse)를 data로 반환합니다.
 };

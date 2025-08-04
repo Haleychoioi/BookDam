@@ -1,4 +1,4 @@
-// src/middleware/error-handing-middleware.ts
+// src.zip/middleware/error-handing-middleware.ts
 
 import { Request, Response, NextFunction } from "express";
 
@@ -13,6 +13,18 @@ export class CustomError extends Error {
   }
 }
 
+// ✨ MultiDuplicateError 클래스 추가 ✨
+// 여러 필드의 중복 오류를 담기 위한 커스텀 에러
+export class MultiDuplicateError extends CustomError {
+  errors: { [key: string]: string }; // 각 필드별 오류 메시지를 담을 객체
+
+  constructor(errors: { [key: string]: string }) {
+    super(409, "다중 중복 오류 발생"); // 409 Conflict 상태 코드 사용
+    this.errors = errors;
+    Object.setPrototypeOf(this, MultiDuplicateError.prototype);
+  }
+}
+
 // 모든 에러를 중앙에서 처리
 export default function (
   err: Error,
@@ -22,7 +34,16 @@ export default function (
 ) {
   console.error("에러 핸들링 미들웨어:", err);
 
-  // err가 CustomError의 인스턴스인지 확인
+  // ✨ MultiDuplicateError 인스턴스 처리 ✨
+  if (err instanceof MultiDuplicateError) {
+    return res.status(err.statusCode).json({
+      status: "error",
+      message: err.message, // "다중 중복 오류 발생"
+      errors: err.errors, // { email: "...", nickname: "..." }
+    });
+  }
+
+  // err가 CustomError의 인스턴스인지 확인 (MultiDuplicateError가 CustomError를 상속받으므로 이 체크는 그 다음에 와야 함)
   if (err instanceof CustomError) {
     return res.status(err.statusCode).json({
       status: "error",
@@ -46,6 +67,11 @@ export default function (
     case "ExistNickname":
       return res.status(400).json({
         errorMessage: "사용중인 닉네임",
+      });
+
+    case "ExistPhone":
+      return res.status(400).json({
+        errorMessage: "이미 가입된 전화번호입니다.",
       });
 
     case "CurrentPasswordMismatch":
@@ -142,7 +168,8 @@ export default function (
       });
 
     case "InvalidRatingRange":
-      return res.send({
+      return res.status(400).send({
+        // Added status 400
         errorMessage: "평점은 1~5점 사이로 입력해 주세요.",
       });
 

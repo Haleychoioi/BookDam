@@ -1,4 +1,5 @@
-import { User, UserRole } from '@prisma/client';
+// src.zip/repositories/user.repository.ts
+import { User, UserRole } from "@prisma/client";
 import prisma from "../utils/prisma";
 
 export interface CreateUserData {
@@ -10,7 +11,7 @@ export interface CreateUserData {
   agreement: boolean;
   introduction?: string;
   profileImage?: string;
-  role?: UserRole
+  role?: UserRole;
 }
 
 export interface UserUpdateData {
@@ -22,9 +23,7 @@ export interface UpdatePasswordData {
   password: string;
 }
 
-
 class UserRepository {
-
   // 이메일로 사용자 찾기
   async findByEmail(email: string) {
     return await prisma.user.findUnique({ where: { email } });
@@ -34,80 +33,91 @@ class UserRepository {
   async findByNickname(nickname: string) {
     return await prisma.user.findFirst({
       where: {
-        nickname: nickname
-      }
+        nickname: nickname,
+      },
+    });
+  }
+
+  // ✨ 전화번호로 사용자 찾기 추가 (정규화 포함) ✨
+  async findByPhone(phone: string) {
+    const normalizedPhone = phone.replace(/[^0-9]/g, ""); // ✨ 쿼리 전에 전화번호 정규화 ✨
+    return await prisma.user.findFirst({
+      where: {
+        phone: normalizedPhone, // ✨ 정규화된 전화번호로 검색 ✨
+      },
     });
   }
 
   // 사용자 ID로 사용자 찾기
   async findById(userId: number) {
     return await prisma.user.findUnique({
-      where: { userId }
+      where: { userId },
     });
   }
 
   // 비밀번호 찾기
   async findByPasswordByUserId(userId: number) {
     return await prisma.user.findUnique({
-      where: { userId }
-    })
+      where: { userId },
+    });
   }
 
   // 새 사용자 생성
   async createUser(userData: CreateUserData) {
-  return await prisma.user.create({
-    data: {
-      name: userData.name,
-      email: userData.email,
-      phone: userData.phone,
-      password: userData.password,
-      role: userData.role || UserRole.USER,
-      nickname: userData.nickname,
-      agreement: userData.agreement,
-      profileImage: userData.profileImage,
-      introduction: userData.introduction,
-    }
-  });
-}
+    return await prisma.user.create({
+      data: {
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone, // 이 전화번호는 이미 service에서 정규화되어 넘어옴
+        password: userData.password,
+        role: userData.role || UserRole.USER,
+        nickname: userData.nickname,
+        agreement: userData.agreement,
+        profileImage: userData.profileImage,
+        introduction: userData.introduction,
+      },
+    });
+  }
 
   // 유저 정보 수정
   async updateUser(userId: number, updateData: UserUpdateData) {
-  return await prisma.user.update({
-    where: { userId },
-    data: updateData,
-  });
-}
+    return await prisma.user.update({
+      where: { userId },
+      data: updateData,
+    });
+  }
 
   // 비밀번호 전용 업데이트
   async updateUserPassword(userId: number, passwordData: UpdatePasswordData) {
     return await prisma.user.update({
       where: { userId },
       data: {
-        password: passwordData.password
-      }
-    })
+        password: passwordData.password,
+      },
+    });
   }
 
   async findByEmailAndName(email: string, name: string) {
-    return await prisma.user.findFirst({  // findUnique 대신 findFirst 사용
+    return await prisma.user.findFirst({
+      // findUnique 대신 findFirst 사용
       where: {
         email: email,
-        name: name
-      }
+        name: name,
+      },
     });
   }
 
   // 사용자 삭제
   async deleteUser(userId: number) {
     return await prisma.user.delete({
-      where: { userId }
+      where: { userId },
     });
   }
 
   // 모든 사용자 조회 (관리자용)
   async findAllUsers() {
     return await prisma.user.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -120,16 +130,14 @@ class UserRepository {
   async checkDuplicates(email: string, nickname: string) {
     const [emailUser, nicknameUser] = await Promise.all([
       this.findByEmail(email),
-      this.findByNickname(nickname)
+      this.findByNickname(nickname),
     ]);
 
     return {
       emailExists: !!emailUser,
-      usernameExists: !!nicknameUser
+      usernameExists: !!nicknameUser,
     };
   }
-
 }
-
 
 export default new UserRepository();

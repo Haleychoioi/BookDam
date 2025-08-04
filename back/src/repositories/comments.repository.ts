@@ -19,7 +19,6 @@ type CommentWithPost = Comment & {
 };
 
 export class CommentRepository {
-
   public async findByUserId(
     userId: number,
     type?: PostType
@@ -43,6 +42,10 @@ export class CommentRepository {
             title: true,
             type: true,
           },
+        },
+        user: {
+          // ✨ 이 부분에 user include 추가 ✨
+          select: { nickname: true, profileImage: true },
         },
       },
       orderBy: {
@@ -76,13 +79,13 @@ export class CommentRepository {
       take: pageSize,
       include: {
         user: {
-          select: { nickname: true },
+          select: { nickname: true, profileImage: true }, // profileImage 추가됨
         },
         replies: {
           // 대댓글 포함 (1단계만)
           orderBy: { createdAt: "asc" },
           include: {
-            user: { select: { nickname: true } },
+            user: { select: { nickname: true, profileImage: true } }, // 대댓글에도 profileImage 추가됨
           },
         },
       },
@@ -174,9 +177,9 @@ export class CommentRepository {
     const comment = await prisma.comment.findUnique({
       where: { commentId: commentId },
       include: {
-        user: { select: { nickname: true } },
+        user: { select: { nickname: true, profileImage: true } }, // profileImage 추가됨
         replies: {
-          include: { user: { select: { nickname: true } } },
+          include: { user: { select: { nickname: true, profileImage: true } } }, // 대댓글에도 profileImage 추가됨
         },
       },
     });

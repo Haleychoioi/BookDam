@@ -30,7 +30,8 @@ export const fetchTeamPosts = async (
       // data: Post[]; -> data: TeamPost[]; 로 변경
       data: TeamPost[];
     }>(
-      `/communities/${communityId}/posts?page=${page}&size=${pageSize}&sort=${sort}`
+      // ✨ 수정: URL에 '/mypage' 경로를 추가합니다. ✨
+      `/mypage/communities/${communityId}/posts?page=${page}&size=${pageSize}&sort=${sort}`
     );
 
     return {
@@ -55,11 +56,12 @@ export const createTeamPost = async (
   postData: { title: string; content: string; type?: string } // type은 백엔드 Enum TeamPostType과 맞춤
 ): Promise<string> => {
   try {
+    // ✨ 수정: URL에 '/mypage' 경로를 추가합니다. ✨
     const response = await apiClient.post<{
       status: string;
       message: string;
       postId: number; // 백엔드는 postId를 number로 반환
-    }>(`/communities/${communityId}/posts/write`, postData);
+    }>(`/mypage/communities/${communityId}/posts/write`, postData);
     return response.data.postId.toString(); // ID를 string으로 변환
   } catch (error) {
     console.error("Failed to create team post:", error);
@@ -79,8 +81,9 @@ export const fetchTeamPostById = async (
   teamPostId: number // ✨ 수정: string -> number ✨
 ): Promise<TeamPost> => {
   try {
+    // ✨ 수정: URL에 '/mypage' 경로를 추가합니다. ✨
     const response = await apiClient.get<{ message: string; data: TeamPost }>(
-      `/communities/${communityId}/posts/${teamPostId}` // URL에 number 직접 사용
+      `/mypage/communities/${communityId}/posts/${teamPostId}` // URL에 number 직접 사용
     );
     return response.data.data;
   } catch (error) {
@@ -102,8 +105,9 @@ export const updateTeamPost = async (
   updateData: { title?: string; content?: string }
 ): Promise<void> => {
   try {
+    // ✨ 수정: URL에 '/mypage' 경로를 추가합니다. ✨
     await apiClient.put(
-      `/communities/${communityId}/posts/${teamPostId}`, // URL에 number 직접 사용
+      `/mypage/communities/${communityId}/posts/${teamPostId}`, // URL에 number 직접 사용
       updateData
     );
   } catch (error) {
@@ -123,7 +127,10 @@ export const deleteTeamPost = async (
   teamPostId: number // ✨ 수정: string -> number ✨
 ): Promise<void> => {
   try {
-    await apiClient.delete(`/communities/${communityId}/posts/${teamPostId}`); // URL에 number 직접 사용
+    // ✨ 수정: URL에 '/mypage' 경로를 추가합니다. ✨
+    await apiClient.delete(
+      `/mypage/communities/${communityId}/posts/${teamPostId}`
+    ); // URL에 number 직접 사용
   } catch (error) {
     console.error("Failed to delete team post:", error);
     throw error;

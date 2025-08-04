@@ -1,14 +1,17 @@
 // src/components/mypage/RecruitingCommunityCard.tsx
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
+
+import React from "react";
 import Button from "../common/Button";
-import { FaUserFriends } from "react-icons/fa";
 import type { Community } from "../../types";
+import { FaUserFriends } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 interface RecruitingCommunityCardProps {
-  community: Community;
+  community: Community & {
+    pendingApplicantCount?: number;
+  };
   onEndRecruitment: (communityId: string) => void;
-  onEditCommunity: (community: Community) => void; // <-- 이 줄을 추가합니다.
+  onEditCommunity: (community: Community) => void;
 }
 
 const RecruitingCommunityCard: React.FC<RecruitingCommunityCardProps> = ({
@@ -16,114 +19,113 @@ const RecruitingCommunityCard: React.FC<RecruitingCommunityCardProps> = ({
   onEndRecruitment,
   onEditCommunity,
 }) => {
-  const isRecruitmentEnded = community.status === "모집종료";
-  const isFull = community.currentMembers >= community.maxMembers;
-
-  const handleEndRecruitmentClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!isFull) {
-      if (
-        !window.confirm(
-          "모집 인원이 다 차지 않았습니다.\n정말로 모집을 종료하고 커뮤니티를 생성하시겠습니까?"
-        )
-      ) {
-        return;
-      }
-    }
-    onEndRecruitment(community.id);
-  };
-
-  const handleEditClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onEditCommunity(community);
-  };
-
-  useEffect(() => {
-    if (isFull && community.status === "모집중") {
-      onEndRecruitment(community.id);
-    }
-  }, [
-    isFull,
-    community.status,
-    community.id,
-    onEndRecruitment,
-    community.title,
-  ]);
+  const showRecruitingButtons = community.status === "모집중";
 
   return (
-    <div className="bg-gray-100 p-6 flex flex-col justify-between">
-      <div className="flex flex-col items-start mb-6">
-        <div className="flex justify-between items-start w-full">
+    <div className="bg-gray-100 p-6 flex flex-col justify-between ">
+      {/* 상단 정보 섹션 시작 */}
+      <div className="flex-grow flex flex-col items-start mb-auto">
+        {/* 제목, 호스트 정보 */}
+        <div className="flex items-center justify-between w-full mb-3">
           <div>
-            <h3 className="text-md font-bold text-gray-800 mb-1">
+            <h3 className="text-xl font-bold text-gray-800 mb-1 leading-tight">
               {community.title}
             </h3>
+            <p className="text-md text-gray-600 mb-0">
+              <span className="font-medium mr-1">호스트: </span>
+              {community.hostName}
+            </p>
           </div>
-          <div className="flex items-center text-gray-600 text-sm mb-1">
-            <FaUserFriends className="w-5 h-5 mr-1 text-gray-500" />
+          {/* 멤버 수 표시 */}
+          <div className="flex items-center text-gray-600 text-sm">
+            <FaUserFriends className="w-4 h-4 mr-1 text-gray-500" />
             <span>
               {community.currentMembers}/{community.maxMembers}명
             </span>
           </div>
         </div>
+
+        {/* 구분선 추가 */}
         <hr className="border-t border-gray-300 w-full mb-4" />
-        <p className="text-gray-700 text-md font-light leading-relaxed">
+
+        {/* 설명 */}
+        <p className="text-gray-700 text-base leading-relaxed line-clamp-3 mb-4">
           {community.description}
         </p>
-      </div>
 
-      <div className="flex flex-col items-end mt-auto w-full space-y-2">
-        <div className="w-full">
-          <Link
-            to={`/mypage/communities/recruiting/${community.id}/applicants`}
+        {/* 대기 신청자 수 (모집 중일 때만 표시) */}
+        {showRecruitingButtons &&
+          community.pendingApplicantCount !== undefined && (
+            <div className="flex items-center text-gray-700 text-sm mb-4">
+              <span className="font-semibold mr-1">대기 신청자:</span>
+              <span className="text-blue-600 font-bold">
+                {community.pendingApplicantCount}명
+              </span>
+            </div>
+          )}
+      </div>{" "}
+      {/* 상단 정보 섹션 끝 */}
+      {/* 하단 버튼 섹션 시작 */}
+      <div className="mt-auto">
+        <div className="flex flex-wrap gap-2 justify-end items-center">
+          {/* 상태 표시 뱃지 */}
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              community.status === "모집중"
+                ? "bg-blue-100 text-blue-600"
+                : "bg-gray-200 text-gray-600"
+            }`}
           >
-            <Button
-              bgColor="bg-gray-200"
-              textColor="text-gray-700"
-              hoverBgColor="hover:bg-gray-300"
-              className="w-full px-2 py-2 text-sm"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
+            {community.status}
+          </span>
+
+          {/* '신청자 목록 보기' 버튼 */}
+          {showRecruitingButtons && (
+            <Link
+              to={`/mypage/communities/recruiting/${community.id}/applicants`}
             >
-              신청 내역 보기
+              <Button
+                // ✨ 이 Button 컴포넌트의 속성 구문을 정확히 다시 확인했습니다. ✨
+                bgColor="bg-main"
+                textColor="text-white"
+                hoverBgColor="hover:bg-apply"
+                className="px-3 py-2 text-xs font-normal"
+              >
+                신청자 보기
+              </Button>
+            </Link>
+          )}
+
+          {/* '수정' 버튼 - 모집중일 때만 표시 */}
+          {community.status === "모집중" && (
+            <Button
+              onClick={() => onEditCommunity(community)}
+              bgColor="bg-gray-300"
+              textColor="text-gray-800"
+              hoverBgColor="hover:bg-gray-400"
+              className="px-3 py-2 text-xs font-normal"
+            >
+              수정
             </Button>
-          </Link>
-        </div>
+          )}
 
-        <div className="w-full">
-          <Button
-            onClick={handleEditClick}
-            bgColor="bg-blue-400"
-            textColor="text-white"
-            hoverBgColor="hover:bg-blue-500"
-            className="w-full px-2 py-2 text-sm"
-            disabled={isRecruitmentEnded}
-          >
-            수정
-          </Button>
+          {/* '모집 종료' 버튼 */}
+          {showRecruitingButtons && (
+            <Button
+              onClick={() => onEndRecruitment(community.id)}
+              bgColor="bg-red-400"
+              textColor="text-white"
+              hoverBgColor="hover:bg-red-500"
+              className="px-3 py-2 text-xs font-normal"
+            >
+              모집 종료
+            </Button>
+          )}
         </div>
-
-        <div className="w-full">
-          <Button
-            onClick={handleEndRecruitmentClick}
-            bgColor={isRecruitmentEnded ? "bg-gray-400" : "bg-main"}
-            textColor="text-white"
-            hoverBgColor={
-              isRecruitmentEnded ? "hover:bg-gray-500" : "hover:bg-apply"
-            }
-            className="w-full px-2 py-2 text-sm"
-            disabled={isRecruitmentEnded}
-          >
-            {isRecruitmentEnded ? "모집 종료됨" : "모집 종료"}
-          </Button>
-        </div>
-      </div>
+      </div>{" "}
+      {/* 하단 버튼 섹션 끝 */}
     </div>
   );
 };
 
-export default RecruitingCommunityCard;
+export default RecruitingCommunityList;

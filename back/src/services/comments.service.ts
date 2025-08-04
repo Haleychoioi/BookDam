@@ -1,15 +1,23 @@
-// src/services/comments.service.ts
+// src/zip/services/comments.service.ts
 
 import { CommentRepository } from "../repositories/comments.repository";
 import { TeamCommentRepository } from "../repositories/team-comments.repository";
 import { PostRepository } from "../repositories/posts.repository";
-import { Comment, PostType } from "@prisma/client";
+import { Comment, PostType, TeamComment } from "@prisma/client";
 import { CustomError } from "../middleware/error-handing-middleware";
 
-// CommentRepository에서 정의한 CommentWithRelations 타입
+// CommentRepository에서 정의한 CommentWithRelations 타입 (현재 서비스 파일 내 정의)
 type CommentWithRelations = Comment & {
-  user: { nickname: string } | null;
-  replies: (Comment & { user: { nickname: string } | null })[];
+  user: { nickname: string; profileImage: string | null } | null; // 이 user 타입이 문제의 원인
+  replies: (Comment & {
+    user: { nickname: string; profileImage: string | null } | null;
+  })[];
+  postTitle?: string;
+  postId?: number;
+  teamPostId?: number;
+  communityId?: number;
+  type?: string;
+  source?: string; // 소스 필드가 있다면 추가
 };
 
 export class CommentService {
@@ -23,7 +31,7 @@ export class CommentService {
     this.teamCommentRepository = new TeamCommentRepository();
   }
 
-   public async getMyComments(
+  public async getMyComments(
     userId: number,
     query: {
       page?: number;
@@ -34,31 +42,78 @@ export class CommentService {
   ) {
     const { page = 1, pageSize = 10, sort = "latest", type } = query;
 
-    let combinedComments: any[] = [];
+    // Prisma 쿼리 결과를 직접 받을 수 있도록 임시적으로 any 타입 사용 (타입 추론 복잡성 회피)
+    let publicCommentsRaw: any[] = [];
+    let teamCommentsRaw: any[] = [];
 
+    // 1. 레포지토리에서 댓글 원본 데이터 조회
     if (type === "TEAM") {
-      const teamComments = await this.teamCommentRepository.findByUserId(userId);
-      combinedComments = teamComments.map((c) => ({ ...c, type: "TEAM", source: "TEAM" }));
-
+      teamCommentsRaw = await this.teamCommentRepository.findByUserId(userId);
     } else if (type === "GENERAL" || type === "RECRUITMENT") {
       const postType = type as PostType;
-      const publicComments = await this.commentRepository.findByUserId(userId, postType);
-      combinedComments = publicComments.map((c) => ({ ...c, type: c.post!.type, source: "PUBLIC" }));
-
+      publicCommentsRaw = await this.commentRepository.findByUserId(
+        userId,
+        postType
+      );
     } else {
-      const publicComments = await this.commentRepository.findByUserId(userId);
-      const teamComments = await this.teamCommentRepository.findByUserId(userId);
-
-      combinedComments.push(...publicComments.map((c) => ({ ...c, type: c.post!.type, source: "PUBLIC" })));
-      combinedComments.push(...teamComments.map((c) => ({ ...c, type: "TEAM", source: "TEAM" })));
+      // type이 없거나 유효하지 않은 경우: 전체 조회
+      publicCommentsRaw = await this.commentRepository.findByUserId(userId);
+      teamCommentsRaw = await this.teamCommentRepository.findByUserId(userId);
     }
 
+    let combinedComments: CommentWithRelations[] = [];
+
+    // 2. 일반 게시물 댓글 처리: 연결된 게시물이 null이 아닌 경우만 포함하고 필드 평탄화
+    publicCommentsRaw.forEach((c) => {
+      if (c.post !== null) {
+        // 게시물이 null이 아닌 경우만 필터링
+        combinedComments.push({
+          ...c, // 원본 댓글 속성 스프레드
+          postTitle: c.post.title,
+          postId: c.post.postId,
+          type: c.post.type, // GENERAL 또는 RECRUITMENT
+          source: "PUBLIC",
+          // ✨ user 객체를 명시적으로 재구성하여 profileImage를 보장합니다. ✨
+          user: c.user
+            ? {
+                nickname: c.user.nickname,
+                profileImage: c.user.profileImage || null, // profileImage가 undefined면 null로 설정
+              }
+            : null, // user 객체가 null인 경우 처리
+        });
+      }
+    });
+
+    // 3. 팀 게시물 댓글 처리: 연결된 팀 게시물이 null이 아닌 경우만 포함하고 필드 평탄화
+    teamCommentsRaw.forEach((c) => {
+      if (c.teamPost !== null) {
+        // 팀 게시물이 null이 아닌 경우만 필터링
+        combinedComments.push({
+          ...c, // 원본 팀 댓글 속성 스프레드
+          type: "TEAM",
+          postTitle: c.teamPost.title,
+          teamPostId: c.teamPost.teamPostId,
+          communityId: c.teamPost.teamId, // teamId가 곧 communityId
+          source: "TEAM",
+          // ✨ user 객체를 명시적으로 재구성하여 profileImage를 보장합니다. ✨
+          user: c.user
+            ? {
+                nickname: c.user.nickname,
+                profileImage: c.user.profileImage || null, // profileImage가 undefined면 null로 설정
+              }
+            : null, // user 객체가 null인 경우 처리
+        });
+      }
+    });
+
+    // 4. 합쳐진 배열을 생성 날짜 기준으로 정렬합니다.
     combinedComments.sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
       return sort === "oldest" ? dateA - dateB : dateB - dateA;
     });
 
+    // 5. 정렬된 배열에 대해 페이지네이션을 적용합니다.
     const totalCount = combinedComments.length;
     const totalPages = Math.ceil(totalCount / pageSize);
     const skip = (page - 1) * pageSize;
@@ -97,7 +152,7 @@ export class CommentService {
       postId,
       query
     );
-    return comments;
+    return comments as CommentWithRelations[]; // Cast to ensure consistent return type
   }
 
   /**
@@ -210,6 +265,6 @@ export class CommentService {
     if (!comment) {
       throw new CustomError(404, "Comment not found");
     }
-    return comment;
+    return comment as CommentWithRelations; // Cast to ensure consistent return type
   }
 }

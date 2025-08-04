@@ -1,4 +1,5 @@
 // src/pages/mypage/MyLibraryPage.tsx
+
 import { useState, useEffect, useCallback } from "react";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import BookGridDisplay from "../../components/bookResults/BookGridDisplay";
@@ -16,7 +17,6 @@ const MyLibraryPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ReadingStatus>("READING"); // 기본 탭 변경
   const [currentPage, setCurrentPage] = useState(1);
-  // const [totalItems, setTotalItems] = useState(0); // totalItems 제거
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 6;
 
@@ -31,25 +31,28 @@ const MyLibraryPage: React.FC = () => {
       );
 
       const transformedBooks: MyLibraryBook[] = response.data.map((item) => ({
-        isbn13: item.book.isbn13,
-        coverImage: item.book.cover,
-        title: item.book.title,
-        author: item.book.author,
-        publisher: item.book.publisher,
-        genre: item.book.category,
-
         libraryId: item.libraryId,
         status: item.status.toLowerCase() as MyLibraryBook["status"],
         myRating: item.myRating,
         updatedAt: item.updatedAt,
-
-        publicationDate: undefined,
-        description: undefined,
-        summary: undefined,
-        averageRating: undefined,
+        // ✨ 여기서 `book` 객체를 중첩된 형태로 정확히 매핑합니다. ✨
+        book: {
+          isbn13: item.book.isbn13,
+          title: item.book.title,
+          author: item.book.author,
+          publisher: item.book.publisher,
+          cover: item.book.cover,
+          category: item.book.category,
+        },
+        user: {
+          nickname: item.user.nickname,
+        },
+        // 이전에 여기에 있던 최상위 속성(isbn13, coverImage 등)들은 제거합니다.
+        // 이 속성들은 이제 `book` 객체 내부에 존재합니다.
+        // publicationDate, description, summary, averageRating 등은 MyLibraryBook 타입에 정의되어 있지 않거나
+        // 사용하지 않는 필드이므로, 제거하거나 필요에 따라 추가합니다.
       }));
       setBooks(transformedBooks);
-      // setTotalItems(response.pagination.totalItems); // totalItems 제거
       setTotalPages(response.pagination.totalPages);
     } catch (err) {
       console.error("내 서재 불러오기 실패:", err);

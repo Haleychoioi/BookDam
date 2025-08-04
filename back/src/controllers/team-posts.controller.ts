@@ -65,10 +65,6 @@ export class TeamPostController {
           error.message === "Unauthorized: You are not a member of this team."
         ) {
           next(new CustomError(403, error.message));
-        } else if (
-          error.message === "No team posts found for this community."
-        ) {
-          next(new CustomError(404, error.message));
         } else {
           next(error);
         }
@@ -98,15 +94,15 @@ export class TeamPostController {
 
       const { title, content, type } = req.body;
 
+      // ✨ 수정: 필수 필드 유효성 검사 (trim() 추가하여 빈 문자열도 막습니다.) ✨
       if (
         rawCommunityId === undefined ||
-        title === undefined ||
-        content === undefined
+        !title ||
+        title.trim().length === 0 ||
+        !content ||
+        content.trim().length === 0
       ) {
-        throw new CustomError(
-          400,
-          "필수 필드(communityId, title, content)가 누락되었습니다."
-        );
+        throw new CustomError(400, "제목과 내용을 모두 입력해주세요.");
       }
 
       const communityId = Number(rawCommunityId);
@@ -114,7 +110,6 @@ export class TeamPostController {
         throw new CustomError(400, "유효한 커뮤니티 ID가 아닙니다.");
       }
 
-      // type이 제공된 경우 유효성 검사
       const upperCaseType = type ? type.toUpperCase() : TeamPostType.DISCUSSION;
       if (!Object.values(TeamPostType).includes(upperCaseType)) {
         throw new CustomError(400, "유효하지 않은 팀 게시물 타입입니다.");
@@ -137,6 +132,8 @@ export class TeamPostController {
           error.message === "Unauthorized: You are not a member of this team."
         ) {
           next(new CustomError(403, error.message));
+        } else if (error.message === "제목과 내용을 모두 입력해주세요.") {
+          next(new CustomError(400, error.message));
         } else {
           next(error);
         }
@@ -310,7 +307,7 @@ export class TeamPostController {
       }
 
       const communityId = Number(rawCommunityId);
-      const teamPostId = Number(rawTeamPostId);
+      const teamPostId = Number(rawTeamPostId); // 이 줄
       if (isNaN(communityId) || isNaN(teamPostId)) {
         throw new CustomError(
           400,
@@ -319,6 +316,7 @@ export class TeamPostController {
       }
 
       await this.teamPostService.deleteTeamPost(
+        // 그리고 이 줄
         communityId,
         teamPostId,
         requestingUserId

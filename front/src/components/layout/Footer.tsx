@@ -28,7 +28,7 @@ const Footer: React.FC = () => {
           {/* 회사 정보 */}
           <div className="flex flex-col space-y-1">
             <p>
-              주)북토크컴퍼니 | 대표 김지성 | 사업자번호 275-08-01847 |
+              주)북담컴퍼니 | 대표 산삼 | 사업자번호 275-08-01847 |
               통신판매업신고번호 제 2024-서울강남-2156호 (
               <a href="#" className="underline hover:text-main">
                 사업자 정보 확인
@@ -52,7 +52,7 @@ const Footer: React.FC = () => {
             </p>
           </div>
 
-          <div className="text-3xl font-script text-gray-800">book</div>
+          <div className="text-3xl font-script text-gray-800">bookDam</div>
         </div>
       </div>
     </footer>

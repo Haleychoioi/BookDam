@@ -11,7 +11,11 @@ import {
   TeamApplication,
   TeamRole,
 } from "@prisma/client";
-import { CustomError } from "../middleware/error-handing-middleware";
+import { CustomError } from "../middleware/error-handing-middleware"; // CustomError 임포트
+
+// ApplicationService의 CustomError 문제를 임시로 해결하기 위한 타입 단언 (최후의 수단)
+// import * as ErrorMiddleware from "../middleware/error-handing-middleware";
+// const CustomError = ErrorMiddleware.CustomError;
 
 type ApplicationWithPostInfo = TeamApplication & {
   post: {
@@ -32,7 +36,6 @@ export class ApplicationService {
     this.postRepository = new PostRepository();
     this.teamMemberRepository = new TeamMemberRepository();
   }
-
 
   public async getMyApplications(
     userId: number
@@ -55,10 +58,7 @@ export class ApplicationService {
       throw new CustomError(403, "자신의 지원만 취소할 수 있습니다.");
     }
     if (application.status !== ApplicationStatus.PENDING) {
-      throw new CustomError(
-        400,
-        "대기 중인 지원서만 취소할 수 있습니다."
-      );
+      throw new CustomError(400, "대기 중인 지원서만 취소할 수 있습니다.");
     }
 
     await this.applicationRepository.deleteById(applicationId);
@@ -79,6 +79,11 @@ export class ApplicationService {
     if (!community) {
       throw new CustomError(404, "Community not found");
     }
+    // ✨ 커뮤니티 상태 로그 추가 ✨
+    console.log(
+      `ApplicationService: Community ID ${communityId} status is ${community.status}`
+    );
+
     if (community.status !== CommunityStatus.RECRUITING) {
       throw new CustomError(400, "This community is not currently recruiting.");
     }

@@ -10,10 +10,13 @@ export interface Community {
   title: string; // 커뮤니티 제목 (백엔드의 postTitle)
   description: string; // 커뮤니티 설명 (백엔드의 postContent)
   hostName: string; // 커뮤니티 호스트 닉네임 (백엔드의 postAuthor)
-  currentMembers: number; // 현재 멤버 수 (백엔드에서 직접 제공하지 않으면 프론트엔드에서 계산 또는 임시값)
-  maxMembers: number; // 최대 멤버 수 (백엔드에서 직접 제공하지 않으면 프론트엔드에서 임시값)
+  hostId: number; // ✨ 새로 추가: 커뮤니티 호스트(팀장)의 userId ✨
+  currentMembers: number; // 현재 멤버 수
+  maxMembers: number; // 최대 멤버 수
   role: "host" | "member"; // 현재 사용자의 커뮤니티 내 역할 (로그인된 사용자 기준)
-  status: "모집중" | "모집종료"; // 프론트엔드에서 표시할 모집 상태 (백엔드의 status 매핑)
+  status: "모집중" | "모집종료"; // 프론트엔드에서 표시할 모집 상태
+  createdAt: string; // ✨ 추가: 생성일시 ✨
+  hasApplied?: boolean; // ✨ 이 줄을 추가합니다: hasApplied 필드 추가 ✨
 }
 
 export interface UserProfile {
@@ -62,16 +65,22 @@ export interface TeamPost {
   userId: number;
   title: string;
   content: string;
-  type: TeamPostType;
+  type: string; // ✨ TeamPostType 대신 string으로 변경 ✨
   createdAt: string;
   updatedAt: string; // 통일된 string 타입
   user: {
     nickname: string;
-    profileImage?: string | null; // 백엔드 include에 따라 없을 수도 있음
+    profileImage?: string | null;
   };
   _count?: {
     comments: number;
   };
+  // 이전 단계에서 추가된 teamPost 속성 (이 오류와는 무관하지만 코드 일관성을 위해 유지)
+  teamPost?: {
+    teamPostId: number;
+    title: string;
+    teamId: number;
+  } | null;
 }
 
 export interface TeamCommunity {
@@ -87,6 +96,25 @@ export interface TeamCommunity {
   maxMembers?: number; // Post에서 가져오는 최대 인원수
 }
 
+export interface TeamApplication {
+  applicationId: number;
+  userId: number;
+  postId: number;
+  applicationMessage: string;
+  status: "PENDING" | "ACCEPTED" | "REJECTED";
+  appliedAt: string;
+  processedAt: string | null;
+}
+
+export interface CommunityWithMemberInfo extends TeamCommunity {
+  currentMembers: number; // 현재 멤버 수 (필수)
+  maxMembers: number; // 최대 멤버 수 (필수)
+}
+
+export interface TeamCommunityWithBookTitle extends TeamCommunity {
+  bookTitle: string | null;
+}
+
 // 1.6 PostType Enum (일반 게시물 타입)
 enum PostType { // 'export' 키워드 제거
   GENERAL = "GENERAL",
@@ -98,7 +126,7 @@ export interface Post {
   userId: number;
   title: string;
   content: string;
-  type: PostType;
+  type: string; // ✨ PostType 대신 string으로 변경 ✨
   createdAt: string;
   updatedAt: string; // 통일된 string 타입
   user: {
@@ -122,7 +150,7 @@ export interface Post {
 
 export interface Comment {
   commentId: number;
-  postId: number;
+  postId?: number; // 서비스에서 평탄화하여 추가할 수 있음
   userId: number;
   content: string;
   createdAt: string;
@@ -134,14 +162,14 @@ export interface Comment {
   };
   replies?: (Comment | TeamComment)[];
   depth?: number;
-  postTitle?: string;
-  postType?: string;
-  communityId?: string;
+  postTitle?: string; // ✨ 서비스에서 추가 ✨
+  postType?: string; // ✨ 서비스에서 추가 (GENERAL, RECRUITMENT) ✨
+  // 'post' 중첩 객체는 서비스에서 평탄화되므로 여기에 직접 정의하지 않습니다.
 }
 
 export interface TeamComment {
   teamCommentId: number;
-  teamPostId: number;
+  teamPostId?: number; // 서비스에서 평탄화하여 추가할 수 있음
   userId: number;
   content: string;
   createdAt: string;
@@ -153,9 +181,10 @@ export interface TeamComment {
   };
   replies?: (Comment | TeamComment)[];
   depth?: number;
-  postTitle?: string;
-  postType?: string;
-  communityId?: string;
+  postTitle?: string; // ✨ 서비스에서 추가 (teamPost.title) ✨
+  postType?: string; // ✨ 서비스에서 추가 (항상 'TEAM') ✨
+  communityId?: number; // ✨ 서비스에서 추가 (teamPost.teamId) ✨
+  // 'teamPost' 중첩 객체는 서비스에서 평탄화되므로 여기에 직접 정의하지 않습니다.
 }
 
 export interface JWTPayload {

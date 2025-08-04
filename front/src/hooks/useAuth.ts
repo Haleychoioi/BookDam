@@ -1,5 +1,4 @@
 // src/hooks/useAuth.ts
-
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../api/apiClient";
@@ -11,9 +10,11 @@ interface AuthResult {
   userId: number | null;
   currentUserProfile: UserProfile | null;
   loading: boolean;
-  error: string | null;
+  error: string | null; // 일반적인 에러 메시지
   login: (email: string, password: string) => Promise<boolean>;
-  register: (formData: SignupRequest) => Promise<boolean>;
+  register: (
+    formData: SignupRequest
+  ) => Promise<string | { [key: string]: string } | null>; // ✨ 반환 타입 변경 ✨
   logout: () => void;
   fetchUserProfile: () => Promise<void>;
   updateProfile: (updateData: FormData) => Promise<boolean>;
@@ -23,7 +24,8 @@ interface AuthResult {
     newPassword: string;
     confirmNewPassword: string;
   }) => Promise<boolean>;
-  issueTemporaryPassword: (email: string, name: string) => Promise<boolean>; // ✨ 새로 추가할 함수 타입 선언 ✨
+  issueTemporaryPassword: (email: string, name: string) => Promise<boolean>;
+  handleAxiosError: (err: unknown, defaultMsg: string) => string;
 }
 
 export const useAuth = (): AuthResult => {
@@ -33,7 +35,7 @@ export const useAuth = (): AuthResult => {
   const [currentUserProfile, setCurrentUserProfile] =
     useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // useAuth 훅의 전역 에러 상태
 
   const handleAxiosError = useCallback(
     (err: unknown, defaultMsg: string): string => {
@@ -75,7 +77,7 @@ export const useAuth = (): AuthResult => {
         "프로필 정보를 불러오는데 실패했습니다."
       );
       setError(errMsg);
-      alert(errMsg);
+      alert(errMsg); // 프로필 로딩 에러는 alert 유지
       localStorage.removeItem("accessToken");
       localStorage.removeItem("userId");
       setIsLoggedIn(false);
@@ -131,7 +133,14 @@ export const useAuth = (): AuthResult => {
       } catch (err) {
         const errMsg = handleAxiosError(err, "로그인 중 오류가 발생했습니다.");
         setError(errMsg);
-        alert(errMsg);
+
+        if (errMsg === "해당 유저가 없습니다") {
+          alert("회원 정보가 없습니다. 회원가입 페이지로 이동합니다.");
+        } else if (errMsg === "패스워드 불일치") {
+          alert("이메일 또는 비밀번호가 올바르지 않습니다.");
+        } else {
+          alert(errMsg);
+        }
         return false;
       } finally {
         setLoading(false);
@@ -141,22 +150,40 @@ export const useAuth = (): AuthResult => {
   );
 
   const register = useCallback(
-    async (formData: SignupRequest): Promise<boolean> => {
+    async (
+      formData: SignupRequest
+    ): Promise<string | { [key: string]: string } | null> => {
+      // ✨ 반환 타입 변경 ✨
       setLoading(true);
       setError(null);
       try {
         const response = await apiClient.post("/auth/register", formData);
-        alert(response.data.message);
+        alert(response.data.message); // 회원가입 성공 메시지
         navigate("/auth/login");
-        return true;
+        return null; // ✨ 성공 시 null 반환 ✨
       } catch (err) {
+        // ✨ Axios 에러일 경우 MultiDuplicateError 여부 확인 ✨
+        if (axios.isAxiosError(err) && err.response && err.response.data) {
+          if (err.response.data.errors) {
+            // MultiDuplicateError에서 보낸 errors 객체
+            setError("다중 중복 오류 발생"); // useAuth의 에러 상태는 일반 메시지로
+            return err.response.data.errors; // ✨ errors 객체 반환 ✨
+          }
+          // 그 외의 Axios 에러 (단일 errorMessage)
+          const errMsg = handleAxiosError(
+            err,
+            "회원가입 중 알 수 없는 오류가 발생했습니다."
+          );
+          setError(errMsg);
+          return errMsg; // ✨ 단일 오류 메시지 문자열 반환 ✨
+        }
+        // Axios 에러가 아닌 일반 JS 에러
         const errMsg = handleAxiosError(
           err,
-          "회원가입 중 오류가 발생했습니다."
+          "회원가입 중 알 수 없는 오류가 발생했습니다."
         );
         setError(errMsg);
-        alert(errMsg);
-        return false;
+        return errMsg; // ✨ 단일 오류 메시지 문자열 반환 ✨
       } finally {
         setLoading(false);
       }
@@ -185,7 +212,7 @@ export const useAuth = (): AuthResult => {
         const response = await apiClient.put<{
           user: UserProfile;
           message: string;
-        }>(`/mypage/profile`, updateData, {
+        }>(`/mypage/profile-edit`, updateData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -249,7 +276,6 @@ export const useAuth = (): AuthResult => {
     }
   }, [logout, handleAxiosError]);
 
-  // ✨ 새로 추가된 임시 비밀번호 발급 함수 ✨
   const issueTemporaryPassword = useCallback(
     async (email: string, name: string): Promise<boolean> => {
       setLoading(true);
@@ -289,6 +315,7 @@ export const useAuth = (): AuthResult => {
     updateProfile,
     deleteUser,
     changePassword,
-    issueTemporaryPassword, // ✨ 새로 추가된 함수 반환 ✨
+    issueTemporaryPassword,
+    handleAxiosError,
   };
 };

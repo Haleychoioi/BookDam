@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import type { LibraryStats } from "../../types/tasteAnalysis.types";
 import apiClient from "../../api/apiClient";
-import MyPageHeader from "../../components/mypage/myPageHeader.tsx";
+import MyPageHeader from "../../components/mypage/MyPageHeader";
 
 const TasteAnalysisPage: React.FC = () => {
   const [data, setData] = useState<LibraryStats | null>(null);
