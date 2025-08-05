@@ -97,7 +97,7 @@ export default class UserService {
             </h2>
             
             <p style="color: #666666; line-height: 1.6; margin: 0 0 15px 0; font-size: 16px;">
-                안녕하세요, <strong style="color: #ffbd42;">홍길동</strong>님.
+    안녕하세요, <strong style="color: #333333;">${userName} </strong>님.
             </p>
             
             <p style="color: #666666; line-height: 1.6; margin: 0 0 30px 0; font-size: 16px;">
@@ -121,7 +121,7 @@ export default class UserService {
                     ⚠️ 보안 안내
                 </p>
                 <p style="color: #666666; margin: 0; font-size: 14px; line-height: 1.5;">
-                    • 이 비밀번호는 일회성이며, 로그인 후 반드시 변경해주세요
+                    • 보안을 위해 로그인 후 새로운 비밀번호로 변경해주세요
                 </p>
             </div>
             
