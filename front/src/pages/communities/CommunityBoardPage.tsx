@@ -41,17 +41,14 @@ const CommunityBoardPage: React.FC = () => {
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const communityResponse: any = await fetchCommunityById(
         parsedCommunityId
       );
-
-      if (communityResponse && communityResponse.data) {
-        setCommunityInfo(communityResponse.data);
+      if (communityResponse) {
+        setCommunityInfo(communityResponse);
       } else {
         setError("커뮤니티 데이터를 찾을 수 없습니다.");
       }
-
       const postsResponse = await fetchTeamPosts(
         String(parsedCommunityId),
         currentPage,
@@ -123,9 +120,8 @@ const CommunityBoardPage: React.FC = () => {
 
   return (
     <BoardTemplate
-      boardTitle={`${communityInfo.postTitle}${
-        communityInfo.bookTitle ? ` - ${communityInfo.bookTitle}` : ""
-      }`}
+      boardTitle={`${communityInfo.postTitle}${communityInfo.bookTitle ? ` - ${communityInfo.bookTitle}` : ""
+        }`}
       posts={communityPosts}
       onWritePostClick={handleWritePostClick}
       onPostClick={handlePostClick}
