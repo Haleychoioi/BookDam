@@ -1,86 +1,111 @@
 // src/pages/mypage/WishlistPage.tsx
-import { useState, useEffect, useMemo, useCallback } from "react";
+
+import { useState, useMemo, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../hooks/useAuth";
+import { useToast } from "../../hooks/useToast";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import BookGridDisplay from "../../components/bookResults/BookGridDisplay";
 import Pagination from "../../components/common/Pagination";
-import type { BookSummary } from "../../types"; // ✨ BookSummary 타입을 명확히 임포트합니다. ✨
-// API 함수 임포트
 import { fetchWishlist, removeWish } from "../../api/mypage";
 
+import type { BookSummary } from "../../types";
+
 const WishlistPage: React.FC = () => {
-  const [wishlistBooks, setWishlistBooks] = useState<BookSummary[]>([]); // ✨ Book[] 대신 BookSummary[]로 타입 변경 ✨
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
-  // 위시리스트 데이터 불러오기
-  const loadWishlist = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // 실제 API 호출로 대체
-      const data = await fetchWishlist(); //
-      // 백엔드 응답 형태에 따라 BookSummary 타입으로 변환
-      const transformedBooks: BookSummary[] = data.map((item) => ({
-        isbn13: item.book.isbn13,
-        cover: item.book.cover, // ✨ coverImage 대신 cover로 속성명 수정 ✨
-        title: item.book.title,
-        author: "", // 위시리스트 조회 응답에는 author 정보가 없으므로 빈 문자열 유지
-        publisher: "", // 위시리스트 조회 응답에는 publisher 정보가 없으므로 빈 문자열 유지
-        pubDate: null, // ✨ publicationDate 대신 pubDate로 속성명 수정 ✨
-        description: null, // 위시리스트 조회 응답에는 description 정보가 없으므로 null 유지
-        category: null, // ✨ genre 대신 category로 속성명 수정 (BookSummary에 맞춤) ✨
-      }));
-      setWishlistBooks(transformedBooks);
-    } catch (err) {
-      console.error("위시리스트 불러오기 실패:", err);
-      setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const queryClient = useQueryClient();
+  const { isLoggedIn, currentUserProfile } = useAuth();
+  const { showToast } = useToast();
 
-  useEffect(() => {
-    loadWishlist();
-  }, [loadWishlist]);
-
-  const handleRemoveFromWishlist = useCallback(
-    async (isbn13: string, bookTitle: string) => {
-      // bookId를 isbn13으로 변경
-      if (confirm(`'${bookTitle}'을(를) 위시리스트에서 삭제하시겠습니까?`)) {
-        try {
-          await removeWish(isbn13);
-          alert(`'${bookTitle}'이(가) 위시리스트에서 삭제되었습니다.`);
-          loadWishlist(); // 삭제 후 목록 새로고침
-        } catch (error) {
-          console.error("위시리스트 삭제 실패:", error);
-          alert("위시리스트 삭제 중 오류가 발생했습니다. 다시 시도해주세요.");
-        }
+  const {
+    data: wishlistData,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<BookSummary[], Error>({
+    queryKey: ["wishlist"],
+    queryFn: async () => {
+      if (!isLoggedIn) {
+        return [];
       }
+      const data = await fetchWishlist();
+      return data.map((item) => ({
+        isbn13: item.book.isbn13,
+        cover: item.book.cover,
+        title: item.book.title,
+        author: "",
+        publisher: "",
+        pubDate: null,
+        description: null,
+        category: null,
+      }));
     },
-    [loadWishlist]
-  );
+    enabled: isLoggedIn,
+    staleTime: 1000 * 60,
+  });
 
-  const totalFilteredItems = wishlistBooks.length;
+  const totalFilteredItems = wishlistData?.length || 0;
   const totalPages = Math.ceil(totalFilteredItems / itemsPerPage);
 
   const paginatedBooks = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return wishlistBooks.slice(startIndex, endIndex);
-  }, [wishlistBooks, currentPage, itemsPerPage]);
+    return (wishlistData || []).slice(startIndex, endIndex);
+  }, [wishlistData, currentPage, itemsPerPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo(0, 0);
   };
 
-  if (loading) {
+  const removeWishMutation = useMutation<void, Error, string>({
+    mutationFn: (isbn13: string) => removeWish(isbn13),
+    onSuccess: (_, variables) => {
+      showToast(
+        `'${variables}'이(가) 위시리스트에서 삭제되었습니다.`,
+        "success"
+      );
+
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+
+      queryClient.invalidateQueries({
+        queryKey: ["bookDetail", variables, isLoggedIn],
+      });
+    },
+    onError: (error) => {
+      console.error("위시리스트 삭제 실패:", error);
+      showToast(
+        "위시리스트 삭제 중 오류가 발생했습니다. 다시 시도해주세요.",
+        "error"
+      );
+    },
+  });
+
+  const handleRemoveFromWishlist = useCallback(
+    (isbn13: string, bookTitle: string) => {
+      if (confirm(`'${bookTitle}'을(를) 위시리스트에서 삭제하시겠습니까?`)) {
+        removeWishMutation.mutate(isbn13);
+      }
+    },
+    [removeWishMutation]
+  );
+
+  if (isLoading) {
     return <div className="text-center py-12">위시리스트를 불러오는 중...</div>;
   }
-  if (error) {
-    return <div className="text-center py-12 text-red-500">오류: {error}</div>;
+  if (isError) {
+    return (
+      <div className="text-center py-12 text-red-500">
+        오류: {error?.message}
+      </div>
+    );
+  }
+  if (!currentUserProfile) {
+    return (
+      <div className="text-center py-12 text-red-500">로그인이 필요합니다.</div>
+    );
   }
 
   return (
@@ -96,7 +121,7 @@ const WishlistPage: React.FC = () => {
             books={paginatedBooks}
             className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3"
             onRemoveFromWishlist={handleRemoveFromWishlist}
-            showWishlistButton={true} // 찜 해제 버튼 표시
+            showWishlistButton={true}
           />
         ) : (
           <p className="col-span-full text-center text-gray-500 py-10">

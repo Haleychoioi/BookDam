@@ -1,10 +1,11 @@
 // src/pages/auth/RegisterPage.tsx
 
-import React, { useState, useRef, useCallback } from "react";
-import Button from "../../components/common/Button";
+import { useState, useRef, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useToast } from "../../hooks/useToast";
 import ReactDOM from "react-dom";
+import Button from "../../components/common/Button";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const initialErrorsState = {
   name: "",
@@ -19,6 +20,7 @@ const initialErrorsState = {
 
 const RegisterPage: React.FC = () => {
   const { register, loading } = useAuth();
+  const { showToast } = useToast();
 
   const [form, setForm] = useState({
     name: "",
@@ -46,8 +48,6 @@ const RegisterPage: React.FC = () => {
   const introductionRef = useRef<HTMLTextAreaElement>(null);
   const agreementRef = useRef<HTMLInputElement>(null);
 
-  // validateField 함수를 useCallback으로 감싸서 안정화
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const validateField = useCallback(
     (name: string, value: string | boolean): string => {
       let message = "";
@@ -65,9 +65,7 @@ const RegisterPage: React.FC = () => {
           break;
         case "phone":
           if (!value) message = "전화번호를 입력해주세요.";
-          // ✨ 전화번호 정규식 수정: 하이픈 선택 사항으로 변경 ✨
           else if (!/^\d{2,3}-?\d{3,4}-?\d{4}$/.test(value as string))
-            // 01012345678, 02-123-4567 등 모두 허용
             message = "유효한 전화번호 형식이 아닙니다 (예: 010-1234-5678).";
           break;
         case "email":
@@ -98,37 +96,31 @@ const RegisterPage: React.FC = () => {
       }
       return message;
     },
-    [form.password, confirmPassword, form.agreement]
+    [form.password]
   );
 
   const handleChange = (
-    // onChange에서 값과 에러 상태를 모두 업데이트
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     let newValue: string | boolean = type === "checkbox" ? checked : value;
 
-    // ✨ 전화번호 자동 하이픈 추가 로직 ✨
     if (name === "phone" && typeof newValue === "string") {
-      const digitsOnly = newValue.replace(/\D/g, ""); // 숫자만 남김
+      const digitsOnly = newValue.replace(/\D/g, "");
       let formattedNumber = "";
       if (digitsOnly.length > 10) {
-        // 010-XXXX-XXXX (11자리)
         formattedNumber = digitsOnly.replace(
           /(\d{3})(\d{4})(\d{4})/,
           "$1-$2-$3"
         );
       } else if (digitsOnly.length > 6) {
-        // 0X-XXX-XXXX or 0XX-XXX-XXXX (7-10자리)
         if (digitsOnly.startsWith("02")) {
-          // 서울 국번
           formattedNumber = digitsOnly.replace(
             /(\d{2})(\d{3,4})(\d{4})/,
             "$1-$2-$3"
           );
         } else {
-          // 그 외 3자리 국번 (01X, 0XX 등)
           formattedNumber = digitsOnly.replace(
             /(\d{3})(\d{3,4})(\d{4})/,
             "$1-$2-$3"
@@ -139,7 +131,7 @@ const RegisterPage: React.FC = () => {
       } else {
         formattedNumber = digitsOnly;
       }
-      newValue = formattedNumber; // 포맷된 값으로 업데이트
+      newValue = formattedNumber;
     }
 
     if (name === "confirmPassword") {
@@ -290,8 +282,7 @@ const RegisterPage: React.FC = () => {
     const dataToSend = {
       name: form.name,
       nickname: form.nickname,
-      // ✨ 전화번호 정규화: 하이픈 제거 ✨ (handle change에서 이미 포맷팅 됨)
-      phone: form.phone.replace(/[^0-9]/g, ""), // 백엔드에는 숫자만 보냄
+      phone: form.phone.replace(/[^0-9]/g, ""),
       email: form.email,
       password: form.password,
       introduction: form.introduction,
@@ -329,35 +320,18 @@ const RegisterPage: React.FC = () => {
             block: "center",
           });
         }
-      } else if (typeof authError === "string") {
-        if (authError.includes("가입된 이메일 존재")) {
-          serverErrorsState.email = authError;
-          emailRef.current?.focus();
-          emailRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        } else if (authError.includes("사용중인 닉네임")) {
-          serverErrorsState.nickname = authError;
-          nicknameRef.current?.focus();
-          nicknameRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        } else if (authError.includes("이미 가입된 전화번호입니다.")) {
-          serverErrorsState.phone = authError;
-          phoneRef.current?.focus();
-          phoneRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        } else {
-          console.error("회원가입 중 백엔드 오류:", authError);
-          alert(authError);
+        const combinedErrorMessage = Object.values(serverErrorsState)
+          .filter((msg) => msg !== "")
+          .join(", ");
+        if (combinedErrorMessage) {
+          showToast(combinedErrorMessage, "error");
         }
+      } else if (typeof authError === "string") {
+        showToast(authError, "error");
+        console.error("회원가입 중 백엔드 오류:", authError);
       } else {
+        showToast("알 수 없는 오류가 발생했습니다.", "error");
         console.error("회원가입 중 예상치 못한 오류 발생:", authError);
-        alert("알 수 없는 오류가 발생했습니다.");
       }
 
       console.log("최종 설정될 serverErrorsState:", serverErrorsState);
@@ -365,6 +339,8 @@ const RegisterPage: React.FC = () => {
       ReactDOM.flushSync(() => {
         setErrors(serverErrorsState);
       });
+    } else {
+      showToast("회원가입이 성공적으로 완료되었습니다.", "success");
     }
   };
 

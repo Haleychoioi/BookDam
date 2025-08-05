@@ -1,41 +1,46 @@
 // src/hooks/useAuth.ts
+
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import apiClient from "../api/apiClient";
+import { useToast } from "./useToast";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import type { UserProfile, SignupRequest } from "../types";
+import apiClient from "../api/apiClient";
+
+import type {
+  UserProfile,
+  SignupRequest,
+  ChangePasswordRequest,
+} from "../types";
+import type { QueryObserverResult } from "@tanstack/react-query";
 
 interface AuthResult {
   isLoggedIn: boolean;
   userId: number | null;
   currentUserProfile: UserProfile | null;
   loading: boolean;
-  error: string | null; // 일반적인 에러 메시지
+  error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   register: (
     formData: SignupRequest
-  ) => Promise<string | { [key: string]: string } | null>; // ✨ 반환 타입 변경 ✨
+  ) => Promise<string | { [key: string]: string } | null>;
   logout: () => void;
-  fetchUserProfile: () => Promise<void>;
+  fetchUserProfile: () => Promise<QueryObserverResult<UserProfile, Error>>;
   updateProfile: (updateData: FormData) => Promise<boolean>;
   deleteUser: () => Promise<boolean>;
-  changePassword: (passwordData: {
-    currentPassword: string;
-    newPassword: string;
-    confirmNewPassword: string;
-  }) => Promise<boolean>;
+  changePassword: (passwordData: ChangePasswordRequest) => Promise<boolean>;
   issueTemporaryPassword: (email: string, name: string) => Promise<boolean>;
   handleAxiosError: (err: unknown, defaultMsg: string) => string;
+  navigate: ReturnType<typeof useNavigate>;
 }
 
 export const useAuth = (): AuthResult => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
-  const [currentUserProfile, setCurrentUserProfile] =
-    useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null); // useAuth 훅의 전역 에러 상태
 
   const handleAxiosError = useCallback(
     (err: unknown, defaultMsg: string): string => {
@@ -53,58 +58,36 @@ export const useAuth = (): AuthResult => {
     []
   );
 
-  // 사용자 프로필 정보를 불러오는 함수
-  const fetchUserProfile = useCallback(async (): Promise<void> => {
-    const currentUserId = localStorage.getItem("userId");
-    if (!currentUserId) {
-      setIsLoggedIn(false);
-      setUserId(null);
-      setCurrentUserProfile(null);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
+  const {
+    data: currentUserProfile,
+    isLoading: isLoadingProfile,
+    isError: isErrorProfile,
+    error: errorProfile,
+    refetch: refetchUserProfile,
+  } = useQuery<UserProfile, Error>({
+    queryKey: ["currentUserProfile"],
+    queryFn: async () => {
       const response = await apiClient.get<{
         user: UserProfile;
         message: string;
-      }>(`/mypage/getProfile`);
-      setCurrentUserProfile(response.data.user);
-    } catch (err) {
-      const errMsg = handleAxiosError(
-        err,
-        "프로필 정보를 불러오는데 실패했습니다."
-      );
-      setError(errMsg);
-      alert(errMsg); // 프로필 로딩 에러는 alert 유지
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("userId");
-      setIsLoggedIn(false);
-      setUserId(null);
-      setCurrentUserProfile(null);
-      window.dispatchEvent(new Event("loginStatusChange"));
-      navigate("/auth/login");
-    } finally {
-      setLoading(false);
-    }
-  }, [handleAxiosError, navigate]);
+      }>("/mypage/getProfile");
+      return response.data.user;
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+    retry: 1,
+  });
 
-  // 초기 로딩 및 localStorage 변경 감지
   useEffect(() => {
     const checkAuthStatus = () => {
       const token = localStorage.getItem("accessToken");
       const storedUserId = localStorage.getItem("userId");
-      const wasLoggedIn = isLoggedIn;
 
-      setIsLoggedIn(!!token);
-      setUserId(storedUserId ? Number(storedUserId) : null);
+      const newUserId = storedUserId ? Number(storedUserId) : null;
+      const newIsLoggedIn = !!token && !!storedUserId;
 
-      if (!!token && storedUserId && (!wasLoggedIn || !currentUserProfile)) {
-        fetchUserProfile();
-      } else if (!token) {
-        setCurrentUserProfile(null);
-      }
+      setIsLoggedIn(newIsLoggedIn);
+      setUserId(newUserId);
     };
 
     checkAuthStatus();
@@ -112,210 +95,252 @@ export const useAuth = (): AuthResult => {
     return () => {
       window.removeEventListener("loginStatusChange", checkAuthStatus);
     };
-  }, [fetchUserProfile, isLoggedIn, currentUserProfile]);
+  }, []);
+
+  const loginMutation = useMutation({
+    mutationFn: async (loginData: { email: string; password: string }) => {
+      const response = await apiClient.post("/auth/login", loginData);
+      const { token, userId, message } = response.data;
+      localStorage.setItem("accessToken", token);
+      localStorage.setItem("userId", userId.toString());
+      window.dispatchEvent(new Event("loginStatusChange"));
+      showToast(message, "success");
+      navigate("/");
+      return true;
+    },
+    onError: (err) => {
+      const errMsg = handleAxiosError(err, "로그인 중 오류가 발생했습니다.");
+      if (
+        errMsg === "해당 유저가 없습니다" ||
+        errMsg === "패스워드 불일치" ||
+        errMsg === "잘못된 입력입니다"
+      ) {
+        showToast("이메일 또는 비밀번호가 올바르지 않습니다.", "error");
+      } else {
+        showToast(errMsg, "error");
+      }
+    },
+  });
 
   const login = useCallback(
     async (email: string, password: string): Promise<boolean> => {
-      setLoading(true);
-      setError(null);
       try {
-        const response = await apiClient.post("/auth/login", {
-          email,
-          password,
-        });
-        const { token, userId, message } = response.data;
-        localStorage.setItem("accessToken", token);
-        localStorage.setItem("userId", userId.toString());
-        window.dispatchEvent(new Event("loginStatusChange"));
-        alert(message);
-        navigate("/");
+        await loginMutation.mutateAsync({ email, password });
         return true;
-      } catch (err) {
-        const errMsg = handleAxiosError(err, "로그인 중 오류가 발생했습니다.");
-        setError(errMsg);
-
-        if (errMsg === "해당 유저가 없습니다") {
-          alert("회원 정보가 없습니다. 회원가입 페이지로 이동합니다.");
-        } else if (errMsg === "패스워드 불일치") {
-          alert("이메일 또는 비밀번호가 올바르지 않습니다.");
-        } else {
-          alert(errMsg);
-        }
+      } catch {
         return false;
-      } finally {
-        setLoading(false);
       }
     },
-    [handleAxiosError, navigate]
+    [loginMutation]
   );
+
+  const registerMutation = useMutation({
+    mutationFn: async (formData: SignupRequest) => {
+      const response = await apiClient.post("/auth/register", formData);
+      showToast(response.data.message, "success");
+      navigate("/auth/login");
+      return null;
+    },
+    onError: (err) => {
+      if (axios.isAxiosError(err) && err.response && err.response.data) {
+        if (err.response.data.errors) {
+          return err.response.data.errors;
+        }
+        const errMsg = handleAxiosError(
+          err,
+          "회원가입 중 알 수 없는 오류가 발생했습니다."
+        );
+        return errMsg;
+      }
+      const errMsg = handleAxiosError(
+        err,
+        "회원가입 중 알 수 없는 오류가 발생했습니다."
+      );
+      return errMsg;
+    },
+  });
 
   const register = useCallback(
     async (
       formData: SignupRequest
     ): Promise<string | { [key: string]: string } | null> => {
-      // ✨ 반환 타입 변경 ✨
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await apiClient.post("/auth/register", formData);
-        alert(response.data.message); // 회원가입 성공 메시지
-        navigate("/auth/login");
-        return null; // ✨ 성공 시 null 반환 ✨
-      } catch (err) {
-        // ✨ Axios 에러일 경우 MultiDuplicateError 여부 확인 ✨
-        if (axios.isAxiosError(err) && err.response && err.response.data) {
-          if (err.response.data.errors) {
-            // MultiDuplicateError에서 보낸 errors 객체
-            setError("다중 중복 오류 발생"); // useAuth의 에러 상태는 일반 메시지로
-            return err.response.data.errors; // ✨ errors 객체 반환 ✨
-          }
-          // 그 외의 Axios 에러 (단일 errorMessage)
-          const errMsg = handleAxiosError(
-            err,
-            "회원가입 중 알 수 없는 오류가 발생했습니다."
-          );
-          setError(errMsg);
-          return errMsg; // ✨ 단일 오류 메시지 문자열 반환 ✨
-        }
-        // Axios 에러가 아닌 일반 JS 에러
-        const errMsg = handleAxiosError(
-          err,
-          "회원가입 중 알 수 없는 오류가 발생했습니다."
-        );
-        setError(errMsg);
-        return errMsg; // ✨ 단일 오류 메시지 문자열 반환 ✨
-      } finally {
-        setLoading(false);
-      }
+      return await registerMutation.mutateAsync(formData);
     },
-    [navigate, handleAxiosError]
+    [registerMutation]
   );
 
   const logout = useCallback(() => {
-    setLoading(true);
     localStorage.removeItem("accessToken");
     localStorage.removeItem("userId");
     setIsLoggedIn(false);
     setUserId(null);
-    setCurrentUserProfile(null);
+    queryClient.setQueryData(["currentUserProfile"], null);
     window.dispatchEvent(new Event("loginStatusChange"));
-    alert("로그아웃 되었습니다.");
     navigate("/");
-    setLoading(false);
-  }, [navigate]);
+  }, [navigate, queryClient]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updateData: FormData) => {
+      const response = await apiClient.put<{
+        user: UserProfile;
+        message: string;
+      }>("/mypage/profile-edit", updateData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["currentUserProfile"], data.user);
+      showToast(data.message, "success");
+      queryClient.invalidateQueries({ queryKey: ["allPosts"] });
+      queryClient.invalidateQueries({ queryKey: ["teamPosts"] });
+      queryClient.invalidateQueries({ queryKey: ["myPosts"] });
+      queryClient.invalidateQueries({ queryKey: ["myComments"] });
+      queryClient.invalidateQueries({ queryKey: ["post"] });
+      queryClient.invalidateQueries({ queryKey: ["teamPost"] });
+    },
+    onError: (err) => {
+      const errMsg = handleAxiosError(err, "프로필 수정에 실패했습니다.");
+      showToast(errMsg, "error");
+    },
+  });
 
   const updateProfile = useCallback(
     async (updateData: FormData): Promise<boolean> => {
-      setLoading(true);
-      setError(null);
       try {
-        const response = await apiClient.put<{
-          user: UserProfile;
-          message: string;
-        }>(`/mypage/profile-edit`, updateData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-        setCurrentUserProfile(response.data.user);
-        alert(response.data.message);
+        await updateProfileMutation.mutateAsync(updateData);
         return true;
-      } catch (err) {
-        const errMsg = handleAxiosError(err, "프로필 수정에 실패했습니다.");
-        setError(errMsg);
-        alert(errMsg);
+      } catch {
         return false;
-      } finally {
-        setLoading(false);
       }
     },
-    [handleAxiosError]
+    [updateProfileMutation]
   );
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (passwordData: ChangePasswordRequest) => {
+      const response = await apiClient.put(
+        "/mypage/change-password",
+        passwordData
+      );
+      return response.data;
+    },
+    onSuccess: (data) => {
+      showToast(data.message, "success");
+    },
+    onError: (err) => {
+      const errMsg = handleAxiosError(err, "비밀번호 변경에 실패했습니다.");
+      showToast(errMsg, "error");
+    },
+  });
 
   const changePassword = useCallback(
-    async (passwordData: {
-      currentPassword: string;
-      newPassword: string;
-      confirmNewPassword: string;
-    }): Promise<boolean> => {
-      setLoading(true);
-      setError(null);
+    async (passwordData: ChangePasswordRequest): Promise<boolean> => {
       try {
-        const response = await apiClient.put(
-          `/mypage/change-password`,
-          passwordData
-        );
-        alert(response.data.message);
+        await changePasswordMutation.mutateAsync(passwordData);
         return true;
-      } catch (err) {
-        const errMsg = handleAxiosError(err, "비밀번호 변경에 실패했습니다.");
-        setError(errMsg);
-        alert(errMsg);
+      } catch {
         return false;
-      } finally {
-        setLoading(false);
       }
     },
-    [handleAxiosError]
+    [changePasswordMutation]
   );
 
-  const deleteUser = useCallback(async (): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
-    try {
-      await apiClient.delete(`/mypage/delete`);
-      logout();
+  const deleteUserMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.delete("/mypage/delete");
       return true;
-    } catch (err) {
+    },
+    onSuccess: () => {
+      showToast("정상적으로 탈퇴되었습니다.", "success");
+      logout();
+    },
+    onError: (err) => {
       const errMsg = handleAxiosError(err, "회원 탈퇴에 실패했습니다.");
-      setError(errMsg);
-      alert(errMsg);
+      showToast(errMsg, "error");
+    },
+  });
+
+  const deleteUser = useCallback(async (): Promise<boolean> => {
+    if (deleteUserMutation.isPending) return false;
+    try {
+      await deleteUserMutation.mutateAsync();
+      return true;
+    } catch {
       return false;
-    } finally {
-      setLoading(false);
     }
-  }, [logout, handleAxiosError]);
+  }, [deleteUserMutation]);
+
+  const issueTemporaryPasswordMutation = useMutation({
+    mutationFn: async (credentials: { email: string; name: string }) => {
+      const response = await apiClient.post(
+        "/auth/password/issue-temp",
+        credentials
+      );
+      return response.data;
+    },
+    onSuccess: (data) => {
+      showToast(data.message, "success");
+    },
+    onError: (err) => {
+      const errMsg = handleAxiosError(
+        err,
+        "임시 비밀번호 발급에 실패했습니다."
+      );
+      showToast(errMsg, "error");
+    },
+  });
 
   const issueTemporaryPassword = useCallback(
     async (email: string, name: string): Promise<boolean> => {
-      setLoading(true);
-      setError(null);
+      if (issueTemporaryPasswordMutation.isPending) return false;
       try {
-        const response = await apiClient.post("/auth/password/issue-temp", {
-          email,
-          name,
-        });
-        alert(response.data.message);
+        await issueTemporaryPasswordMutation.mutateAsync({ email, name });
         return true;
-      } catch (err) {
-        const errMsg = handleAxiosError(
-          err,
-          "임시 비밀번호 발급에 실패했습니다."
-        );
-        setError(errMsg);
-        alert(errMsg);
+      } catch {
         return false;
-      } finally {
-        setLoading(false);
       }
     },
-    [handleAxiosError]
+    [issueTemporaryPasswordMutation]
   );
+
+  const loading =
+    isLoadingProfile ||
+    loginMutation.isPending ||
+    registerMutation.isPending ||
+    updateProfileMutation.isPending ||
+    changePasswordMutation.isPending ||
+    deleteUserMutation.isPending ||
+    issueTemporaryPasswordMutation.isPending;
+
+  const error = isErrorProfile
+    ? errorProfile?.message
+    : loginMutation.isError ||
+      registerMutation.isError ||
+      updateProfileMutation.isError ||
+      changePasswordMutation.isError ||
+      deleteUserMutation.isError ||
+      issueTemporaryPasswordMutation.isError
+    ? "서버 오류 또는 알 수 없는 오류가 발생했습니다."
+    : null;
 
   return {
     isLoggedIn,
     userId,
-    currentUserProfile,
+    currentUserProfile: currentUserProfile || null,
     loading,
     error,
     login,
     register,
     logout,
-    fetchUserProfile,
+    fetchUserProfile: refetchUserProfile,
     updateProfile,
     deleteUser,
     changePassword,
     issueTemporaryPassword,
     handleAxiosError,
+    navigate,
   };
 };

@@ -9,7 +9,7 @@ export interface MyBookItem extends AladinBookItem {
 export interface BookForAnalysis {
   author: string;
   publisher: string;
-  categoryName: string;
+  categoryName: string | null;
   title: string;
   myRating: number;
 }

@@ -1,45 +1,41 @@
 // src/pages/mypage/MyCommunitiesAppliedPage.tsx
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useToast } from "../../hooks/useToast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import AppliedCommunityCard from "../../components/mypage/AppliedCommunityCard";
 import Pagination from "../../components/common/Pagination";
-import { type AppliedCommunity } from "../../types";
 import {
   fetchAppliedCommunities,
   cancelApplication,
-} from "../../api/communities"; // fetchAppliedCommunities와 cancelApplication 임포트
+} from "../../api/communities";
+
+import { type AppliedCommunity } from "../../types";
 
 const MyCommunitiesAppliedPage: React.FC = () => {
-  const [communities, setCommunities] = useState<AppliedCommunity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
     "pending" | "accepted" | "rejected" | "전체"
   >("전체");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  // 내가 신청한 커뮤니티 목록을 불러오는 함수
-  const loadAppliedCommunities = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const fetchedData = await fetchAppliedCommunities();
-      setCommunities(fetchedData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    loadAppliedCommunities();
-  }, [loadAppliedCommunities]);
+  const {
+    data: communities,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<AppliedCommunity[], Error>({
+    queryKey: ["appliedCommunities"],
+    queryFn: fetchAppliedCommunities,
+    staleTime: 1000 * 60,
+  });
 
   const filteredCommunities = useMemo(() => {
-    setCurrentPage(1);
+    if (!communities) return [];
     if (activeTab === "전체") {
       return communities;
     }
@@ -60,35 +56,51 @@ const MyCommunitiesAppliedPage: React.FC = () => {
     window.scrollTo(0, 0);
   };
 
-  const handleCancelApplication = async (applicationId: string) => {
-    // communityId -> applicationId로 변경 (applicationId로 취소)
-    if (window.confirm("정말로 이 커뮤니티 가입 신청을 취소하시겠습니까?")) {
-      console.log(`신청 취소 요청: ${applicationId}`);
-      try {
-        await cancelApplication(applicationId); // 실제 API 호출
-        alert("커뮤니티 신청이 성공적으로 취소되었습니다.");
-        loadAppliedCommunities(); // 취소 후 목록 새로고침
-      } catch (error) {
-        console.error("신청 취소 중 오류 발생:", error);
-        let errorMessage =
-          "신청 취소 중 오류가 발생했습니다. 다시 시도해주세요.";
-        if (error instanceof Error) {
-          errorMessage = error.message;
-        }
-        alert(errorMessage);
-      }
-    }
+  const handleTabChange = (
+    tab: "pending" | "accepted" | "rejected" | "전체"
+  ) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
   };
 
-  if (loading) {
+  const cancelApplicationMutation = useMutation<void, Error, string>({
+    mutationFn: (applicationId: string) => cancelApplication(applicationId),
+    onSuccess: () => {
+      showToast("커뮤니티 신청이 성공적으로 취소되었습니다.", "success");
+      queryClient.invalidateQueries({ queryKey: ["appliedCommunities"] });
+    },
+    onError: (error) => {
+      console.error("신청 취소 중 오류 발생:", error);
+      let errorMessage = "신청 취소 중 오류가 발생했습니다. 다시 시도해주세요.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      showToast(errorMessage, "error");
+    },
+  });
+
+  const handleCancelApplication = useCallback(
+    async (applicationId: string) => {
+      if (window.confirm("정말로 이 커뮤니티 가입 신청을 취소하시겠습니까?")) {
+        cancelApplicationMutation.mutate(applicationId);
+      }
+    },
+    [cancelApplicationMutation]
+  );
+
+  if (isLoading) {
     return (
       <div className="text-center py-12">
         신청한 커뮤니티 목록을 불러오는 중...
       </div>
     );
   }
-  if (error) {
-    return <div className="text-center py-12 text-red-500">오류: {error}</div>;
+  if (isError) {
+    return (
+      <div className="text-center py-12 text-red-500">
+        오류: {error?.message}
+      </div>
+    );
   }
 
   return (
@@ -100,7 +112,7 @@ const MyCommunitiesAppliedPage: React.FC = () => {
 
       <div className="flex border-b border-gray-200 mb-6">
         <button
-          onClick={() => setActiveTab("전체")}
+          onClick={() => handleTabChange("전체")}
           className={`px-4 py-2 text-lg font-medium ${
             activeTab === "전체"
               ? "text-main border-b-2 border-main"
@@ -110,7 +122,7 @@ const MyCommunitiesAppliedPage: React.FC = () => {
           전체
         </button>
         <button
-          onClick={() => setActiveTab("pending")}
+          onClick={() => handleTabChange("pending")}
           className={`px-4 py-2 text-lg font-medium ${
             activeTab === "pending"
               ? "text-main border-b-2 border-main"
@@ -120,7 +132,7 @@ const MyCommunitiesAppliedPage: React.FC = () => {
           신청 대기 중
         </button>
         <button
-          onClick={() => setActiveTab("accepted")}
+          onClick={() => handleTabChange("accepted")}
           className={`px-4 py-2 text-lg font-medium ${
             activeTab === "accepted"
               ? "text-main border-b-2 border-main"
@@ -130,7 +142,7 @@ const MyCommunitiesAppliedPage: React.FC = () => {
           신청 수락됨
         </button>
         <button
-          onClick={() => setActiveTab("rejected")}
+          onClick={() => handleTabChange("rejected")}
           className={`px-4 py-2 text-lg font-medium ${
             activeTab === "rejected"
               ? "text-main border-b-2 border-main"
@@ -147,13 +159,7 @@ const MyCommunitiesAppliedPage: React.FC = () => {
             <AppliedCommunityCard
               key={community.id}
               community={community}
-              // handleCancelApplication에 community.id 대신 community.applicationId를 전달해야 합니다.
-              // AppliedCommunity 타입에 applicationId 필드가 있다고 가정합니다. (types/index.ts의 AppliedCommunity 참조)
-              // 만약 없다면, community.id를 사용하되, 백엔드가 communityId가 아닌 applicationId를 받는다면
-              // 백엔드 API를 수정하거나, 여기서 applicationId를 별도로 찾아 전달해야 합니다.
-              // 현재 AppliedCommunity는 communityId가 아닌 id 필드를 가지고 있고, 이는 teamId의 string 버전이므로
-              // 이 API에서는 applicationId가 필요합니다.
-              onCancelApplication={() => handleCancelApplication(community.id)} // community.id (string)을 그대로 전달
+              onCancelApplication={(appId) => handleCancelApplication(appId)}
             />
           ))
         ) : (

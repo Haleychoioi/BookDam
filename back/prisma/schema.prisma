@@ -104,7 +104,7 @@ model Book {
   pubDate     String?   @map("pub_date")
   description String?   @db.Text @map("description")
   cover       String?   @map("cover")
-  category    String    @map("category")
+  category    String?    @map("category")
   pageCount   Int?      @map("page_count")
   toc         String?   @db.Text @map("toc")
   story       String?   @db.Text @map("story")

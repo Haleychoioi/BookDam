@@ -1,23 +1,23 @@
 // src/components/bookDetail/CommunityCarousel.tsx
 
 import { useState } from "react";
-import Button from "../common/Button";
-import { FaChevronLeft, FaChevronRight, FaUserFriends } from "react-icons/fa";
-
-import type { Community } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
-import ApplyToCommunityModal from "../modals/ApplyToCommunityModal";
 import { useQuery } from "@tanstack/react-query";
+import Button from "../common/Button";
+import ApplyToCommunityModal from "../modals/ApplyToCommunityModal";
+import { FaChevronLeft, FaChevronRight, FaUserFriends } from "react-icons/fa";
 import { fetchCommunitiesByBookIsbn13 } from "../../api/communities";
 
+import type { Community } from "../../types";
+
 interface CommunityCarouselProps {
-  bookIsbn13: string; // ✨ communities는 여기서 직접 fetch하므로 prop으로 받지 않습니다. ✨
-  onApplyClick: (communityId: string) => void; // ✨ onApplyClick prop 추가 ✨
+  bookIsbn13: string;
+  onApplyClick: (communityId: string) => void;
 }
 
 const CommunityCarousel: React.FC<CommunityCarouselProps> = ({
-  bookIsbn13, // ✨ bookIsbn13 prop 받기 ✨
-  onApplyClick, // ✨ onApplyClick prop 받기 ✨
+  bookIsbn13,
+  onApplyClick,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const itemsPerPage = 3;
@@ -28,21 +28,20 @@ const CommunityCarousel: React.FC<CommunityCarouselProps> = ({
   );
   const [listError, setListError] = useState<string | null>(null);
 
-  // useQuery를 사용하여 커뮤니티 데이터 가져오기 (타입 수정)
   const {
-    data: communities, // data 이름을 communities로 변경 (Community[] 타입으로 직접 받음)
+    data: communities,
     isLoading,
     isError,
     error,
     isFetching,
   } = useQuery<Community[], Error>({
-    queryKey: ["bookDetailPageData", bookIsbn13, currentUserProfile?.userId], // queryKey에 userId 추가
+    queryKey: ["bookDetailPageData", bookIsbn13, currentUserProfile?.userId],
     queryFn: ({ queryKey }) => {
       const [, isbn, userId] = queryKey;
       return fetchCommunitiesByBookIsbn13(isbn as string, 5, userId as number);
     },
-    enabled: !!bookIsbn13, // isbn13이 있을 때만 쿼리 실행
-    staleTime: 1000 * 60 * 5, // 5분
+    enabled: !!bookIsbn13,
+    staleTime: 1000 * 60 * 5,
   });
 
   const handlePrev = () => {
@@ -146,7 +145,7 @@ const CommunityCarousel: React.FC<CommunityCarouselProps> = ({
                       </span>
                     </div>
                     <Button
-                      onClick={() => onApplyClick(community.id)} // ✨ onApplyClick prop 사용 ✨
+                      onClick={() => onApplyClick(community.id)}
                       bgColor={hasApplied ? "bg-gray-400" : "bg-main"}
                       textColor="text-white"
                       hoverBgColor={

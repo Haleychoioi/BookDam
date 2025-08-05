@@ -1,29 +1,29 @@
+// src/components/home/HomeHeroSection.tsx
+
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../../hooks/useToast";
 
 const HomeHeroSection: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast(); // useToast 훅 사용
 
-  // 검색 실행 로직
   const executeSearch = () => {
-    const processedSearchTerm = searchTerm.replace(/\s/g, ""); // 모든 공백 제거
+    const processedSearchTerm = searchTerm.replace(/\s/g, "");
 
-    // ✨ 검색어가 아예 비어있을 때만 alert를 띄우고 중단 ✨
     if (processedSearchTerm.length === 0) {
-      alert("검색어를 입력해주세요."); // 검색어가 없다는 메시지로 변경
-      return; // 검색 실행 중단
+      showToast("검색어를 입력해주세요.", "warn");
+      return;
     }
 
-    // 1글자 이상이면 모두 검색 실행
     const searchPath = `/books/search?q=${encodeURIComponent(
       processedSearchTerm
     )}`;
     navigate(searchPath);
   };
 
-  // Enter 키 입력 시 검색 실행
   const handleSearchOnEnter = (
     event: React.KeyboardEvent<HTMLInputElement>
   ) => {
@@ -32,7 +32,6 @@ const HomeHeroSection: React.FC = () => {
     }
   };
 
-  // 인풋 포커스
   useEffect(() => {
     const handleGlobalEnterKey = (event: KeyboardEvent) => {
       if (event.key === "Enter") {

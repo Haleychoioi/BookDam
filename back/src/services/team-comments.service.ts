@@ -1,5 +1,3 @@
-// src/services/team-comments.service.ts
-
 import { TeamCommentRepository } from "../repositories/team-comments.repository";
 import { TeamPostRepository } from "../repositories/team-posts.repository";
 import { TeamMemberRepository } from "../repositories/team-members.repository";
@@ -34,7 +32,6 @@ export class TeamCommentService {
     content: string,
     parentId?: number
   ): Promise<TeamComment> {
-    // 1. 팀 게시물 존재 여부 확인 및 커뮤니티 소속 확인
     const teamPost = await this.teamPostRepository.findById(teamPostId);
     if (!teamPost || teamPost.teamId !== communityId) {
       throw new CustomError(
@@ -43,7 +40,6 @@ export class TeamCommentService {
       );
     }
 
-    // 2. 사용자가 해당 팀의 멤버인지 확인
     const teamMember = await this.teamMemberRepository.findByUserIdAndTeamId(
       userId,
       teamPost.teamId
@@ -55,7 +51,6 @@ export class TeamCommentService {
       );
     }
 
-    // 3. 부모 댓글이 지정된 경우, 부모 댓글이 존재하는지 확인 및 해당 게시물에 속하는지 확인
     if (parentId) {
       const parentComment = await this.teamCommentRepository.findById(parentId);
       if (!parentComment || parentComment.teamPostId !== teamPostId) {
@@ -94,7 +89,6 @@ export class TeamCommentService {
       replies: (TeamComment & { user: { nickname: string } | null })[];
     })[]
   > {
-    // 1. 팀 게시물 존재 여부 확인 및 커뮤니티 소속 확인
     const teamPost = await this.teamPostRepository.findById(teamPostId);
     if (!teamPost || teamPost.teamId !== communityId) {
       throw new CustomError(
@@ -103,7 +97,6 @@ export class TeamCommentService {
       );
     }
 
-    // 2. 요청하는 사용자가 해당 팀의 멤버인지 확인
     const teamMember = await this.teamMemberRepository.findByUserIdAndTeamId(
       requestingUserId,
       teamPost.teamId
@@ -115,7 +108,6 @@ export class TeamCommentService {
       );
     }
 
-    // 레포지토리에서 닉네임과 대댓글을 포함하여 가져오므로, 반환 타입 업데이트
     const comments = await this.teamCommentRepository.findByTeamPostId(
       teamPostId
     );
@@ -137,7 +129,6 @@ export class TeamCommentService {
     userId: number,
     content: string
   ): Promise<TeamComment> {
-    // 1. 댓글 존재 여부 확인
     const existingComment = await this.teamCommentRepository.findById(
       teamCommentId
     );
@@ -146,11 +137,9 @@ export class TeamCommentService {
       throw new CustomError(404, "Comment not found.");
     }
 
-    // 2. 댓글이 속한 게시물 확인 및 커뮤니티 소속 확인
     const teamPost = await this.teamPostRepository.findById(
       existingComment.teamPostId
     );
-    // teamPost가 null이거나 teamId(communityId)가 일치하지 않으면 에러
     if (!teamPost || teamPost.teamId !== communityId) {
       throw new CustomError(
         404,
@@ -158,7 +147,6 @@ export class TeamCommentService {
       );
     }
 
-    // 3. 수정 권한 확인: 요청하는 userId가 댓글 작성자이거나 팀장인지 확인
     const teamMember = await this.teamMemberRepository.findByUserIdAndTeamId(
       userId,
       teamPost.teamId
@@ -196,7 +184,6 @@ export class TeamCommentService {
     teamCommentId: number,
     userId: number
   ): Promise<number> {
-    // 1. 댓글 존재 여부 확인
     const existingComment = await this.teamCommentRepository.findById(
       teamCommentId
     );
@@ -205,8 +192,6 @@ export class TeamCommentService {
       throw new CustomError(404, "Comment not found.");
     }
 
-    // 2. 댓글이 속한 팀 게시물 존재 여부 및 커뮤니티/게시물 소속 확인
-    // 컨트롤러에서 받은 teamPostId와 댓글의 teamPostId가 일치하는지 확인
     if (existingComment.teamPostId !== teamPostId) {
       throw new CustomError(
         400,
@@ -224,7 +209,6 @@ export class TeamCommentService {
       );
     }
 
-    // 3. 삭제 권한 확인: 요청하는 userId가 댓글 작성자이거나 팀장인지 확인
     const teamMember = await this.teamMemberRepository.findByUserIdAndTeamId(
       userId,
       teamPost.teamId
@@ -240,7 +224,6 @@ export class TeamCommentService {
       );
     }
 
-    // 4. 레포지토리의 delete 메서드가 삭제된 레코드 수를 반환하도록 변경되었으므로, 그 값을 그대로 반환합니다.
     const deletedCount = await this.teamCommentRepository.delete(teamCommentId);
 
     if (deletedCount === 0) {

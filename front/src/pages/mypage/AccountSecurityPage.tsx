@@ -1,48 +1,44 @@
 // src/pages/mypage/AccountSecurityPage.tsx
+
 import { useState } from "react";
-import MyPageHeader from "../../components/mypage/MyPageHeader"; // 대소문자 수정 및 확장자 추가
+import { useAuth } from "../../hooks/useAuth";
+import { useToast } from "../../hooks/useToast";
+import MyPageHeader from "../../components/mypage/MyPageHeader";
 import Button from "../../components/common/Button";
-import { useAuth } from "../../hooks/useAuth"; // useAuth 훅 임포트
 
 const AccountSecurityPage: React.FC = () => {
-  const { currentUserProfile, changePassword, loading } = useAuth(); // useAuth 훅에서 changePassword와 loading 가져오기
+  const { currentUserProfile, changePassword, loading } = useAuth();
+  const { showToast } = useToast(); // useToast 훅 사용
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleChangePassword = async () => {
-    // async 함수로 변경
-    // 프론트엔드 유효성 검사 (기존 로직 유지)
     if (!currentPassword || !newPassword || !confirmPassword) {
-      alert("모든 비밀번호 입력란을 채워주세요.");
+      showToast("모든 비밀번호 입력란을 채워주세요.", "error");
       return;
     }
     if (newPassword.length < 8) {
-      // API 명세서에 맞춰 최소 8자로 변경 (validation-result-handler)
-      alert("새 비밀번호는 최소 8자 이상이어야 합니다.");
+      showToast("새 비밀번호는 최소 8자 이상이어야 합니다.", "error");
       return;
     }
     if (newPassword !== confirmPassword) {
-      alert("새 비밀번호가 일치하지 않습니다.");
+      showToast("새 비밀번호가 일치하지 않습니다.", "error");
       return;
     }
 
-    // useAuth 훅의 changePassword 함수 호출
     const success = await changePassword({
       currentPassword,
       newPassword,
-      confirmNewPassword: confirmPassword, // ✨ confirmPassword 변수를 confirmNewPassword 속성으로 전달하도록 수정 ✨
+      confirmNewPassword: confirmPassword,
     });
 
     if (success) {
-      // 성공 시 입력 필드 초기화
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      // 성공 메시지는 useAuth 훅에서 이미 alert로 처리합니다.
     }
-    // 실패 메시지도 useAuth 훅에서 alert로 처리합니다.
   };
 
   return (

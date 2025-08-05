@@ -1,5 +1,3 @@
-// src/controllers/team-comments.controller.ts
-
 import { Request, Response, NextFunction } from "express";
 import { TeamCommentService } from "../services/team-comments.service";
 import { CustomError } from "../middleware/error-handing-middleware";

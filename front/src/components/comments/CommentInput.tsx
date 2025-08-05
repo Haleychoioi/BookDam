@@ -1,62 +1,117 @@
 // src/components/comments/CommentInput.tsx
 
-import { useState, forwardRef, useImperativeHandle, useRef } from "react";
-import Button from "../common/Button";
+import { useState, useRef, forwardRef, useImperativeHandle } from "react";
+
+export interface CommentInputRef {
+  focus: () => void;
+  getValue: () => string;
+  clear: () => void;
+}
 
 interface CommentInputProps {
-  onAddComment: (content: string) => void;
+  onAddComment: (content: string) => Promise<void>;
   placeholder?: string;
   onCancel?: () => void;
 }
 
-const CommentInput = forwardRef<HTMLTextAreaElement, CommentInputProps>(
-  ({ onAddComment, placeholder = "댓글을 작성해보세요", onCancel }, ref) => {
-    const [commentContent, setCommentContent] = useState("");
-    const innerRef = useRef<HTMLTextAreaElement>(null);
+const CommentInput = forwardRef<CommentInputRef, CommentInputProps>(
+  ({ onAddComment, placeholder = "댓글을 작성하세요...", onCancel }, ref) => {
+    const [comment, setComment] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    useImperativeHandle(ref, () => innerRef.current!);
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        textareaRef.current?.focus();
+      },
+      getValue: () => comment,
+      clear: () => setComment(""),
+    }));
 
-    const handleSubmit = () => {
-      if (commentContent.trim()) {
-        onAddComment(commentContent);
-        setCommentContent("");
-        innerRef.current?.blur();
+    const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setComment(event.target.value);
+    };
+
+    const handleSubmit = async () => {
+      if (!comment.trim()) {
+        alert("댓글 내용을 입력해주세요.");
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+        }
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        await onAddComment(comment);
+        setComment("");
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+          textareaRef.current.blur();
+        }
+      } catch (error) {
+        console.error("댓글 제출 실패:", error);
+        alert("댓글 제출 중 오류가 발생했습니다.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Escape") {
-        setCommentContent(""); // 입력 내용 지우기
-        innerRef.current?.blur(); // 포커스 해제
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        handleSubmit();
+      } else if (event.key === "Escape") {
+        setComment("");
+        textareaRef.current?.blur();
         if (onCancel) {
-          onCancel(); // 부모 컴포넌트의 취소 함수 호출
+          onCancel();
         }
       }
     };
 
+    const handleTextareaResize = () => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      }
+    };
+
     return (
-      <div className="mb-6 flex flex-col sm:flex-row items-end sm:items-stretch">
+      <div className="mb-4">
         <textarea
-          ref={innerRef}
-          className="flex-grow p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-main focus:border-transparent mr-0 sm:mr-2 mb-2 sm:mb-0"
-          rows={3}
+          ref={textareaRef}
           placeholder={placeholder}
-          value={commentContent}
-          onChange={(e) => setCommentContent(e.target.value)}
+          value={comment}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
-        ></textarea>
-        <Button
-          onClick={handleSubmit}
-          bgColor="bg-main"
-          textColor="text-white"
-          hoverBgColor="hover:bg-apply"
-          className="px-6 py-3 rounded-md w-full sm:w-auto"
-        >
-          작성
-        </Button>
+          onInput={handleTextareaResize}
+          className="w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-main focus:border-transparent resize-none"
+          rows={3}
+        />
+        <div className="flex justify-end mt-2 space-x-2">
+          {onCancel && (
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors focus:outline-none"
+              disabled={isLoading}
+            >
+              취소
+            </button>
+          )}
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 bg-main text-white rounded-md hover:bg-main-dark transition-colors focus:outline-none"
+            disabled={isLoading}
+          >
+            {isLoading ? "등록 중..." : "등록"}
+          </button>
+        </div>
       </div>
     );
   }
 );
 
+CommentInput.displayName = "CommentInput";
 export default CommentInput;

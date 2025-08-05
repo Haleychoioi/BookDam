@@ -1,41 +1,46 @@
 // src/pages/mypage/MyLibraryPage.tsx
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
+import { useToast } from "../../hooks/useToast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../hooks/useAuth";
 import MyPageHeader from "../../components/mypage/MyPageHeader";
 import BookGridDisplay from "../../components/bookResults/BookGridDisplay";
 import Pagination from "../../components/common/Pagination";
-import { type MyLibraryBook } from "../../types";
-// API 함수 임포트
 import { fetchMyLibrary, deleteBookFromMyLibrary } from "../../api/mypage";
 
-// 'myLibrary.service.ts'와 'myLibrary.repository.ts'에 정의된 상태값 사용
+import type { MyLibraryResponseData } from "../../api/mypage";
+import { type MyLibraryBook } from "../../types";
+
 type ReadingStatus = "WANT_TO_READ" | "READING" | "COMPLETED";
 
 const MyLibraryPage: React.FC = () => {
-  const [books, setBooks] = useState<MyLibraryBook[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ReadingStatus>("READING"); // 기본 탭 변경
+  const [activeTab, setActiveTab] = useState<ReadingStatus>("READING");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 6;
 
-  const loadMyLibraryBooks = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const { currentUserProfile } = useAuth();
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
+
+  const {
+    data: myLibraryData,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<MyLibraryBook[], Error>({
+    queryKey: ["myLibrary", activeTab, currentPage, itemsPerPage],
+    queryFn: async () => {
       const response = await fetchMyLibrary(
         currentPage,
         itemsPerPage,
         activeTab
       );
-
-      const transformedBooks: MyLibraryBook[] = response.data.map((item) => ({
+      return response.data.map((item) => ({
         libraryId: item.libraryId,
         status: item.status.toLowerCase() as MyLibraryBook["status"],
         myRating: item.myRating,
         updatedAt: item.updatedAt,
-        // ✨ 여기서 `book` 객체를 중첩된 형태로 정확히 매핑합니다. ✨
         book: {
           isbn13: item.book.isbn13,
           title: item.book.title,
@@ -47,56 +52,75 @@ const MyLibraryPage: React.FC = () => {
         user: {
           nickname: item.user.nickname,
         },
-        // 이전에 여기에 있던 최상위 속성(isbn13, coverImage 등)들은 제거합니다.
-        // 이 속성들은 이제 `book` 객체 내부에 존재합니다.
-        // publicationDate, description, summary, averageRating 등은 MyLibraryBook 타입에 정의되어 있지 않거나
-        // 사용하지 않는 필드이므로, 제거하거나 필요에 따라 추가합니다.
       }));
-      setBooks(transformedBooks);
-      setTotalPages(response.pagination.totalPages);
-    } catch (err) {
-      console.error("내 서재 불러오기 실패:", err);
-      setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, itemsPerPage, activeTab]);
+    },
+    enabled: !!currentUserProfile,
+    staleTime: 1000 * 60,
+  });
 
-  useEffect(() => {
-    loadMyLibraryBooks();
-  }, [loadMyLibraryBooks]);
+  const totalPages = useMemo(() => {
+    if (!myLibraryData) return 1;
 
-  const handleTabChange = (tab: ReadingStatus) => {
+    const queryData = queryClient.getQueryData<MyLibraryResponseData>([
+      "myLibrary",
+      activeTab,
+      currentPage,
+      itemsPerPage,
+    ]);
+    return queryData?.pagination?.totalPages || 1;
+  }, [myLibraryData, activeTab, currentPage, itemsPerPage, queryClient]);
+
+  const handleTabChange = useCallback((tab: ReadingStatus) => {
     setActiveTab(tab);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
     window.scrollTo(0, 0);
-  };
+  }, []);
+
+  const deleteBookMutation = useMutation<void, Error, string>({
+    mutationFn: (isbn13: string) => deleteBookFromMyLibrary(isbn13),
+    onSuccess: (_, variables) => {
+      showToast(`'${variables}'이(가) 내 서재에서 삭제되었습니다.`, "success");
+      queryClient.invalidateQueries({ queryKey: ["myLibrary"] });
+    },
+    onError: (error) => {
+      console.error("내 서재 도서 삭제 실패:", error);
+      showToast(
+        "내 서재 도서 삭제 중 오류가 발생했습니다. 다시 시도해주세요.",
+        "error"
+      );
+    },
+  });
 
   const handleDeleteBook = useCallback(
-    async (isbn13: string, bookTitle: string) => {
+    (isbn13: string, bookTitle: string) => {
       if (confirm(`'${bookTitle}'을(를) 내 서재에서 삭제하시겠습니까?`)) {
-        try {
-          await deleteBookFromMyLibrary(isbn13);
-          loadMyLibraryBooks();
-        } catch (error) {
-          console.error("내 서재 도서 삭제 실패:", error);
-          alert("내 서재 도서 삭제 중 오류가 발생했습니다. 다시 시도해주세요.");
-        }
+        deleteBookMutation.mutate(isbn13);
       }
     },
-    [loadMyLibraryBooks]
+    [deleteBookMutation]
   );
 
-  if (loading) {
+  if (isLoading) {
     return <div className="text-center py-12">내 서재를 불러오는 중...</div>;
   }
-  if (error) {
-    return <div className="text-center py-12 text-red-500">오류: {error}</div>;
+  if (isError) {
+    return (
+      <div className="text-center py-12 text-red-500">
+        오류: {error?.message}
+      </div>
+    );
   }
+  if (!currentUserProfile) {
+    return (
+      <div className="text-center py-12 text-red-500">로그인이 필요합니다.</div>
+    );
+  }
+
+  const booksToDisplay = myLibraryData || [];
 
   return (
     <div className="p-6">
@@ -139,9 +163,9 @@ const MyLibraryPage: React.FC = () => {
       </div>
 
       <div className="container mx-auto px-0">
-        {books.length > 0 ? (
+        {booksToDisplay.length > 0 ? (
           <BookGridDisplay
-            books={books}
+            books={booksToDisplay}
             className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3"
             showDeleteButton={true}
             onDeleteFromMyLibrary={handleDeleteBook}

@@ -1,6 +1,5 @@
 // src/components/posts/BoardTemplate.tsx
 
-import React from "react";
 import PostList from "./PostList";
 import Button from "../common/Button";
 import Pagination from "../common/Pagination";
@@ -35,17 +34,12 @@ const BoardTemplate: React.FC<BoardTemplateProps> = ({
           <h1 className="text-3xl font-bold text-gray-800">{boardTitle}</h1>
           <Button
             onClick={onWritePostClick}
-            // 기존 Button 컴포넌트의 기본 스타일을 사용하도록 bgColor, textColor, hoverBgColor 제거
-            // bgColor="bg-black"
-            // textColor="text-white"
-            // hoverBgColor="hover:bg-gray-800"
             className="px-4 py-2 rounded text-base"
           >
             게시물 작성
           </Button>
         </div>
 
-        {/* 게시글 목록 */}
         <div className="mb-8">
           {isLoading ? (
             <div className="text-center text-gray-600">

@@ -1,45 +1,44 @@
-// src/zip/controllers/user.controller.ts
-
 import { Request, Response, NextFunction } from "express";
-// ✨ userService 대신 UserService 클래스 자체를 임포트 ✨
-import UserService from "../services/user.service"; // ✨ 수정: default 임포트 이름 변경 ✨
+import UserService from "../services/user.service";
 import { SignupRequest, LoginRequest } from "../types/user.type";
 import { CustomError } from "../middleware/error-handing-middleware";
 
 class UserController {
-  private userService: UserService; // ✨ UserService 인스턴스 멤버 변수로 선언 ✨
+  private userService: UserService;
 
   constructor() {
-    this.userService = new UserService(); // ✨ 생성자에서 인스턴스 초기화 ✨
+    this.userService = new UserService(); 
   }
 
   // 회원가입
   signup = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const signupData: SignupRequest = req.body;
-      const result = await this.userService.signUp(signupData); // ✨ this.userService 사용 ✨
+      const result = await this.userService.signUp(signupData);
       res.status(201).json(result);
     } catch (error) {
       next(error);
     }
   };
 
+
   // 로그인
   login = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const loginData: LoginRequest = req.body;
-      const result = await this.userService.login(loginData); // ✨ this.userService 사용 ✨
+      const result = await this.userService.login(loginData);
       res.status(200).json(result);
     } catch (error) {
       next(error);
     }
   };
 
+
   // 내 정보 조회
   getProfile = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user!;
-      const userProfile = await this.userService.getMyProfile(userId); // ✨ this.userService 사용 ✨
+      const userProfile = await this.userService.getMyProfile(userId);
 
       res.status(200).json({
         user: userProfile,
@@ -50,6 +49,7 @@ class UserController {
     }
   };
 
+
   // 프로필 업데이트 (닉네임, 한줄소개, 이미지)
   updateProfile = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -58,7 +58,6 @@ class UserController {
       const file = req.file;
 
       const updatedUser = await this.userService.updateProfile(
-        // ✨ this.userService 사용 ✨
         userId,
         updateData,
         file
@@ -73,6 +72,7 @@ class UserController {
     }
   };
 
+
   // 비밀번호 변경
   changePassword = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -80,7 +80,6 @@ class UserController {
       const { currentPassword, newPassword, confirmNewPassword } = req.body;
 
       const result = await this.userService.changePassword(userId, {
-        // ✨ this.userService 사용 ✨
         currentPassword,
         newPassword,
         confirmNewPassword,
@@ -95,12 +94,13 @@ class UserController {
     }
   };
 
+
   // 비밀번호 찾기 - 임시 비밀번호 발급
   findPassword = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email, name } = req.body;
 
-      const result = await this.userService.findPassword(email, name); // ✨ this.userService 사용 ✨
+      const result = await this.userService.findPassword(email, name);
 
       res.status(200).json({
         success: true,
@@ -111,12 +111,13 @@ class UserController {
     }
   };
 
+
   // 유저 삭제
   deleteUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user!;
 
-      await this.userService.deleteUser(userId); // ✨ this.userService 사용 ✨
+      await this.userService.deleteUser(userId);
 
       res.status(200).json({
         message: "계정이 성공적으로 삭제되었습니다.",
@@ -126,10 +127,8 @@ class UserController {
     }
   };
 
-  /**
-   * 특정 사용자의 커뮤니티 참여 이력 조회
-   * GET /mypage/users/:userId/community-history
-   */
+
+  // 특정 사용자의 커뮤니티 참여 이력 조회
   getCommunityHistory = async (
     req: Request,
     res: Response,
@@ -144,10 +143,10 @@ class UserController {
 
       const userId = Number(rawUserId);
       if (isNaN(userId)) {
-        throw new CustomError(400, "유효한 사용자 ID가 아닙니다."); // ✨ new CustomError로 수정 ✨
+        throw new CustomError(400, "유효한 사용자 ID가 아닙니다.");
       }
 
-      const history = await this.userService.getCommunityHistory(userId); // ✨ this.userService 사용 ✨
+      const history = await this.userService.getCommunityHistory(userId);
 
       res.status(200).json({
         status: "success",

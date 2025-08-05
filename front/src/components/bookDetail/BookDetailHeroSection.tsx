@@ -1,9 +1,14 @@
-// src/components/bookDetail/BookDetailHeroSection.tsx
+// src/pages/books/BookDetailHeroSection.tsx
+
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useAuth } from "../../hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "../../hooks/useToast";
+import axios from "axios";
 import Button from "../common/Button";
 import HeartButton from "../common/HeartButton";
 import { FaCaretDown, FaQuestionCircle } from "react-icons/fa";
-import { useQueryClient } from "@tanstack/react-query";
+
 import type { BookDetail } from "../../types";
 import { AuthRequiredError } from "../../types";
 import {
@@ -11,8 +16,8 @@ import {
   removeWish,
   upsertBookToMyLibrary,
   fetchMyLibrary,
+  addRatingToMyLibrary
 } from "../../api/mypage";
-import axios from "axios";
 
 interface BookDetailHeroSectionProps {
   book: BookDetail;
@@ -25,12 +30,14 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const [isAddToListDropdownOpen, setIsAddToListDropdownOpen] = useState(false);
-  const [selectedRating, setSelectedRating] = useState(0); // 이 상태가 평점을 관리합니다.
+  const [selectedRating, setSelectedRating] = useState(0);
   const [isHoveringQuestion, setIsHoveringQuestion] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const questionRef = useRef<HTMLDivElement>(null);
 
-  const [isBookWishlisted, setIsBookWishlisted] = useState(book.isWished); // isWished 속성 사용
+  const [isBookWishlisted, setIsBookWishlisted] = useState(book.isWished);
+  const { isLoggedIn } = useAuth();
+  const { showToast } = useToast();
 
   useEffect(() => {
     const loadBookMyLibraryStatus = async () => {
@@ -62,25 +69,25 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
   };
 
   const handleAddToList = useCallback(
-    async (status: "WANT_TO_READ" | "READING" | "COMPLETED") => {
-      if (status === "COMPLETED" && selectedRating === 0) {
-        alert("별점을 선택해야 '읽었음'으로 추가할 수 있습니다.");
+    async (status: "WANT_TO_READ" | "READING") => {
+      if (!isLoggedIn) {
+        showToast("내 서재에 추가하려면 로그인이 필요합니다.", "warn");
         return;
       }
+
       try {
         await upsertBookToMyLibrary(
           book.isbn13,
           status,
-          selectedRating || null
+          null
         );
 
         setIsAddToListDropdownOpen(false);
         queryClient.invalidateQueries({ queryKey: ["myLibrary"] });
-        alert("내 서재에 성공적으로 추가되었습니다.");
+        showToast("내 서재에 성공적으로 추가되었습니다.", "success");
       } catch (error: unknown) {
         if (error instanceof AuthRequiredError) {
-          alert(error.message);
-          setSelectedRating(0);
+          showToast(error.message, "error");
         } else {
           console.error("내 서재 추가/수정 실패:", error);
           let errorMessage = "내 서재 추가/수정 중 오류가 발생했습니다.";
@@ -89,19 +96,46 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
           } else if (error instanceof Error) {
             errorMessage = error.message;
           }
-          alert(errorMessage);
+          showToast(errorMessage, "error");
         }
       }
     },
-    [book.isbn13, selectedRating, queryClient]
+    [book.isbn13, queryClient, isLoggedIn, showToast]
   );
 
-  const handleStarClick = (rating: number) => {
-    setSelectedRating(rating);
+  const handleStarClick = async (rating: number) => {
+    if (!isLoggedIn) {
+      showToast("별점을 주려면 로그인이 필요합니다.", "warn");
+      return;
+    }
+
+    try {
+      setSelectedRating(rating);
+      
+      await addRatingToMyLibrary(book.isbn13, rating);
+
+      queryClient.invalidateQueries({ queryKey: ["myLibrary"] });
+      showToast(`내 서재에 성공적으로 추가되었습니다. `, "success");
+    } catch (error: unknown) {
+      console.error("별점 추가 실패:", error);
+      setSelectedRating(0); // 실패 시 별점 초기화
+      
+      let errorMessage = "별점 추가 중 오류가 발생했습니다.";
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.message || error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      showToast(errorMessage, "error");
+    }
   };
 
   const handleWishlistClick = useCallback(
     async (isWishlisted: boolean) => {
+      if (!isLoggedIn) {
+        showToast("도서를 찜하려면 로그인이 필요합니다.", "warn");
+        return;
+      }
       try {
         if (isWishlisted) {
           await addWish(book.isbn13);
@@ -110,9 +144,18 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
         }
         setIsBookWishlisted(isWishlisted);
         queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+        queryClient.invalidateQueries({
+          queryKey: ["bookDetailPageData", book.isbn13, isLoggedIn],
+        });
+        showToast(
+          isWishlisted
+            ? "도서가 찜 목록에 추가되었습니다."
+            : "도서가 찜 목록에서 제거되었습니다.",
+          "success"
+        );
       } catch (error: unknown) {
         if (error instanceof AuthRequiredError) {
-          alert(error.message);
+          showToast(error.message, "error");
         } else {
           console.error("찜 목록 추가/삭제 실패:", error);
           let errorMessage = "찜 목록 처리 중 오류가 발생했습니다.";
@@ -121,12 +164,12 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
           } else if (error instanceof Error) {
             errorMessage = error.message;
           }
-          alert(errorMessage);
+          showToast(errorMessage, "error");
           setIsBookWishlisted(!isWishlisted);
         }
       }
     },
-    [book.isbn13, queryClient]
+    [book.isbn13, queryClient, isLoggedIn, showToast]
   );
 
   useEffect(() => {
@@ -150,7 +193,7 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
         <div className="flex-shrink-0 mr-10">
           <img
             src={
-              book.cover || // 'book.coverImage'를 'book.cover'로 변경합니다.
+              book.cover ||
               "https://via.placeholder.com/200x450/F0F0F0/B0B0B0?text=Book+Cover"
             }
             alt={book.title}
@@ -163,12 +206,11 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
             {book.title}
           </h1>
           <span className="inline-block bg-category text-categoryText text-sm px-3 py-1 rounded-full mb-6">
-            {book.category} {/* 'book.genre'를 'book.category'로 변경합니다. */}
+            {book.category}
           </span>
 
           <p className="text-gray-700 text-sm mb-10 leading-relaxed">
-            {book.description}{" "}
-            {/* 'book.summary'를 'book.description'으로 변경합니다. */}
+            {book.description}
           </p>
 
           <div className="flex items-center justify-center mb-8">
@@ -228,7 +270,8 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
                     className="block w-full text-left px-4 py-2 mb-1"
                     bgColor="bg-transparent"
                     textColor="text-gray-700"
-                    hoverBgColor="hover:bg-gray-100"
+                    hoverBgColor="hover:bg-transparent"
+                    hoverTextColor="hover:text-main"
                   >
                     읽고싶어요
                   </Button>
@@ -237,23 +280,10 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
                     className="block w-full text-left px-4 py-2 mb-1"
                     bgColor="bg-transparent"
                     textColor="text-gray-700"
-                    hoverBgColor="hover:bg-gray-100"
+                    hoverBgColor="hover:bg-transparent"
+                    hoverTextColor="hover:text-main"
                   >
                     읽는 중
-                  </Button>
-                  <Button
-                    onClick={() => handleAddToList("COMPLETED")}
-                    className={`block w-full text-left px-4 py-2 ${
-                      selectedRating === 0
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
-                    }`}
-                    bgColor="bg-transparent"
-                    textColor="text-gray-700"
-                    hoverBgColor="hover:bg-gray-100"
-                    disabled={selectedRating === 0}
-                  >
-                    읽었음
                   </Button>
                 </div>
               )}

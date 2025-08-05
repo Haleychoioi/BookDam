@@ -1,5 +1,3 @@
-// src/controllers/team-posts.controller.ts
-
 import { Request, Response, NextFunction } from "express";
 import { TeamPostService } from "../services/team-posts.service";
 import { TeamPostType } from "@prisma/client";
@@ -94,7 +92,6 @@ export class TeamPostController {
 
       const { title, content, type } = req.body;
 
-      // ✨ 수정: 필수 필드 유효성 검사 (trim() 추가하여 빈 문자열도 막습니다.) ✨
       if (
         rawCommunityId === undefined ||
         !title ||
@@ -307,7 +304,7 @@ export class TeamPostController {
       }
 
       const communityId = Number(rawCommunityId);
-      const teamPostId = Number(rawTeamPostId); // 이 줄
+      const teamPostId = Number(rawTeamPostId);
       if (isNaN(communityId) || isNaN(teamPostId)) {
         throw new CustomError(
           400,

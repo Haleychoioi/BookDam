@@ -1,8 +1,7 @@
 // src/api/teamPosts.ts
 
 import apiClient from "./apiClient";
-// Post 대신 TeamPost 타입을 임포트하도록 변경
-import type { TeamPost } from "../types"; // Post 타입 임포트 -> TeamPost로 변경
+import type { TeamPost } from "../types";
 
 // =========================================================
 // 팀 게시물 관련 API
@@ -22,15 +21,12 @@ export const fetchTeamPosts = async (
   page: number = 1,
   pageSize: number = 10,
   sort: string = "latest"
-  // Promise 반환 타입을 { posts: Post[]; totalResults: number } -> { posts: TeamPost[]; totalResults: number }로 변경
 ): Promise<{ posts: TeamPost[]; totalResults: number }> => {
   try {
     const response = await apiClient.get<{
       message: string;
-      // data: Post[]; -> data: TeamPost[]; 로 변경
       data: TeamPost[];
     }>(
-      // ✨ 수정: URL에 '/mypage' 경로를 추가합니다. ✨
       `/mypage/communities/${communityId}/posts?page=${page}&size=${pageSize}&sort=${sort}`
     );
 
@@ -53,16 +49,15 @@ export const fetchTeamPosts = async (
  */
 export const createTeamPost = async (
   communityId: string,
-  postData: { title: string; content: string; type?: string } // type은 백엔드 Enum TeamPostType과 맞춤
+  postData: { title: string; content: string; type?: string }
 ): Promise<string> => {
   try {
-    // ✨ 수정: URL에 '/mypage' 경로를 추가합니다. ✨
     const response = await apiClient.post<{
       status: string;
       message: string;
-      postId: number; // 백엔드는 postId를 number로 반환
+      postId: number;
     }>(`/mypage/communities/${communityId}/posts/write`, postData);
-    return response.data.postId.toString(); // ID를 string으로 변환
+    return response.data.postId.toString();
   } catch (error) {
     console.error("Failed to create team post:", error);
     throw error;
@@ -78,12 +73,11 @@ export const createTeamPost = async (
  */
 export const fetchTeamPostById = async (
   communityId: string,
-  teamPostId: number // ✨ 수정: string -> number ✨
+  teamPostId: number
 ): Promise<TeamPost> => {
   try {
-    // ✨ 수정: URL에 '/mypage' 경로를 추가합니다. ✨
     const response = await apiClient.get<{ message: string; data: TeamPost }>(
-      `/mypage/communities/${communityId}/posts/${teamPostId}` // URL에 number 직접 사용
+      `/mypage/communities/${communityId}/posts/${teamPostId}`
     );
     return response.data.data;
   } catch (error) {
@@ -101,13 +95,12 @@ export const fetchTeamPostById = async (
  */
 export const updateTeamPost = async (
   communityId: string,
-  teamPostId: number, // ✨ 수정: string -> number ✨
+  teamPostId: number,
   updateData: { title?: string; content?: string }
 ): Promise<void> => {
   try {
-    // ✨ 수정: URL에 '/mypage' 경로를 추가합니다. ✨
     await apiClient.put(
-      `/mypage/communities/${communityId}/posts/${teamPostId}`, // URL에 number 직접 사용
+      `/mypage/communities/${communityId}/posts/${teamPostId}`,
       updateData
     );
   } catch (error) {
@@ -124,13 +117,12 @@ export const updateTeamPost = async (
  */
 export const deleteTeamPost = async (
   communityId: string,
-  teamPostId: number // ✨ 수정: string -> number ✨
+  teamPostId: number
 ): Promise<void> => {
   try {
-    // ✨ 수정: URL에 '/mypage' 경로를 추가합니다. ✨
     await apiClient.delete(
       `/mypage/communities/${communityId}/posts/${teamPostId}`
-    ); // URL에 number 직접 사용
+    );
   } catch (error) {
     console.error("Failed to delete team post:", error);
     throw error;

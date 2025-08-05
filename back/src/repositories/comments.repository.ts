@@ -1,10 +1,6 @@
-// src/repositories/comments.repository.ts
-
 import prisma from "../utils/prisma";
 import { Comment, Prisma, PostType } from "@prisma/client";
 
-// Prisma의 findUnique/findMany 타입
-// Comment 모델에 user (nickname만 포함), replies (Comment와 user 포함) 관계가 포함된 형태
 type CommentWithRelations = Comment & {
   user: { nickname: string } | null;
   replies: (Comment & { user: { nickname: string } | null })[];
@@ -44,7 +40,6 @@ export class CommentRepository {
           },
         },
         user: {
-          // ✨ 이 부분에 user include 추가 ✨
           select: { nickname: true, profileImage: true },
         },
       },
@@ -79,13 +74,13 @@ export class CommentRepository {
       take: pageSize,
       include: {
         user: {
-          select: { nickname: true, profileImage: true }, // profileImage 추가됨
+          select: { nickname: true, profileImage: true },
         },
         replies: {
           // 대댓글 포함 (1단계만)
           orderBy: { createdAt: "asc" },
           include: {
-            user: { select: { nickname: true, profileImage: true } }, // 대댓글에도 profileImage 추가됨
+            user: { select: { nickname: true, profileImage: true } },
           },
         },
       },
@@ -177,9 +172,9 @@ export class CommentRepository {
     const comment = await prisma.comment.findUnique({
       where: { commentId: commentId },
       include: {
-        user: { select: { nickname: true, profileImage: true } }, // profileImage 추가됨
+        user: { select: { nickname: true, profileImage: true } },
         replies: {
-          include: { user: { select: { nickname: true, profileImage: true } } }, // 대댓글에도 profileImage 추가됨
+          include: { user: { select: { nickname: true, profileImage: true } } },
         },
       },
     });

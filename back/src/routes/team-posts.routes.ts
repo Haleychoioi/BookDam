@@ -1,5 +1,3 @@
-// src/routes/team-posts.routes.ts
-
 import { Router } from "express";
 import { TeamPostController } from "../controllers/team-posts.controller";
 import authenticate from "../middleware/authenticate-middleware";

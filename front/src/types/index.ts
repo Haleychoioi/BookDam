@@ -1,22 +1,19 @@
-// src/types/index.ts
-
 // =========================================================
 // 1. 핵심 엔티티 타입 (Core Entities)
-// 백엔드 Prisma 모델 및 API 응답에 최대한 맞춰 재정의
 // =========================================================
 
 export interface Community {
-  id: string; // 커뮤니티 ID (백엔드의 teamId를 string으로 매핑)
-  title: string; // 커뮤니티 제목 (백엔드의 postTitle)
-  description: string; // 커뮤니티 설명 (백엔드의 postContent)
-  hostName: string; // 커뮤니티 호스트 닉네임 (백엔드의 postAuthor)
-  hostId: number; // ✨ 새로 추가: 커뮤니티 호스트(팀장)의 userId ✨
-  currentMembers: number; // 현재 멤버 수
-  maxMembers: number; // 최대 멤버 수
-  role: "host" | "member"; // 현재 사용자의 커뮤니티 내 역할 (로그인된 사용자 기준)
-  status: "모집중" | "모집종료"; // 프론트엔드에서 표시할 모집 상태
-  createdAt: string; // ✨ 추가: 생성일시 ✨
-  hasApplied?: boolean; // ✨ 이 줄을 추가합니다: hasApplied 필드 추가 ✨
+  id: string;
+  title: string;
+  description: string;
+  hostName: string;
+  hostId: number;
+  currentMembers: number;
+  maxMembers: number;
+  role: "host" | "member";
+  status: "모집중" | "모집종료" | "활동중";
+  createdAt: string;
+  hasApplied?: boolean;
 }
 
 export interface UserProfile {
@@ -27,7 +24,7 @@ export interface UserProfile {
   phone: string;
   profileImage: string | null;
   introduction: string | null;
-  role: string; // UserRole enum 대신 string으로 일반화
+  role: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,7 +42,6 @@ export interface BookEntity {
   toc: string | null;
   story: string | null;
   createdAt: string;
-  // 다음 두 속성을 추가합니다.
   bestRank: number | null;
   seriesInfo: {
     seriesId: number;
@@ -54,7 +50,7 @@ export interface BookEntity {
 }
 
 // 1.3 TeamPostType Enum (팀 게시물 타입)
-enum TeamPostType { // 'export' 키워드 제거
+enum TeamPostType {
   DISCUSSION = "DISCUSSION",
   NOTICE = "NOTICE",
 }
@@ -65,9 +61,9 @@ export interface TeamPost {
   userId: number;
   title: string;
   content: string;
-  type: string; // ✨ TeamPostType 대신 string으로 변경 ✨
+  type: string;
   createdAt: string;
-  updatedAt: string; // 통일된 string 타입
+  updatedAt: string;
   user: {
     nickname: string;
     profileImage?: string | null;
@@ -75,7 +71,7 @@ export interface TeamPost {
   _count?: {
     comments: number;
   };
-  // 이전 단계에서 추가된 teamPost 속성 (이 오류와는 무관하지만 코드 일관성을 위해 유지)
+
   teamPost?: {
     teamPostId: number;
     title: string;
@@ -87,13 +83,13 @@ export interface TeamCommunity {
   teamId: number;
   postId: number;
   isbn13: string;
-  status: string; // CommunityStatus enum (예: 'RECRUITING', 'ACTIVE', 'COMPLETED')
+  status: string;
   postTitle: string;
   postContent: string;
-  postAuthor: string; // User의 nickname
+  postAuthor: string;
   createdAt: string;
-  updatedAt: string; // 통일된 string 타입
-  maxMembers?: number; // Post에서 가져오는 최대 인원수
+  updatedAt: string;
+  maxMembers?: number;
 }
 
 export interface TeamApplication {
@@ -107,8 +103,24 @@ export interface TeamApplication {
 }
 
 export interface CommunityWithMemberInfo extends TeamCommunity {
-  currentMembers: number; // 현재 멤버 수 (필수)
-  maxMembers: number; // 최대 멤버 수 (필수)
+  currentMembers: number;
+  maxMembers: number;
+}
+
+export interface AppliedCommunityPostInfo {
+  postId: number;
+  title: string;
+  userId: number;
+  maxMembers: number;
+  team: {
+    teamId: number;
+    status: string;
+    postTitle: string;
+    postContent: string;
+    postAuthor: string;
+    currentMembers?: number;
+    maxMembers?: number;
+  } | null;
 }
 
 export interface TeamCommunityWithBookTitle extends TeamCommunity {
@@ -116,19 +128,19 @@ export interface TeamCommunityWithBookTitle extends TeamCommunity {
 }
 
 // 1.6 PostType Enum (일반 게시물 타입)
-enum PostType { // 'export' 키워드 제거
+enum PostType {
   GENERAL = "GENERAL",
   RECRUITMENT = "RECRUITMENT",
 }
 
 export interface Post {
-  postId: number; // id -> postId (백엔드와 일치)
+  postId: number;
   userId: number;
   title: string;
   content: string;
-  type: string; // ✨ PostType 대신 string으로 변경 ✨
+  type: string;
   createdAt: string;
-  updatedAt: string; // 통일된 string 타입
+  updatedAt: string;
   user: {
     nickname: string;
     profileImage: string | null;
@@ -144,13 +156,13 @@ export interface Post {
     toc?: string | null;
     story?: string | null;
   } | null;
-  recruitmentStatus?: string; // RecruitmentStatus (string으로 일반화)
-  maxMembers?: number; // 모집글일 경우 최대 인원
+  recruitmentStatus?: string;
+  maxMembers?: number;
 }
 
 export interface Comment {
   commentId: number;
-  postId?: number; // 서비스에서 평탄화하여 추가할 수 있음
+  postId?: number;
   userId: number;
   content: string;
   createdAt: string;
@@ -162,14 +174,13 @@ export interface Comment {
   };
   replies?: (Comment | TeamComment)[];
   depth?: number;
-  postTitle?: string; // ✨ 서비스에서 추가 ✨
-  postType?: string; // ✨ 서비스에서 추가 (GENERAL, RECRUITMENT) ✨
-  // 'post' 중첩 객체는 서비스에서 평탄화되므로 여기에 직접 정의하지 않습니다.
+  postTitle?: string;
+  postType?: string;
 }
 
 export interface TeamComment {
   teamCommentId: number;
-  teamPostId?: number; // 서비스에서 평탄화하여 추가할 수 있음
+  teamPostId?: number;
   userId: number;
   content: string;
   createdAt: string;
@@ -181,40 +192,38 @@ export interface TeamComment {
   };
   replies?: (Comment | TeamComment)[];
   depth?: number;
-  postTitle?: string; // ✨ 서비스에서 추가 (teamPost.title) ✨
-  postType?: string; // ✨ 서비스에서 추가 (항상 'TEAM') ✨
-  communityId?: number; // ✨ 서비스에서 추가 (teamPost.teamId) ✨
-  // 'teamPost' 중첩 객체는 서비스에서 평탄화되므로 여기에 직접 정의하지 않습니다.
+  postTitle?: string;
+  postType?: string;
+  communityId?: number;
 }
 
 export interface JWTPayload {
   userId: number;
   email: string;
-  role: string; // UserRole enum 대신 string으로 일반화
+  role: string;
   iat?: number;
   exp?: number;
 }
 
 // =========================================================
-// 2. 알라딘 API 관련 Enum (as const 제거, 일반 enum으로 선언)
-// 'export' 키워드 제거
+// 2. 알라딘 API 관련 Enum
 // =========================================================
 
-enum AladinQueryType { // 'export' 키워드 제거
+enum AladinQueryType {
   KEYWORD = "Keyword",
   TITLE = "Title",
   AUTHOR = "Author",
   PUBLISHER = "Publisher",
 }
 
-enum AladinSearchTarget { // 'export' 키워드 제거
+enum AladinSearchTarget {
   BOOK = "Book",
   FOREIGN = "Foreign",
   EBOOK = "eBook",
   ALL = "All",
 }
 
-enum AladinSortType { // 'export' 키워드 제거
+enum AladinSortType {
   ACCURACY = "Accuracy",
   PUBLISH_TIME = "PublishTime",
   TITLE = "Title",
@@ -223,7 +232,7 @@ enum AladinSortType { // 'export' 키워드 제거
   MY_REVIEW_COUNT = "MyReviewCount",
 }
 
-enum AladinListType { // 'export' 키워드 제거
+enum AladinListType {
   NEW_ALL = "ItemNewAll",
   NEW_SPECIAL = "ItemNewSpecial",
   EDITOR_CHOICE = "ItemEditorChoice",
@@ -231,7 +240,7 @@ enum AladinListType { // 'export' 키워드 제거
   BLOG_BEST = "BlogBest",
 }
 
-enum AladinCoverSize { // 'export' 키워드 제거
+enum AladinCoverSize {
   BIG = "Big",
   MID_BIG = "MidBig",
   MID = "Mid",
@@ -240,12 +249,12 @@ enum AladinCoverSize { // 'export' 키워드 제거
   NONE = "None",
 }
 
-enum AladinOutputType { // 'export' 키워드 제거
+enum AladinOutputType {
   XML = "XML",
   JS = "JS",
 }
 
-enum AladinItemIdType { // 'export' 키워드 제거
+enum AladinItemIdType {
   ISBN = "ISBN",
   ISBN13 = "ISBN13",
   ITEM_ID = "ItemId",
@@ -319,19 +328,19 @@ export interface BookSummary {
 
 export interface BookDetail extends BookSummary {
   pageCount: number | null;
-  toc: string[] | null; // 목차
-  fullDescription: string | null; // 상세 설명
-  bestRank: number | null; // 베스트셀러 순위
+  toc: string[] | null;
+  fullDescription: string | null;
+  bestRank: number | null;
   seriesInfo: {
     seriesId: number;
     seriesName: string;
   } | null;
-  isWished: boolean; // 이 줄을 추가합니다. (찜하기 여부)
+  isWished: boolean;
 }
 
 export interface MyLibraryBook {
   libraryId: number;
-  status: string; // ReadingStatus Enum 대신 string으로 일반화
+  status: string;
   myRating: number | null;
   updatedAt: string;
 
@@ -349,9 +358,9 @@ export interface MyLibraryBook {
 }
 
 export interface ApplicantWithStatus {
-  id: string; // 프론트엔드용 ID, applicationId를 string으로 변환하여 사용
-  applicationId: number; // 백엔드 응답 필드
-  userId: number; // 백엔드 응답 필드
+  id: string;
+  applicationId: number;
+  userId: number;
   nickname: string;
   appliedAt: string;
   applicationMessage: string;
@@ -360,14 +369,15 @@ export interface ApplicantWithStatus {
 
 export interface CommunityHistoryEntry {
   communityName: string;
-  role: string; // "host" | "member"
+  role: string;
   startDate: string;
   endDate?: string;
-  status: string; // "활동중" | "활동종료"
+  status: string;
 }
 
 export interface AppliedCommunity extends Community {
-  myApplicationStatus: string; // "pending" | "accepted" | "rejected"
+  myApplicationStatus: string;
+  applicationId: number;
 }
 
 export interface SignupRequest {
@@ -384,8 +394,8 @@ export interface SignupRequest {
 export interface UpdateUserData {
   nickname?: string;
   introduction?: string;
-  profileImage?: string; // 파일 URL 또는 'true' (기본 이미지로 변경)
-  deleteProfileImage?: string; // 'true'일 경우 기본 이미지로 변경
+  profileImage?: string;
+  deleteProfileImage?: string;
 }
 
 export interface LoginRequest {
@@ -457,7 +467,7 @@ export interface LibraryStats {
 
 export interface UpsertMyLibraryRequest {
   isbn13: string;
-  status: string; // ReadingStatus Enum (WANT_TO_READ, READING, COMPLETED)
+  status: string;
   myRating?: number | null;
 }
 
@@ -472,7 +482,6 @@ export class AuthRequiredError extends Error {
   }
 }
 
-// 파일 하단에 모든 enum들을 한 번에 내보냅니다.
 export {
   TeamPostType,
   PostType,

@@ -1,12 +1,9 @@
-// src/zip/services/communities.service.ts
-
 import { CommunityRepository } from "../repositories/communities.repository";
 import { PostRepository } from "../repositories/posts.repository";
 import { TeamMemberRepository } from "../repositories/team-members.repository";
 import userRepository from "../repositories/user.repository";
 import { ApplicationService } from "./applications.service";
-import { BookRepository } from "../repositories/book.repository"; // ✨ BookRepository 임포트 추가 ✨
-
+import { BookRepository } from "../repositories/book.repository";
 import {
   TeamCommunity,
   CommunityStatus,
@@ -14,11 +11,13 @@ import {
   TeamRole,
   RecruitmentStatus,
   ApplicationStatus,
-  TeamApplication, // ✨ TeamApplication 임포트 추가 ✨
+  TeamApplication,
 } from "@prisma/client";
 import { CustomError } from "../middleware/error-handing-middleware";
 
-// CommunityWithMemberInfo 인터페이스를 이 파일 내부에 정의합니다.
+import prisma from "../utils/prisma";
+import { bookService } from "./book.service";
+
 interface CommunityWithMemberInfo extends TeamCommunity {
   currentMembers: number;
   maxMembers: number;
@@ -27,7 +26,6 @@ interface CommunityWithMemberInfo extends TeamCommunity {
   pendingApplicantCount?: number;
 }
 
-// CommunityRepository에서 반환하는 타입과 일치시킵니다.
 type CommunityWithApplicationStatus = TeamCommunity & {
   hasApplied?: boolean;
   recruitmentPost?: {
@@ -36,7 +34,6 @@ type CommunityWithApplicationStatus = TeamCommunity & {
   } | null;
 };
 
-// ✨ 새로 추가: TeamCommunity에 책 제목이 포함된 타입 ✨
 export interface TeamCommunityWithBookTitle extends TeamCommunity {
   bookTitle: string | null;
 }
@@ -47,7 +44,7 @@ export class CommunityService {
   private teamMemberRepository: TeamMemberRepository;
   private userRepository = userRepository;
   private applicationService: ApplicationService;
-  private bookRepository: BookRepository; // ✨ BookRepository 인스턴스 추가 ✨
+  private bookRepository: BookRepository;
 
   constructor() {
     this.communityRepository = new CommunityRepository();
@@ -55,7 +52,7 @@ export class CommunityService {
     this.teamMemberRepository = new TeamMemberRepository();
     this.userRepository = userRepository;
     this.applicationService = new ApplicationService();
-    this.bookRepository = new BookRepository(); // ✨ BookRepository 초기화 ✨
+    this.bookRepository = new BookRepository();
   }
 
   public async getMyRecruitingCommunities(
@@ -74,7 +71,6 @@ export class CommunityService {
   public async getMyParticipatingCommunities(
     userId: number
   ): Promise<CommunityWithMemberInfo[]> {
-    // findActiveByMemberId는 이제 CLOSED/COMPLETED도 포함하도록 아래에서 수정됩니다.
     const communities = await this.communityRepository.findActiveByMemberId(
       userId
     );
@@ -94,16 +90,29 @@ export class CommunityService {
     userId: number,
     teamId: number
   ): Promise<string> {
+    console.log(
+      `[leaveOrDeleteCommunity] User ${userId} attempting action on community ${teamId}`
+    );
     const membership = await this.teamMemberRepository.findByUserIdAndTeamId(
       userId,
       teamId
     );
 
     if (!membership) {
+      console.log(
+        `[leaveOrDeleteCommunity] No membership found for user ${userId} in community ${teamId}. Throwing 404.`
+      );
       throw new CustomError(404, "가입되지 않은 커뮤니티입니다.");
     }
 
+    console.log(
+      `[leaveOrDeleteCommunity] Membership found: Role = ${membership.role}`
+    );
+
     if (membership.role === TeamRole.LEADER) {
+      console.log(
+        `[leaveOrDeleteCommunity] User is LEADER. Calling cancelRecruitment.`
+      );
       const community = await this.communityRepository.findById(teamId);
       if (community) {
         await this.applicationService.cancelRecruitment(
@@ -114,6 +123,9 @@ export class CommunityService {
       await this.communityRepository.delete(teamId);
       return "커뮤니티가 성공적으로 삭제되었습니다.";
     } else {
+      console.log(
+        `[leaveOrDeleteCommunity] User is MEMBER. Deleting team member.`
+      );
       await this.teamMemberRepository.delete(userId, teamId);
       return "커뮤니티에서 성공적으로 탈퇴했습니다.";
     }
@@ -151,51 +163,66 @@ export class CommunityService {
   }
 
   /**
-   * 새로운 커뮤니티 생성
-   * @param communityData
-   * @returns TeamCommunity
-   * @throws
-   */
-  public async createCommunity(communityData: {
-    userId: number;
-    isbn13: string;
-    title: string;
-    content: string;
-    maxMembers: number;
-  }): Promise<TeamCommunity> {
-    const user = await this.userRepository.findById(communityData.userId);
-    if (!user) {
-      throw new CustomError(404, "User not found.");
+ * 새로운 커뮤니티 생성
+ * @param communityData
+ * @returns TeamCommunity
+ * @throws
+ */
+public async createCommunity(communityData: {
+  userId: number;
+  isbn13: string;
+  title: string;
+  content: string;
+  maxMembers: number;
+}): Promise<TeamCommunity> {
+  // 책이 존재하지 않으면 알라딘 API에서 가져와서 저장
+  await bookService.getBookDetail(communityData.isbn13);
+  
+  const newCommunity = await prisma.$transaction(
+    async (prismaTransaction) => {
+      const user = await this.userRepository.findById(communityData.userId);
+      if (!user) {
+        throw new CustomError(404, "User not found.");
+      }
+
+      const recruitmentPost = await prismaTransaction.post.create({
+        data: {
+          userId: communityData.userId,
+          title: communityData.title,
+          content: communityData.content,
+          type: PostType.RECRUITMENT,
+          maxMembers: communityData.maxMembers,
+          recruitmentStatus: RecruitmentStatus.RECRUITING,
+          isbn13: communityData.isbn13,
+        },
+      });
+
+      const createdCommunityEntry =
+        await prismaTransaction.teamCommunity.create({
+          data: {
+            postId: recruitmentPost.postId,
+            isbn13: communityData.isbn13,
+            status: CommunityStatus.RECRUITING,
+            postTitle: recruitmentPost.title,
+            postContent: recruitmentPost.content,
+            postAuthor: user.nickname,
+          },
+        });
+
+      await prismaTransaction.teamMember.create({
+        data: {
+          userId: communityData.userId,
+          teamId: createdCommunityEntry.teamId,
+          role: TeamRole.LEADER,
+        },
+      });
+
+      return createdCommunityEntry;
     }
+  );
 
-    const recruitmentPost = await this.postRepository.create({
-      userId: communityData.userId,
-      title: communityData.title,
-      content: communityData.content,
-      type: PostType.RECRUITMENT,
-      maxMembers: communityData.maxMembers,
-      recruitmentStatus: RecruitmentStatus.RECRUITING,
-
-      isbn13: communityData.isbn13,
-    });
-
-    const newCommunity = await this.communityRepository.create({
-      postId: recruitmentPost.postId,
-      isbn13: communityData.isbn13,
-      status: CommunityStatus.RECRUITING,
-      postTitle: recruitmentPost.title,
-      postContent: recruitmentPost.content,
-      postAuthor: user.nickname,
-    });
-
-    await this.teamMemberRepository.create({
-      userId: communityData.userId,
-      teamId: newCommunity.teamId,
-      role: TeamRole.LEADER,
-    });
-
-    return newCommunity;
-  }
+  return newCommunity;
+}
 
   /**
    * 특정 도서 관련 커뮤니티 목록 조회
@@ -443,7 +470,6 @@ export class CommunityService {
     const currentMembersCount =
       await this.teamMemberRepository.countMembersByTeamId(communityId);
 
-    // ✨ 최소 멤버 수 확인 로직 ✨
     if (currentMembersCount < 2) {
       throw new CustomError(
         400,
@@ -451,7 +477,6 @@ export class CommunityService {
       );
     }
 
-    // ✨ 상태를 ACTIVE로 변경 (모집 성공적으로 완료) ✨
     const updatedCommunity = await this.communityRepository.update(
       communityId,
       { status: CommunityStatus.ACTIVE }
@@ -496,6 +521,9 @@ export class CommunityService {
           await this.teamMemberRepository.countMembersByTeamId(
             community.teamId
           );
+        console.log(
+          `[DEBUG - enrich] Community ID: ${community.teamId}, currentMembers counted: ${currentMembers}`
+        );
 
         const pendingApplicantCount =
           community.recruitmentPost?.applications?.filter(

@@ -1,4 +1,3 @@
-// book.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import { AladinQueryType, AladinSortType, AladinSearchTarget, AladinListType, AladinLookupRequest, AladinCoverSize, AladinItemIdType } from '../types/book.type';
 import { aladinApiService } from '../services/aladin-api.service';
@@ -77,6 +76,7 @@ class BookController {
   }
 }
   
+
 // 상품 리스트 - 베스트셀러
   getBestSellers = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -127,6 +127,7 @@ class BookController {
       next(error);
     }
   }
+
 
   // 상품 리스트 - 주목할 신간
   getSpecialNewBooks = async (req: Request, res: Response, next: NextFunction) => {
@@ -179,7 +180,6 @@ getBookDetail = async (req: Request, res: Response, next: NextFunction) => {
     next(error);
   }
 }
-
   
   // enum 변환 헬퍼 메서드들
   private mapQueryType(type?: string): AladinQueryType {

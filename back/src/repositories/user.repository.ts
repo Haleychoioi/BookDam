@@ -1,4 +1,3 @@
-// src.zip/repositories/user.repository.ts
 import { User, UserRole } from "@prisma/client";
 import prisma from "../utils/prisma";
 
@@ -15,8 +14,9 @@ export interface CreateUserData {
 }
 
 export interface UserUpdateData {
-  nickname: string;
+  nickname?: string;
   introduction?: string;
+  profileImage?: string;
 }
 
 export interface UpdatePasswordData {
@@ -24,6 +24,7 @@ export interface UpdatePasswordData {
 }
 
 class UserRepository {
+
   // 이메일로 사용자 찾기
   async findByEmail(email: string) {
     return await prisma.user.findUnique({ where: { email } });
@@ -38,12 +39,12 @@ class UserRepository {
     });
   }
 
-  // ✨ 전화번호로 사용자 찾기 추가 (정규화 포함) ✨
+  // 전화번호로 사용자 찾기
   async findByPhone(phone: string) {
-    const normalizedPhone = phone.replace(/[^0-9]/g, ""); // ✨ 쿼리 전에 전화번호 정규화 ✨
+    const normalizedPhone = phone.replace(/[^0-9]/g, "");
     return await prisma.user.findFirst({
       where: {
-        phone: normalizedPhone, // ✨ 정규화된 전화번호로 검색 ✨
+        phone: normalizedPhone,
       },
     });
   }
@@ -68,7 +69,7 @@ class UserRepository {
       data: {
         name: userData.name,
         email: userData.email,
-        phone: userData.phone, // 이 전화번호는 이미 service에서 정규화되어 넘어옴
+        phone: userData.phone,
         password: userData.password,
         role: userData.role || UserRole.USER,
         nickname: userData.nickname,
@@ -99,7 +100,6 @@ class UserRepository {
 
   async findByEmailAndName(email: string, name: string) {
     return await prisma.user.findFirst({
-      // findUnique 대신 findFirst 사용
       where: {
         email: email,
         name: name,
@@ -109,9 +109,13 @@ class UserRepository {
 
   // 사용자 삭제
   async deleteUser(userId: number) {
-    return await prisma.user.delete({
+    console.log(`Attempting to delete user with ID: ${userId}`);
+    const result = await prisma.user.delete({
       where: { userId },
     });
+    console.log(
+      `Successfully deleted user with ID: ${userId}, count: ${result ? 1 : 0}`
+    );
   }
 
   // 모든 사용자 조회 (관리자용)

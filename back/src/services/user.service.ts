@@ -1,5 +1,3 @@
-// src/services/user.service.ts (수정된 전체 코드)
-
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
@@ -69,8 +67,8 @@ export default class UserService {
     return result;
   }
 
+
   async sendTemporaryPasswordEmail(
-    // ✨ async 키워드 추가 ✨
     email: string,
     temporaryPassword: string,
     userName: string
@@ -78,21 +76,80 @@ export default class UserService {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "임시 비밀번호 안내",
+      subject: "bookDam 임시 비밀번호 안내",
       html: `
-                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #333;">임시 비밀번호 안내</h2>
-                    <p>안녕하세요, <strong>${userName}</strong>님.</p>
-                    <p>요청하신 임시 비밀번호는 다음과 같습니다. 로그인 후 반드시 비밀번호를 변경해주세요.</p>
-                    <p style="font-size: 18px; font-weight: bold; background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
-                        <strong>${temporaryPassword}</strong>
-                    </p>
-                </div>
+                <body style="margin: 0; padding: 20px; background-color: #f5f5f5;">
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <div style="background-color: #ffbd42; padding: 40px 20px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 500; letter-spacing: 2px;">
+                bookDam
+            </h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0; opacity: 0.9; font-size: 14px;">
+                당신의 독서 여정을 함께합니다
+            </p>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 40px 30px; background-color: #ffffff;">
+            <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">
+                임시 비밀번호 안내
+            </h2>
+            
+            <p style="color: #666666; line-height: 1.6; margin: 0 0 15px 0; font-size: 16px;">
+    안녕하세요, <strong style="color: #333333;">${userName} </strong>님.
+            </p>
+            
+            <p style="color: #666666; line-height: 1.6; margin: 0 0 30px 0; font-size: 16px;">
+                비밀번호 재설정을 위한 임시 비밀번호를 발급해드렸습니다.<br>
+                보안을 위해 로그인 후 즉시 새로운 비밀번호로 변경해주세요.
+            </p>
+            
+            <!-- Password Box -->
+            <div style="background-color: #fffaf5; border: 2px solid #ffbd42; border-radius: 12px; padding: 25px; text-align: center; margin: 30px 0;">
+                <p style="color: #ff9500; margin: 0 0 10px 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                    임시 비밀번호
+                </p>
+                <p style="font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold; color: #333333; margin: 0; letter-spacing: 3px; word-break: break-all;">
+                   ${temporaryPassword}
+                </p>
+            </div>
+            
+            <!-- Warning Box -->
+            <div style="background-color: #fff8f0; border-left: 4px solid #ff9500; padding: 15px 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                <p style="color: #ff9500; margin: 0 0 8px 0; font-weight: 600; font-size: 14px;">
+                    ⚠️ 보안 안내
+                </p>
+                <p style="color: #666666; margin: 0; font-size: 14px; line-height: 1.5;">
+                    • 보안을 위해 로그인 후 새로운 비밀번호로 변경해주세요
+                </p>
+            </div>
+            
+            <!-- Login Button -->
+            <div style="text-align: center; margin: 35px 0;">
+                <a href="http://localhost:5173/auth/login" style="display: inline-block; background-color: #ffbd42; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(255, 189, 66, 0.4); transition: all 0.3s ease;">
+                    로그인하기
+                </a>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 25px 30px; text-align: center; border-top: 1px solid #e9ecef;">
+            <p style="color: #6c757d; margin: 0 0 10px 0; font-size: 14px;">
+                문의사항이 있으시면 언제든 연락해주세요.
+            </p>
+            <p style="color: #adb5bd; margin: 0; font-size: 12px;">
+                © 2025 bookDam. All rights reserved.<br>
+                이 이메일은 발신전용입니다.
+            </p>
+        </div>
+    </div>
+</body>
             `,
     };
 
-    // sendMail은 Promise를 반환하므로, 함수 자체가 async여야 합니다.
-    await this.transporter.sendMail(mailOptions); // ✨ await 키워드 추가 (선택 사항이지만 명확성을 위해) ✨
+    // sendMail은 Promise를 반환해서 함수 자체가 async여야함
+    await this.transporter.sendMail(mailOptions);
   }
 
   private normalizePhoneNumber(phone: string): string {
@@ -265,7 +322,7 @@ export default class UserService {
       const { password, agreement, ...userWithoutPassword } = updatedUser;
       return userWithoutPassword;
     } catch (error) {
-      return Promise.reject(error); // ✨ 수정: 명시적으로 Promise.reject 반환 ✨
+      return Promise.reject(error);
     }
   }
 
@@ -315,7 +372,7 @@ export default class UserService {
         message: "비밀번호가 성공적으로 변경되었습니다.",
       };
     } catch (error) {
-      return Promise.reject(error); // ✨ 수정: 명시적으로 Promise.reject 반환 ✨
+      return Promise.reject(error);
     }
   }
 
@@ -339,7 +396,7 @@ export default class UserService {
         message: "유저 삭제가 완료되었습니다.",
       };
     } catch (error) {
-      return Promise.reject(error); // ✨ 수정: 명시적으로 Promise.reject 반환 ✨
+      return Promise.reject(error);
     }
   }
 
@@ -359,7 +416,6 @@ export default class UserService {
     for (const membership of memberships) {
       const community = membership.team;
 
-      // '모집중' 상태의 커뮤니티는 이력에 포함하지 않습니다.
       if (community.status === CommunityStatus.RECRUITING) {
         continue;
       }

@@ -16,7 +16,6 @@ export const fetchTeamComments = async (
       message: string;
       data: TeamComment[];
     }>(
-      // 이 경로는 이미 올바르게 설정되어 있습니다.
       `/mypage/communities/team-posts/${teamPostId}/comments?communityId=${communityId}`
     );
     return response.data.data;
@@ -43,7 +42,6 @@ export const createTeamComment = async (
       data: TeamComment;
       teamCommentId: number;
     }>(
-      // ✨ 수정: '/mypage/communities/' 경로 접두사 추가 ✨
       `/mypage/communities/team-posts/${teamPostId}/comments?communityId=${communityId}`,
       {
         userId,
@@ -65,7 +63,6 @@ export const updateTeamComment = async (
 ): Promise<void> => {
   try {
     await apiClient.put(
-      // ✨ 수정: '/mypage/communities/' 경로 접두사 추가 ✨
       `/mypage/communities/team-comments/${teamCommentId}?communityId=${communityId}`,
       { content }
     );
@@ -83,7 +80,6 @@ export const deleteTeamComment = async (
 ): Promise<void> => {
   try {
     await apiClient.delete(
-      // ✨ 수정: '/mypage/communities/' 경로 접두사 추가 ✨
       `/mypage/communities/team-comments/${teamCommentId}?communityId=${communityId}&teamPostId=${teamPostId}`,
       { data: { userId } }
     );

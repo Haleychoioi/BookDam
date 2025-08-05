@@ -3,14 +3,14 @@
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
 import { FaChevronLeft } from "react-icons/fa";
+import { formatKoreanDateTime } from "../../utils/dateFormatter";
 
 import MDEditor from "@uiw/react-md-editor";
 import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
 import remarkGfm from "remark-gfm";
 
-import type { Post, TeamPost, UserProfile } from "../../types"; // ✨ UserProfile 임포트 ✨
-import { formatKoreanDateTime } from "../../utils/dateFormatter";
+import type { Post, TeamPost, UserProfile } from "../../types";
 
 interface PostDetailTemplateProps {
   post: Post | TeamPost | undefined;
@@ -25,7 +25,7 @@ interface PostDetailTemplateProps {
   onSavePost: (updatedTitle?: string) => Promise<void>;
   onCancelEdit: () => void;
   isPostAuthor: boolean;
-  currentUserProfile?: UserProfile; // ✨ currentUserProfile prop 타입 UserProfile로 변경 ✨
+  currentUserProfile?: UserProfile;
 }
 
 const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
@@ -41,14 +41,12 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
   onSavePost,
   onCancelEdit,
   isPostAuthor,
-  currentUserProfile, // ✨ prop으로 받기 ✨
+  currentUserProfile,
 }) => {
-  // DEFAULT_AVATAR_URL을 Dicebear URL로 변경
   const DEFAULT_AVATAR_BASE_URL =
     "https://api.dicebear.com/8.x/identicon/svg?seed=";
 
   const getAuthorNickname = (p: Post | TeamPost | undefined): string => {
-    // currentUserProfile이 있고, 현재 사용자가 작성자일 경우 currentUserProfile 닉네임 사용
     if (isPostAuthor && currentUserProfile?.nickname) {
       return currentUserProfile.nickname;
     }
@@ -62,18 +60,13 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
   };
 
   const getAuthorProfileImage = (p: Post | TeamPost | undefined): string => {
-    // currentUserProfile이 있고, 현재 사용자가 작성자일 경우 currentUserProfile 이미지 사용
     if (isPostAuthor && currentUserProfile?.profileImage) {
-      // return `${currentUserProfile.profileImage}?${new Date().getTime()}`; // 캐시 무력화 코드 제거
       return currentUserProfile.profileImage;
     }
     if (!p) return `${DEFAULT_AVATAR_BASE_URL}Guest`;
     if (p.user?.profileImage) {
-      // 게시물 데이터에 포함된 프로필 이미지 사용 (캐시 무력화 코드 제거)
-      // return `${p.user.profileImage}?${new Date().getTime()}`;
       return p.user.profileImage;
     }
-    // 기본값으로 닉네임 기반 Dicebear 아바타 사용
     return `${DEFAULT_AVATAR_BASE_URL}${encodeURIComponent(
       getAuthorNickname(p)
     )}`;
@@ -93,7 +86,6 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
   return (
     <div className="min-h-full py-10 bg-white">
       <div className="container mx-auto px-4 lg:px-20 xl:px-32">
-        {/* 뒤로 가기 링크 */}
         <Link
           to={backToBoardPath}
           className="text-gray-600 hover:text-gray-800 flex items-center mb-8"
@@ -103,7 +95,6 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
             <span>{backToBoardText}</span>
           </div>
         </Link>
-        {/* 게시물 헤더 */}
         <h1 className="text-3xl font-bold text-gray-800 text-center my-16">
           {displayTitle}
         </h1>
@@ -123,7 +114,7 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
             </span>
           </div>
         </div>
-        {/* 게시물 관리/수정 버튼 */}
+
         {isPostAuthor && (
           <div className="flex justify-end space-x-2">
             {isEditing ? (
@@ -175,7 +166,7 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
             )}
           </div>
         )}
-        {/* 게시물 내용 (수정 모드에 따라 다르게 렌더링) */}
+
         <div className="mb-8 py-4 px-16" data-color-mode="light">
           {isEditing ? (
             <MDEditor

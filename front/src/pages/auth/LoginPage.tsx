@@ -1,22 +1,18 @@
 // src/pages/auth/LoginPage.tsx
-import React, { useState } from "react";
-import Button from "../../components/common/Button";
+
+import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { useNavigate, Link } from "react-router-dom"; // Link 컴포넌트 임포트
+import { Link } from "react-router-dom";
+import Button from "../../components/common/Button";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login, loading } = useAuth();
-  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const success = await login(email, password);
-    if (success) {
-      navigate("/"); //로그인 성공 시 홈으로 이동
-    }
+    await login(email, password);
   };
 
   return (
@@ -55,7 +51,6 @@ const LoginPage: React.FC = () => {
           <Button type="submit" disabled={loading}>
             {loading ? "로그인 중..." : "로그인"}
           </Button>
-          {/* ✨ '비밀번호 찾기' 링크 추가 ✨ */}
           <div className="text-center mt-4">
             <Link
               to="/auth/find-password"

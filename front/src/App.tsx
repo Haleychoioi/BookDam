@@ -1,5 +1,6 @@
-// src/App.tsx
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import MainLayout from "./layouts/MainLayout";
 import HomePage from "./pages/HomePage";
@@ -31,6 +32,23 @@ import AccountSecurityPage from "./pages/mypage/AccountSecurityPage";
 function App() {
   return (
     <BrowserRouter>
+      <ToastContainer
+        position="top-center"
+        autoClose={1000}
+        hideProgressBar={true}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        toastStyle={{
+          maxWidth: "90vw",
+          width: "auto",
+          whiteSpace: "pre-wrap",
+        }}
+      />
+
       <Routes>
         <Route path="/" element={<MainLayout />}>
           {/* 홈페이지 */}
@@ -46,9 +64,9 @@ function App() {
             element={<CommunityBoardPage />}
           />
 
-          {/* ✨ 추가: 특정 팀 게시물 상세 조회 라우트 ✨ */}
+          {/* 특정 팀 게시물 상세 조회 라우트 */}
           <Route
-            path="communities/:communityId/posts/:postId" // postId는 teamPostId를 의미
+            path="communities/:communityId/posts/:postId"
             element={<PostDetailPage />}
           />
 

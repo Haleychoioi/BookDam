@@ -1,20 +1,21 @@
 // src/components/modals/EditCommunityModal.tsx (새로 생성)
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useToast } from "../../hooks/useToast";
 import Button from "../common/Button";
+
 import type { Community } from "../../types";
 
 interface EditCommunityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  community: Community; // 수정할 커뮤니티 데이터
+  community: Community;
   onSave: (
     communityId: string,
     updateData: {
       title?: string;
       content?: string;
       maxMembers?: number;
-      // recruiting?: boolean; // ✨ 제거: 모집 상태는 이 모달에서 수정하지 않습니다. ✨
     }
   ) => Promise<void>;
 }
@@ -28,15 +29,14 @@ const EditCommunityModal: React.FC<EditCommunityModalProps> = ({
   const [title, setTitle] = useState(community.title);
   const [description, setDescription] = useState(community.description);
   const [maxMembers, setMaxMembers] = useState(community.maxMembers.toString());
-  // const [recruiting, setRecruiting] = useState(community.status === "모집중"); // ✨ 제거: 모집 상태는 이 모달에서 관리하지 않습니다. ✨
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
       setTitle(community.title);
       setDescription(community.description);
       setMaxMembers(community.maxMembers.toString());
-      // setRecruiting(community.status === "모집중"); // ✨ 제거: 모집 상태는 이 모달에서 관리하지 않습니다. ✨
     }
   }, [isOpen, community]);
 
@@ -49,17 +49,17 @@ const EditCommunityModal: React.FC<EditCommunityModalProps> = ({
       parsedMaxMembers < 2 ||
       parsedMaxMembers > 10
     ) {
-      alert("모집 인원을 최소 2명, 최대 10명 이내로 입력해주세요.");
+      showToast("모집 인원을 최소 2명, 최대 10명 이내로 입력해주세요.", "warn");
       return;
     }
 
     if (title.trim().length < 3 || title.trim().length > 30) {
-      alert("커뮤니티 이름은 3자 이상 30자 이내로 입력해주세요.");
+      showToast("커뮤니티 이름은 3자 이상 30자 이내로 입력해주세요.", "warn");
       return;
     }
 
     if (description.trim().length < 3 || description.trim().length > 100) {
-      alert("커뮤니티 소개는 3자 이상 100자 이내로 입력해주세요.");
+      showToast("커뮤니티 소개는 3자 이상 100자 이내로 입력해주세요.", "warn");
       return;
     }
 
@@ -67,14 +67,13 @@ const EditCommunityModal: React.FC<EditCommunityModalProps> = ({
     try {
       await onSave(community.id, {
         title: title.trim(),
-        content: description.trim(), // 백엔드 필드명에 맞춤
+        content: description.trim(),
         maxMembers: parsedMaxMembers,
-        // recruiting: recruiting, // ✨ 제거: 모집 상태는 이 모달에서 수정하지 않습니다. ✨
       });
       onClose();
     } catch (error) {
       console.error("커뮤니티 수정 실패:", error);
-      alert("커뮤니티 수정 중 오류가 발생했습니다.");
+      showToast("커뮤니티 수정 중 오류가 발생했습니다.", "error");
     } finally {
       setLoading(false);
     }
@@ -141,24 +140,6 @@ const EditCommunityModal: React.FC<EditCommunityModalProps> = ({
             onChange={(e) => setMaxMembers(e.target.value)}
           />
         </div>
-
-        {/* ✨ 제거: 모집 중 체크박스 섹션 ✨
-        <div className="mb-6 flex items-center">
-          <input
-            id="recruiting"
-            type="checkbox"
-            className="h-4 w-4 text-main rounded"
-            checked={recruiting}
-            onChange={(e) => setRecruiting(e.target.checked)}
-          />
-          <label
-            htmlFor="recruiting"
-            className="ml-2 block text-gray-700 text-base font-medium"
-          >
-            모집 중
-          </label>
-        </div>
-        */}
 
         <div className="flex justify-end space-x-4">
           <Button

@@ -1,16 +1,7 @@
-// src/zip/repositories/team-members.repository.ts
-
 import prisma from "../utils/prisma";
 import { TeamMember, TeamRole } from "@prisma/client";
 
-// 여기에 'export' 키워드를 추가해야 합니다.
 export class TeamMemberRepository {
-  /**
-   * 새로운 팀 멤버 생성
-   * @param data
-   * @returns
-   * @remarks
-   */
   public async create(data: {
     userId: number;
     teamId: number;
@@ -22,12 +13,6 @@ export class TeamMemberRepository {
     return newTeamMember;
   }
 
-  /**
-   * 특정 사용자 ID와 팀 ID로 팀 멤버 조회
-   * @param userId
-   * @param teamId
-   * @returns
-   */
   public async findByUserIdAndTeamId(
     userId: number,
     teamId: number
@@ -43,11 +28,6 @@ export class TeamMemberRepository {
     return teamMember;
   }
 
-  /**
-   * 특정 팀의 멤버 수 조회
-   * @param teamId
-   * @returns
-   */
   public async countMembersByTeamId(teamId: number): Promise<number> {
     const count = await prisma.teamMember.count({
       where: { teamId: teamId },
@@ -55,13 +35,6 @@ export class TeamMemberRepository {
     return count;
   }
 
-  /**
-   * 특정 팀 멤버 삭제
-   * @param userId
-   * @param teamId
-   * @returns
-   * @remarks
-   */
   public async delete(userId: number, teamId: number): Promise<void> {
     await prisma.teamMember.delete({
       where: {
@@ -73,12 +46,6 @@ export class TeamMemberRepository {
     });
   }
 
-  /**
-   * 특정 팀의 모든 멤버 조회
-   * @param teamId
-   * @returns
-   * @remarks
-   */
   public async findManyByTeamId(teamId: number): Promise<TeamMember[]> {
     const members = await prisma.teamMember.findMany({
       where: { teamId: teamId },
@@ -91,14 +58,6 @@ export class TeamMemberRepository {
     return members;
   }
 
-  /**
-   * 특정 팀 멤버 역할 업데이트
-   * @param userId
-   * @param teamId
-   * @param newRole
-   * @returns
-   * @remarks
-   */
   public async updateRole(
     userId: number,
     teamId: number,
@@ -118,7 +77,6 @@ export class TeamMemberRepository {
     return updatedMember;
   }
 
-  // 특정 사용자가 'LEADER' 역할을 맡고 있는 팀 멤버십이 있는지 확인
   public async findLeaderMembershipByUserId(
     userId: number
   ): Promise<TeamMember | null> {
@@ -131,12 +89,6 @@ export class TeamMemberRepository {
     return leaderMembership;
   }
 
-  /**
-   * ✨ 새로 추가 ✨
-   * 특정 사용자의 모든 팀 멤버십 조회 (커뮤니티 정보 포함)
-   * @param userId
-   * @returns
-   */
   public async findManyMembershipsByUserId(userId: number): Promise<
     (TeamMember & {
       team: {
@@ -148,7 +100,6 @@ export class TeamMemberRepository {
       };
     })[]
   > {
-    // CommunityStatus는 string으로 넘어오므로 일단 string
     const memberships = await prisma.teamMember.findMany({
       where: { userId: userId },
       include: {
@@ -158,12 +109,19 @@ export class TeamMemberRepository {
             postTitle: true,
             createdAt: true,
             status: true,
-            postId: true, // Community와 Post 연결을 위해 postId 추가
+            postId: true,
           },
         },
       },
       orderBy: { teamId: "desc" },
     });
-    return memberships as any; // 타입 불일치 방지를 위한 임시 any, 정확한 타입으로 추후 변경
+    return memberships as any;
+  }
+
+  public async deleteManyByTeamId(teamId: number): Promise<number> {
+    const result = await prisma.teamMember.deleteMany({
+      where: { teamId: teamId },
+    });
+    return result.count;
   }
 }

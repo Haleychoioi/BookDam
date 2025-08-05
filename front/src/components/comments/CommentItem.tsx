@@ -1,13 +1,13 @@
 // src/components/comments/CommentItem.tsx
 
-import React, { useState, useRef, memo } from "react";
+import { useState, useRef, memo, useEffect } from "react";
 import { Link } from "react-router-dom";
-import type { Comment, TeamComment } from "../../types";
-import CommentInput from "./CommentInput";
 import CommentList from "./CommentList";
+import CommentInput, { type CommentInputRef } from "./CommentInput";
 import { formatKoreanDateTime } from "../../utils/dateFormatter";
 
-// Helper function to safely get the comment ID
+import type { Comment, TeamComment } from "../../types";
+
 const getCommentIdentifier = (c: Comment | TeamComment): number => {
   if ("commentId" in c && typeof c.commentId === "number") {
     return c.commentId;
@@ -41,22 +41,33 @@ const CommentItem: React.FC<CommentItemProps> = memo(
     const [editedCommentContent, setEditedContent] = useState(comment.content);
     const isAuthor = comment.userId === currentUserId;
 
-    const replyInputRef = useRef<HTMLTextAreaElement>(null);
+    const replyInputRef = useRef<CommentInputRef>(null);
     const editInputRef = useRef<HTMLTextAreaElement>(null);
 
     console.log(
       `[CommentItem Render] ID: ${getCommentIdentifier(
         comment
       )}, isEditing: ${isEditingComment}`
-    ); // 디버깅 로그 유지
+    );
+
+    useEffect(() => {
+      if (isEditingComment && editInputRef.current) {
+        editInputRef.current.focus();
+        const length = editedCommentContent.length;
+        editInputRef.current.setSelectionRange(length, length);
+        console.log(
+          `[CommentItem useEffect Focus] ID: ${getCommentIdentifier(
+            comment
+          )}, Focused`
+        );
+      }
+    }, [isEditingComment, editedCommentContent, comment]);
 
     const handleReplyClick = () => {
-      setShowReplyInput((prev) => {
+      setShowReplyInput((prev: boolean) => {
         const newState = !prev;
         if (newState) {
-          setTimeout(() => {
-            replyInputRef.current?.focus();
-          }, 0);
+          replyInputRef.current?.focus();
         }
         return newState;
       });
@@ -66,10 +77,12 @@ const CommentItem: React.FC<CommentItemProps> = memo(
       const commentActualId = getCommentIdentifier(comment);
       await onAddReply(commentActualId, content);
       setShowReplyInput(false);
+      replyInputRef.current?.clear();
     };
 
     const handleCancelReply = () => {
       setShowReplyInput(false);
+      replyInputRef.current?.clear();
     };
 
     const handleEditCommentClick = () => {
@@ -79,17 +92,6 @@ const CommentItem: React.FC<CommentItemProps> = memo(
       }
       setIsEditingComment(true);
       setEditedContent(comment.content);
-
-      setTimeout(() => {
-        if (editInputRef.current) {
-          editInputRef.current.focus();
-          const length = editedCommentContent.length;
-          editInputRef.current.setSelectionRange(length, length);
-          console.log(
-            `[CommentItem Focus] ID: ${getCommentIdentifier(comment)}, Focused`
-          ); // 디버깅 로그 유지
-        }
-      }, 0);
     };
 
     const handleSaveEditedComment = async () => {
@@ -126,6 +128,19 @@ const CommentItem: React.FC<CommentItemProps> = memo(
       }
     };
 
+    const handleKeyDownForEdit = (
+      event: React.KeyboardEvent<HTMLTextAreaElement>
+    ) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        handleSaveEditedComment();
+        editInputRef.current?.blur();
+      } else if (event.key === "Escape") {
+        handleCancelEditComment();
+        editInputRef.current?.blur();
+      }
+    };
+
     const OuterWrapper: React.FC<{ children: React.ReactNode }> = ({
       children,
     }) => {
@@ -156,7 +171,10 @@ const CommentItem: React.FC<CommentItemProps> = memo(
 
     return (
       <OuterWrapper>
-        <div className={`mb-2 ${basePadding} ${indentationClass}`}>
+        <div
+          id={`comment-${getCommentIdentifier(comment)}`}
+          className={`mb-2 ${basePadding} ${indentationClass}`}
+        >
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center">
               <img
@@ -181,49 +199,42 @@ const CommentItem: React.FC<CommentItemProps> = memo(
           </div>
 
           {isEditingComment ? (
-            <div key="edit-comment-input-container" className="mt-2">
+            <div className="mt-2">
               <textarea
-                key={`edit-textarea-${getCommentIdentifier(comment)}`} // ✨ textarea에 고유한 key 추가 ✨
                 ref={editInputRef}
-                className="w-full p-2 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-main"
+                className="w-full p-2 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-main focus:border-transparent"
                 rows={3}
                 value={editedCommentContent}
-                onChange={(e) => {
-                  setEditedContent(e.target.value);
-                  console.log(
-                    `[CommentItem Input] ID: ${getCommentIdentifier(
-                      comment
-                    )}, Value: ${e.target.value}`
-                  ); // 디버깅 로그 유지
-                }}
+                onChange={(e) => setEditedContent(e.target.value)}
+                onKeyDown={handleKeyDownForEdit}
               />
               <div className="flex justify-end space-x-2 mt-2">
                 <button
                   onClick={handleSaveEditedComment}
-                  className="px-4 py-2 bg-main text-white rounded-md hover:bg-main-dark transition-colors"
+                  className="px-4 py-2 bg-main text-white rounded-md hover:bg-main-dark transition-colors focus:outline-none"
                 >
                   저장
                 </button>
                 <button
                   onClick={handleCancelEditComment}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors focus:outline-none"
                 >
                   취소
                 </button>
               </div>
             </div>
           ) : (
-            <p
-              key="display-comment-content"
-              className="text-gray-800 mb-2 whitespace-pre-wrap mt-2"
-            >
+            <p className="text-gray-800 mb-2 whitespace-pre-wrap mt-2">
               {comment.content}
             </p>
           )}
 
           <div className="flex text-sm text-gray-600 space-x-4">
             {!isEditingComment && canReply && (
-              <button onClick={handleReplyClick} className="hover:text-main">
+              <button
+                onClick={handleReplyClick}
+                className="hover:text-main focus:outline-none"
+              >
                 답글
               </button>
             )}
@@ -231,13 +242,13 @@ const CommentItem: React.FC<CommentItemProps> = memo(
               <>
                 <button
                   onClick={handleEditCommentClick}
-                  className="hover:text-main"
+                  className="hover:text-main focus:outline-none"
                 >
                   수정
                 </button>
                 <button
                   onClick={handleDeleteCommentClick}
-                  className="hover:text-main"
+                  className="hover:text-main focus:outline-none"
                 >
                   삭제
                 </button>
@@ -257,7 +268,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
               <div className="flex justify-end mt-2">
                 <button
                   onClick={handleCancelReply}
-                  className="px-4 py-1 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors text-sm"
+                  className="px-4 py-1 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors text-sm focus:outline-none"
                 >
                   취소
                 </button>

@@ -1,14 +1,15 @@
 // src/components/modals/CreateCommunityModal.tsx
 
 import { useState, useEffect } from "react";
+import { useToast } from "../../hooks/useToast";
 import Button from "../common/Button";
 
 interface CreateCommunityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  bookId: string | undefined; // bookId가 undefined일 수 있도록 타입 변경
+  bookId: string | undefined;
   onCommunityCreate: (
-    bookId: string, // 이 콜백은 string을 받음을 명시
+    bookId: string,
     communityName: string,
     maxMembers: number,
     description: string
@@ -24,6 +25,7 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
   const [communityName, setCommunityName] = useState("");
   const [maxMembers, setMaxMembers] = useState<string>("");
   const [description, setDescription] = useState("");
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!isOpen) {
@@ -58,16 +60,17 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
       return;
     }
 
-    // ✨ bookId가 유효한(undefined 또는 빈 문자열이 아닌) string인지 확인하는 로직 추가 ✨
     if (!bookId || bookId.trim() === "") {
-      // bookId가 undefined이거나 빈 문자열일 경우
-      alert("도서 정보가 올바르지 않아 커뮤니티를 생성할 수 없습니다.");
+      showToast(
+        "도서 정보가 올바르지 않아 커뮤니티를 생성할 수 없습니다.",
+        "error"
+      );
       console.error("Community creation failed: bookId is missing or empty.");
       return;
     }
 
     onCommunityCreate(
-      bookId, // bookId는 이제 handleSubmit 내부에서 유효성이 검증된 string입니다.
+      bookId,
       trimmedCommunityName,
       parsedMaxMembers,
       trimmedDescription

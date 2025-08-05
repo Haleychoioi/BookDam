@@ -1,9 +1,9 @@
 // src/components/modals/CommunityHistoryModal.tsx
 
-import Button from "../common/Button";
-import { type CommunityHistoryEntry } from "../../types";
-// ✨ formatKoreanDate 임포트 ✨
 import { formatKoreanDate } from "../../utils/dateFormatter";
+import Button from "../common/Button";
+
+import { type CommunityHistoryEntry } from "../../types";
 
 interface CommunityHistoryModalProps {
   isOpen: boolean;
@@ -24,11 +24,10 @@ const CommunityHistoryModal: React.FC<CommunityHistoryModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  // ✨ 역할(role)을 한국어로 변환하는 헬퍼 함수 ✨
   const getKoreanRole = (role: string): string => {
     if (role === "host") return "호스트";
     if (role === "member") return "멤버";
-    return role; // 일치하는 것이 없으면 원본 반환
+    return role;
   };
 
   return (
@@ -62,13 +61,13 @@ const CommunityHistoryModal: React.FC<CommunityHistoryModalProps> = ({
                 <h5 className="font-semibold text-lg text-gray-800">
                   {entry.communityName}
                 </h5>
-                {/* ✨ 역할 한국어 표시 ✨ */}
+
                 <p className="text-sm text-gray-600">
                   역할: {getKoreanRole(entry.role)}
                 </p>
-                {/* ✨ 날짜 연월일 형식으로 표시 ✨ */}
+
                 <p className="text-sm text-gray-600">
-                  기간: {formatKoreanDate(entry.startDate)} ~{" "}
+                  기간: {formatKoreanDate(entry.startDate)} ~
                   {entry.endDate
                     ? formatKoreanDate(entry.endDate)
                     : "현재 활동중"}

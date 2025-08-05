@@ -1,6 +1,9 @@
-import Button from "../common/Button";
+// src/components/mypage/ParticipatingCommunityCard.tsx
+
 import { Link } from "react-router-dom";
+import Button from "../common/Button";
 import { FaUserFriends } from "react-icons/fa";
+
 import type { Community } from "../../types";
 
 interface ParticipatingCommunityCardProps {

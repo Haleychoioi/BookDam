@@ -15,8 +15,4 @@ router.put('/profile',authenticate,upload.single('profileImage'),updateProfileVa
 // 비밀번호 수정
 router.put('/change-password', authenticate, userController.changePassword);
 
-
-// 유저 삭제
-// router.delete('/delete', authenticate, handleValidationResult, userController.deleteUser);
-
 export default router;

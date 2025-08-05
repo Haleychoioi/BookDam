@@ -1,14 +1,15 @@
 // src/components/mypage/MyPostsDisplay.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchMyPosts } from "../../api/posts";
-import type { MyPostsResponse } from "../../api/posts";
 import { useAuth } from "../../hooks/useAuth";
-import type { Post, TeamPost } from "../../types";
+import { Link } from "react-router-dom";
 import { formatKoreanDateTime } from "../../utils/dateFormatter";
 import Pagination from "../common/Pagination";
-import { Link } from "react-router-dom";
+import { fetchMyPosts } from "../../api/posts";
+
+import type { MyPostsResponse } from "../../api/posts";
+import type { Post, TeamPost } from "../../types";
 
 const POSTS_PER_PAGE = 10;
 
@@ -24,7 +25,7 @@ const MyPostsDisplay: React.FC = () => {
   const selectedSort = "latest";
 
   const { data, isLoading, isError, error, isFetching } = useQuery<
-    MyPostsResponse, // useQuery의 data 타입은 이제 MyPostsResponse와 동일합니다.
+    MyPostsResponse,
     Error
   >({
     queryKey: ["myPosts", userId, currentPage, selectedSort],
@@ -39,9 +40,6 @@ const MyPostsDisplay: React.FC = () => {
     placeholderData: (previousData) => previousData,
   });
 
-  console.log("MyPostsDisplay - useQuery data:", data); // 이 로그를 통해 data.data.posts를 확인하세요.
-
-  // ✨ data.data 내부에 있는 posts와 pagination에 접근하도록 수정합니다. ✨
   const posts = data?.data?.posts || [];
   const totalPages = data?.data?.pagination?.totalPages || 1;
   const totalCount = data?.data?.pagination?.totalCount || 0;
@@ -99,11 +97,6 @@ const MyPostsDisplay: React.FC = () => {
             const linkTo = isTeamPost(post)
               ? `/communities/${post.teamId}/posts/${post.teamPostId}`
               : `/posts/${post.postId}`;
-            const postTypeDisplay = isTeamPost(post)
-              ? "팀 게시글"
-              : post.type === "RECRUITMENT"
-              ? "모집글"
-              : "일반글";
 
             return (
               <li
@@ -115,9 +108,6 @@ const MyPostsDisplay: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-900 truncate pr-4">
                       {post.title}
                     </h3>
-                    <span className="text-sm text-gray-500">
-                      {postTypeDisplay}
-                    </span>
                   </div>
                   <p className="text-gray-700 text-sm mb-2 line-clamp-2">
                     {post.content}

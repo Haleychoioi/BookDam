@@ -1,5 +1,3 @@
-// src/routes/applications.routes.ts
-
 import { Router } from "express";
 import { ApplicationController } from "../controllers/applications.controller";
 import authenticate from "../middleware/authenticate-middleware";

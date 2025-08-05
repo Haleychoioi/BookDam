@@ -1,5 +1,4 @@
 import { Link, type LinkProps } from "react-router-dom";
-import React from "react"; // React 임포트가 없었다면 추가
 
 interface BaseButtonProps {
   className?: string;
@@ -28,18 +27,18 @@ const Button: React.FC<ButtonProps> = ({
   bgColor,
   hoverBgColor,
   textColor,
-  hoverTextColor, // ✨ hoverTextColor 프롭스 구조분해 할당 유지 ✨
+  hoverTextColor,
   ...props
 }) => {
   const defaultBgColor = "bg-main";
   const defaultHoverBgColor = "hover:bg-apply";
   const defaultTextColor = "text-white";
-  const defaultHoverTextColor = "hover:text-white"; // ✨ 기본 hoverTextColor 정의 유지 ✨
+  const defaultHoverTextColor = "hover:text-white";
 
   const finalBgColor = bgColor || defaultBgColor;
   const finalHoverBgColor = hoverBgColor || defaultHoverBgColor;
   const finalTextColor = textColor || defaultTextColor;
-  const finalHoverTextColor = hoverTextColor || defaultHoverTextColor; // ✨ 최종 hoverTextColor 적용 유지 ✨
+  const finalHoverTextColor = hoverTextColor || defaultHoverTextColor;
 
   const hasCustomBorderRadius = /(^|\s)rounded(-\w+)?/.test(className);
 

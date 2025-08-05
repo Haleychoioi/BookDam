@@ -1,4 +1,3 @@
-// book.repository.ts
 import prisma from "../utils/prisma";
 import { BookCreateData } from '../types/book.type';
 
@@ -11,7 +10,7 @@ export class BookRepository {
         });
     }
 
-    // 책 생성
+    // 책 생성 => data에서 에러나면 npx prisma generate
     async create(data: BookCreateData) {
         return await prisma.book.create({
             data

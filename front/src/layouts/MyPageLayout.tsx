@@ -1,6 +1,6 @@
 // src/layouts/MyPageLayout.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { FaBars, FaTimes } from "react-icons/fa";
 
@@ -9,15 +9,11 @@ const MyPageLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const getNavLinkClass = (path: string) => {
-    // ✨ 수정: startsWith를 사용하여 현재 경로가 링크 경로로 시작하는지 확인 ✨
-    // 또는 정확한 하위 경로 매칭을 위해 복합 로직 사용
     const isActive =
-      location.pathname.startsWith(path) && // 현재 경로가 링크 경로로 시작하는지
-      (location.pathname.length === path.length || // 정확히 일치하거나
-        location.pathname.charAt(path.length) === "/"); // 하위 경로의 시작이 '/' 인지 (중요: /mypage/abc와 /mypage/abcd 구별)
+      location.pathname.startsWith(path) &&
+      (location.pathname.length === path.length ||
+        location.pathname.charAt(path.length) === "/");
 
-    // 특별 케이스: /mypage 경로 자체가 /mypage/communities/participating을 가리키는 경우
-    // 이는 MyPageLayout의 index route가 participating 페이지인 경우에 해당 (현재 App.tsx에서 그렇게 설정되어 있음)
     if (
       location.pathname === "/mypage" &&
       path === "/mypage/communities/participating"
@@ -38,7 +34,6 @@ const MyPageLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
     <div className="min-h-screen py-10">
       <div className="container mx-auto px-4 lg:px-8 xl:px-20">
         <div className="flex flex-col md:flex-row gap-8">
-          {/* 모바일 햄버거 메뉴 버튼 (md 미만에서만 보임)  */}
           <div className="md:hidden flex justify-center w-full mb-4">
             <button
               onClick={toggleMobileMenu}
@@ -53,7 +48,6 @@ const MyPageLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
             </button>
           </div>
 
-          {/* ✨ 사이드 메뉴 - 모바일에서 조건부 숨김/보임 처리 ✨ */}
           <nav
             className={`w-full md:w-1/6 p-4 border-r md:border-r-0 border-gray-200 md:block ${
               isMobileMenuOpen ? "block" : "hidden"
@@ -184,7 +178,7 @@ const MyPageLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
             </ul>
           </nav>
 
-          <main className="w-full md:w-5/6 p-6">
+          <main className="w-full md:w-5/6">
             {children}
             <Outlet />
           </main>

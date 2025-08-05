@@ -1,5 +1,3 @@
-// src/repositories/communities.repository.ts
-
 import prisma from "../utils/prisma";
 import {
   TeamApplication,
@@ -8,11 +6,9 @@ import {
   Prisma,
 } from "@prisma/client";
 
-// 반환 타입에 hasApplied 추가
 type CommunityWithApplicationStatus = TeamCommunity & {
-  hasApplied?: boolean; // ✨ hasApplied 필드 추가 ✨
+  hasApplied?: boolean;
   recruitmentPost?: {
-    // applications를 포함할 수 있도록 옵셔널하게 추가 (include 시에만 존재)
     applications?: { applicationId: number }[];
   } | null;
 };
@@ -66,7 +62,6 @@ export class CommunityRepository {
   public async findActiveByMemberId(userId: number): Promise<TeamCommunity[]> {
     const communities = await prisma.teamCommunity.findMany({
       where: {
-        // ✨ 수정: ACTIVE, CLOSED, COMPLETED 상태를 모두 포함 ✨
         status: {
           in: [
             CommunityStatus.ACTIVE,
@@ -97,10 +92,9 @@ export class CommunityRepository {
     page?: number;
     pageSize?: number;
     sort?: string;
-    userId?: number; // ✨ userId 추가 ✨
+    userId?: number;
   }): Promise<CommunityWithApplicationStatus[]> {
-    // ✨ 반환 타입 변경 ✨
-    const { page = 1, pageSize = 10, sort, userId } = query; // ✨ userId 구조 분해 할당 ✨
+    const { page = 1, pageSize = 10, sort, userId } = query;
     const skip = (page - 1) * pageSize;
 
     const findManyOptions: Prisma.TeamCommunityFindManyArgs = {
@@ -110,8 +104,7 @@ export class CommunityRepository {
       where: {
         status: CommunityStatus.RECRUITING,
       },
-      // ✨ userId가 있을 경우 applications 포함하여 조회 ✨
-      // _count를 사용하여 신청 여부 확인 (Prisma 2.x 이상)
+      
       include: {
         recruitmentPost: userId
           ? {
@@ -127,7 +120,7 @@ export class CommunityRepository {
                 },
               },
             }
-          : undefined, // userId 없으면 recruitmentPost도 include 안함
+          : undefined,
       },
     };
 
@@ -139,14 +132,12 @@ export class CommunityRepository {
 
     const communities = await prisma.teamCommunity.findMany(findManyOptions);
 
-    // ✨ hasApplied 필드 추가 로직 (데이터 변환) ✨
     const communitiesWithStatus = communities.map((community: any) => {
-      // ✨ community.recruitmentPost?._count?.applications가 null/undefined일 경우 0으로 처리 ✨
       const hasApplied =
         userId && (community.recruitmentPost?._count?.applications ?? 0) > 0;
       console.log(
         `Community ID: ${community.teamId}, UserId: ${userId}, Applications Count: ${community.recruitmentPost?._count?.applications}, hasApplied: ${hasApplied}`
-      ); // ✨ 디버깅 로그 ✨
+      );
       return {
         ...community,
         hasApplied: hasApplied,
@@ -184,7 +175,6 @@ export class CommunityRepository {
    * @remarks
    */
   public async update(
-    // 기존 update 메서드를 활용하여 status도 업데이트 가능하게
     teamId: number,
     updateData: Partial<TeamCommunity>
   ): Promise<TeamCommunity> {
@@ -204,15 +194,13 @@ export class CommunityRepository {
    */
   public async findByBookIsbn13(
     bookIsbn13: string,
-    query: { size?: number; userId?: number } // ✨ userId 추가 ✨
+    query: { size?: number; userId?: number } 
   ): Promise<CommunityWithApplicationStatus[]> {
-    // ✨ 반환 타입 변경 ✨
-    const { size, userId } = query; // ✨ userId 구조 분해 할당 ✨
+    const { size, userId } = query;
     const findManyOptions: Prisma.TeamCommunityFindManyArgs = {
-      where: { isbn13: bookIsbn13, status: CommunityStatus.RECRUITING }, // ✨ 모집 중인 커뮤니티만 필터링 추가 ✨
+      where: { isbn13: bookIsbn13, status: CommunityStatus.RECRUITING },
       take: size,
       orderBy: { createdAt: "desc" },
-      // ✨ userId가 있을 경우 applications 포함하여 조회 ✨
       include: {
         recruitmentPost: userId
           ? {
@@ -233,14 +221,12 @@ export class CommunityRepository {
     };
     const communities = await prisma.teamCommunity.findMany(findManyOptions);
 
-    // ✨ hasApplied 필드 추가 로직 ✨
     const communitiesWithStatus = communities.map((community: any) => {
-      // any 사용
       const hasApplied =
         userId && (community.recruitmentPost?._count?.applications ?? 0) > 0;
       console.log(
         `Book ISBN13: ${bookIsbn13}, Community ID: ${community.teamId}, UserId: ${userId}, Applications Count: ${community.recruitmentPost?._count?.applications}, hasApplied: ${hasApplied}`
-      ); // ✨ 디버깅 로그 ✨
+      );
       return {
         ...community,
         hasApplied: hasApplied,
@@ -296,5 +282,12 @@ export class CommunityRepository {
       // },
       orderBy: { createdAt: "desc" },
     });
+  }
+
+  public async countCommunitiesById(teamId: number): Promise<number> {
+    const count = await prisma.teamCommunity.count({
+      where: { teamId: teamId },
+    });
+    return count;
   }
 }

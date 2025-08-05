@@ -1,52 +1,26 @@
 // src/pages/auth/FindPasswordPage.tsx
 
-import React, { useState } from "react";
-import Button from "../../components/common/Button";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-// useAuth 훅에 임시 비밀번호 발급 함수를 추가할 예정입니다.
-// import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth";
+import Button from "../../components/common/Button";
 
 const FindPasswordPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false); // 로딩 상태 추가
-  const [error, setError] = useState<string | null>(null); // 에러 상태 추가
-  const navigate = useNavigate();
+  const { issueTemporaryPassword, loading, error } = useAuth();
 
-  // useAuth 훅에 임시 비밀번호 발급 함수가 추가되면 이곳에 임포트하여 사용합니다.
-  // const { issueTemporaryPassword } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
 
-    // TODO: useAuth 훅의 issueTemporaryPassword 함수 호출 (다음 단계에서 구현)
-    try {
-      // await issueTemporaryPassword(email, name);
-      // 실제 API 호출 시 위 주석을 해제하고 사용
-      console.log(`임시 비밀번호 요청: 이메일 - ${email}, 이름 - ${name}`);
+    const success = await issueTemporaryPassword(email, name);
 
-      // Mock API 호출 (실제 구현 시 제거)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (Math.random() > 0.1) {
-        // 90% 성공
-        alert(
-          "임시 비밀번호가 이메일로 전송되었습니다. 로그인 후 비밀번호를 변경해주세요."
-        );
-        navigate("/auth/login"); // 성공 시 로그인 페이지로 이동
-      } else {
-        throw new Error(
-          "비밀번호 찾기 요청에 실패했습니다. 입력 정보를 확인해주세요."
-        );
-      }
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.";
-      setError(errorMessage);
-      alert(errorMessage);
-    } finally {
-      setLoading(false);
+    if (success) {
+      navigate("/auth/login");
+    } else {
+      console.error("비밀번호 찾기 요청 실패");
     }
   };
 
@@ -100,7 +74,7 @@ const FindPasswordPage: React.FC = () => {
               className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-main"
             />
           </div>
-          <Button type="submit" disabled={loading} className="w-full">
+          <Button type="submit" disabled={loading}>
             {loading ? "전송 중..." : "임시 비밀번호 받기"}
           </Button>
         </form>

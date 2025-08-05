@@ -1,24 +1,33 @@
-// src/repositories/applications.repository.ts
-
-import prisma from "../utils/prisma";
 import { ApplicationStatus, TeamApplication, Prisma } from "@prisma/client";
+import prisma from "../utils/prisma";
 
-type ApplicationWithPostInfo = TeamApplication & {
+export type ApplicationWithPostInfo = TeamApplication & {
   post: {
     postId: number;
     title: string;
-  };
+    userId: number;
+    maxMembers: number;
+    team: {
+      teamId: number;
+      status: string;
+      postTitle: string;
+      postContent: string;
+      postAuthor: string;
+      currentMembers?: number;
+      maxMembers?: number;
+    } | null;
+  } | null;
+  user: { nickname: string } | null;
 };
 
 export class ApplicationRepository {
-
   public async deleteById(applicationId: number): Promise<void> {
     await prisma.teamApplication.delete({
-      where: { applicationId: applicationId }
-    })
+      where: { applicationId: applicationId },
+    });
   }
 
-   public async findManyByUserId(
+  public async findManyByUserId(
     userId: number
   ): Promise<ApplicationWithPostInfo[]> {
     const applications = await prisma.teamApplication.findMany({
@@ -30,6 +39,24 @@ export class ApplicationRepository {
           select: {
             postId: true,
             title: true,
+            userId: true, // Post 작성자 (호스트 ID) 포함
+            maxMembers: true, // Post에서 maxMembers를 직접 선택
+            team: {
+              // Post와 TeamCommunity 간의 관계 이름이 'team'이라고 가정
+              select: {
+                teamId: true,
+                status: true,
+                postTitle: true,
+                postContent: true,
+                postAuthor: true,
+              },
+            },
+          },
+        },
+        user: {
+          // 신청한 사용자 정보 (닉네임만)
+          select: {
+            nickname: true,
           },
         },
       },
@@ -148,6 +175,7 @@ export class ApplicationRepository {
    * @param userId
    * @param postId
    * @returns
+   *
    */
   public async findByUserIdAndPostId(
     userId: number,
@@ -162,5 +190,12 @@ export class ApplicationRepository {
       },
     });
     return application;
+  }
+
+  public async countApplicationsByPostId(postId: number): Promise<number> {
+    const count = await prisma.teamApplication.count({
+      where: { postId: postId },
+    });
+    return count;
   }
 }

@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { IoIosArrowUp, IoIosArrowDown } from "react-icons/io";
-// import { IoMailOutline , IoCallOutline, IoLocationOutline } from "react-icons/io5";
 
 const FAQPage: React.FC = () => {
   const faqList = [
@@ -53,40 +52,6 @@ const FAQPage: React.FC = () => {
           </div>
         ))}
       </section>
-      {/* <section id="contact" className="container mx-auto py-12 px-20">
-      <h1 className="text-3xl font-bold mb-8">문의하기</h1>
-      <p>추가 질문이 있으시면 언제든지 연락주세요</p>
-        <div className="flex flex-col md:flex-row justify-between gap-8 mt-20">
-          <div className="flex flex-col gap-8 md:w-1/2 text-left">
-            <div className="text-center">
-              <IoMailOutline size={32} className="mx-auto" />
-              <h3 className="text-xl font-bold mt-4 mb-4">이메일</h3>
-              <p>플랫폼 관련 문의는 아래 이메일로 연락해 주세요.</p>
-              <a href="mailto:contact@bookplatform.com">contact@bookplatform.com</a>
-            </div>
-
-            <div className="text-center">
-              <IoCallOutline size={32} className="mx-auto" />
-              <h3 className="text-xl font-bold mt-4 mb-4">전화</h3>
-              <p>전화 문의는 언제든지 가능합니다.</p>
-              <p>+82 (2) 1234-5678</p>
-            </div>
-
-            <div className="text-center">
-              <IoLocationOutline size={32} className="mx-auto" />
-              <h3 className="text-xl font-bold mt-4 mb-4">사무실</h3>
-              <p>우리 사무실은 언제든지 방문 가능합니다.</p>
-              <p>서울특별시 강남구 123번지</p>
-            </div>
-          </div>
-
-          <div className="md:w-1/2">
-            <div className="w-full h-60 bg-gray-200 flex items-center justify-center rounded-lg">
-              이미지 영역
-            </div>
-          </div>
-        </div>
-    </section> */}
     </div>
   );
 };

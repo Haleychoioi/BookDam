@@ -1,5 +1,3 @@
-// src/repositories/posts.repository.ts
-
 import prisma from "../utils/prisma";
 import {
   Post,
@@ -7,9 +5,8 @@ import {
   PostType,
   RecruitmentStatus,
   Comment,
-} from "@prisma/client"; // ✨ RecruitmentStatus 임포트 ✨
+} from "@prisma/client";
 
-// Comment 타입에 사용자 정보와 대댓글 포함 타입을 정의합니다.
 type CommentWithUserAndReplies = Comment & {
   user: { nickname: string; profileImage: string | null } | null;
   replies: (Comment & {
@@ -17,13 +14,9 @@ type CommentWithUserAndReplies = Comment & {
   })[];
 };
 
-// PostWithRelations 타입을 Prisma의 findUnique/findMany 결과에 맞게 재정의합니다.
 type PostWithRelations = Post & {
   user: { nickname: string; profileImage: string | null } | null;
   comments: CommentWithUserAndReplies[];
-  // Prisma의 _count는 자동 생성된 타입에 포함될 수 있으므로, 명시적으로 추가하지 않아도 될 수 있습니다.
-  // 필요한 경우 PrismaClientOptions의 log 속성에서 쿼리 로그를 확인하여 정확한 구조를 파악하세요.
-  // _count?: { comments: number };
 };
 
 export class PostRepository {
@@ -93,10 +86,7 @@ export class PostRepository {
     } else if (sort === "oldest") {
       findManyOptions.orderBy = { createdAt: "asc" };
     }
-    // 'popular' 정렬 (views 필드 오류로 인해 주석 처리)
-    // else if (sort === "popular") {
-    //   findManyOptions.orderBy = { views: "desc" };
-    // }
+
     else {
       findManyOptions.orderBy = { createdAt: "desc" };
     }
@@ -122,7 +112,6 @@ export class PostRepository {
   }): Promise<Post> {
     const newPost = await prisma.post.create({
       data: {
-        // ✨ data 객체 직접 구성 ✨
         userId: postData.userId, // PostUncheckedCreateInput 스타일로 userId 직접 할당
         title: postData.title,
         content: postData.content,
@@ -135,8 +124,8 @@ export class PostRepository {
           recruitmentStatus: postData.recruitmentStatus,
         }),
         ...(postData.isbn13 !== undefined &&
-          postData.isbn13 !== null && { isbn13: postData.isbn13 }), // ✨ isbn13이 null도 아닐 경우에만 포함 ✨
-      } as Prisma.PostUncheckedCreateInput, // ✨ PostUncheckedCreateInput으로 명시적 타입 단언 ✨
+          postData.isbn13 !== null && { isbn13: postData.isbn13 }),
+      } as Prisma.PostUncheckedCreateInput,
     });
     return newPost;
   }
@@ -167,7 +156,6 @@ export class PostRepository {
     const result = await prisma.post.deleteMany({
       where: { postId: postId },
     });
-    // return result.count; // ✨ return result.count; 제거 ✨
   }
 
   /**
@@ -213,11 +201,4 @@ export class PostRepository {
    * @param postId
    * @returns
    */
-  // public async incrementViews(postId: number): Promise<Post> {
-  //   const updatedPost = await prisma.post.update({
-  //     where: { postId: postId },
-  //     data: { views: { increment: 1 } },
-  //   });
-  //   return updatedPost;
-  // }
 }

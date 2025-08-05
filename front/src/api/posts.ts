@@ -1,18 +1,12 @@
 // src/api/posts.ts
 
 import apiClient from "./apiClient";
-import type { Post, TeamPost } from "../types"; // Post 타입 임포트
+import type { Post, TeamPost } from "../types";
 
 // =========================================================
 // 일반 게시물 관련 API
 // =========================================================
 
-/**
- * 새로운 일반 게시물을 생성합니다.
- * POST /api/posts/write
- * @param postData - 생성할 게시물 데이터 { title, content }
- * @returns 생성된 게시물 ID
- */
 export const createPost = async (postData: {
   title: string;
   content: string;
@@ -21,9 +15,9 @@ export const createPost = async (postData: {
     const response = await apiClient.post<{
       status: string;
       message: string;
-      postId: number; // 백엔드는 postId를 number로 반환
+      postId: number;
     }>(`/posts/write`, postData);
-    return response.data.postId.toString(); // ID를 string으로 변환
+    return response.data.postId.toString();
   } catch (error) {
     console.error("Failed to create post:", error);
     throw error;
@@ -33,18 +27,29 @@ export const createPost = async (postData: {
 /**
  * 모든 일반 게시물 목록을 조회합니다. (일반 게시판용)
  * GET /api/posts
+ * @param page - 페이지 번호
+ * @param pageSize - 페이지당 항목 수
+ * @param sort - 정렬 기준 (예: 'latest')
+ * @param type - 게시물 타입 필터 ('GENERAL', 'RECRUITMENT', 또는 undefined/null이면 전체)
  * @returns 게시물 목록 배열 및 총 결과 수
  */
 export const fetchAllPosts = async (
   page: number = 1,
   pageSize: number = 10,
-  sort: string = "latest"
+  sort: string = "latest",
+  type?: "GENERAL" | "RECRUITMENT"
 ): Promise<{ posts: Post[]; totalResults: number }> => {
   try {
+    let url = `/posts?page=${page}&pageSize=${pageSize}&sort=${sort}`;
+
+    if (type) {
+      url += `&type=${type}`;
+    }
+
     const response = await apiClient.get<{
       message: string;
       data: Post[];
-    }>(`/posts?page=${page}&pageSize=${pageSize}&sort=${sort}`);
+    }>(url);
 
     return {
       posts: response.data.data,
@@ -63,10 +68,9 @@ export const fetchAllPosts = async (
  * @returns Post 객체
  */
 export const fetchPostById = async (postId: number): Promise<Post> => {
-  // ✨ 수정: string -> number ✨
   try {
     const response = await apiClient.get<{ message: string; data: Post }>(
-      `/posts/${postId}` // URL에 number 직접 사용
+      `/posts/${postId}`
     );
     return response.data.data;
   } catch (error) {
@@ -82,11 +86,11 @@ export const fetchPostById = async (postId: number): Promise<Post> => {
  * @param updateData - 업데이트할 데이터 { title?, content? }
  */
 export const updatePost = async (
-  postId: number, // ✨ 수정: string -> number ✨
+  postId: number,
   updateData: { title?: string; content?: string }
 ): Promise<void> => {
   try {
-    await apiClient.put(`/posts/${postId}`, updateData); // URL에 number 직접 사용
+    await apiClient.put(`/posts/${postId}`, updateData);
   } catch (error) {
     console.error("Failed to update post:", error);
     throw error;
@@ -103,9 +107,8 @@ export const deletePost = async (
   postId: number,
   userId: number
 ): Promise<void> => {
-  // ✨ 수정: string -> number ✨
   try {
-    await apiClient.delete(`/posts/${postId}`, { data: { userId } }); // URL에 number 직접 사용
+    await apiClient.delete(`/posts/${postId}`, { data: { userId } });
   } catch (error) {
     console.error("Failed to delete post:", error);
     throw error;
@@ -113,10 +116,9 @@ export const deletePost = async (
 };
 
 export interface MyPostsResponse {
-  message: string; // 응답 메시지
+  message: string;
   data: {
-    // 실제 데이터와 페이지네이션 정보가 담긴 중첩된 'data' 객체
-    posts: (Post | TeamPost)[]; // Post와 TeamPost를 모두 포함할 수 있도록 타입 확장
+    posts: (Post | TeamPost)[];
     pagination: {
       currentPage: number;
       pageSize: number;
@@ -136,5 +138,5 @@ export const fetchMyPosts = async (
   const response = await apiClient.get<MyPostsResponse>(`/mypage/my-posts`, {
     params: { page, size: pageSize, sort },
   });
-  return response.data; // apiClient는 T (여기서는 MyPostsResponse)를 data로 반환합니다.
+  return response.data;
 };

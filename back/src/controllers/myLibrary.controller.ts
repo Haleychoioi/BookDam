@@ -4,6 +4,7 @@ import { ReadingStatus } from "@prisma/client";
 import { bookService } from "../services/book.service";
 
 class MyLibraryController {
+  
   // 서재 추가, 상태/평점 수정
   upsertBookInLibrary = async (
     req: Request,
@@ -14,8 +15,8 @@ class MyLibraryController {
       const userId = req.user!;
       const { isbn13, status, myRating } = req.body;
 
-      if (!isbn13 || !status) {
-        return res.status(400).json({ message: "isbn13과 status는 필수" });
+      if (!isbn13 ) {
+        return res.status(400).json({ message: "isbn13는 필수" });
       }
 
       const upsertBook = await myLibraryService.upsertBookInLibrary(userId, {
@@ -29,6 +30,7 @@ class MyLibraryController {
       next(error);
     }
   };
+
 
   // 서재 목록 조회
   getBooksInLibrary = async (
@@ -57,20 +59,8 @@ class MyLibraryController {
       next(error);
     }
   };
-  // getBooksLibrary = async (req: Request, res: Response, next: NextFunction) => {
-  //     try {
-  //         const userId = req.user!;
-  //         const { status } = req.query;
 
-  //         const books = await myLibraryService.getBooksInLibrary(userId, status as ReadingStatus | undefined);
-
-  //         return res.status(200).json({ data: books })
-
-  //     } catch (error) {
-  //         next(error);
-  //     }
-  // }
-
+  // 서재 도서 삭제
   deleteBookFromLibrary = async (
     req: Request,
     res: Response,
