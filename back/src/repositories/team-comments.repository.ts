@@ -1,10 +1,6 @@
-// src/repositories/team-comments.repository.ts
-
 import prisma from "../utils/prisma";
 import { TeamComment, Prisma } from "@prisma/client";
 
-// Prisma의 findUnique/findMany 타입
-// TeamComment 모델에 user (nickname만 포함), replies (TeamComment와 user 포함) 관계가 포함된 형태
 type TeamCommentWithRelations = TeamComment & {
   user: { nickname: string } | null;
   replies: (TeamComment & { user: { nickname: string } | null })[];
@@ -13,14 +9,13 @@ type TeamCommentWithRelations = TeamComment & {
 export class TeamCommentRepository {
   public async findByUserId(userId: number): Promise<TeamComment[]> {
     const teamComments = await prisma.teamComment.findMany({
-      // Add log here too
       where: { userId: userId },
       include: {
         teamPost: {
           select: {
             teamPostId: true,
             title: true,
-            teamId: true, // ✨ teamId (커뮤니티 ID)를 포함합니다. ✨
+            teamId: true,
           },
         },
         user: {
@@ -31,7 +26,7 @@ export class TeamCommentRepository {
     });
     console.log(
       `[TeamCommentRepository] findByUserId - userId: ${userId}, found: ${teamComments.length} team comments`
-    ); // Debugging log
+    );
     return teamComments;
   }
 
@@ -51,13 +46,13 @@ export class TeamCommentRepository {
       },
       include: {
         user: {
-          select: { nickname: true, profileImage: true }, // profileImage 추가됨
+          select: { nickname: true, profileImage: true },
         },
         replies: {
           // 대댓글 포함 (1단계만)
           orderBy: { createdAt: "asc" },
           include: {
-            user: { select: { nickname: true, profileImage: true } }, // 대댓글에도 profileImage 추가됨
+            user: { select: { nickname: true, profileImage: true } },
           },
         },
       },
@@ -132,7 +127,7 @@ export class TeamCommentRepository {
   > {
     const teamComment = await prisma.teamComment.findUnique({
       where: { teamCommentId: teamCommentId },
-      include: { user: { select: { nickname: true, profileImage: true } } }, // profileImage 추가됨
+      include: { user: { select: { nickname: true, profileImage: true } } },
     });
     return teamComment;
   }

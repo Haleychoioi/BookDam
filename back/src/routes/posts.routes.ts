@@ -1,13 +1,9 @@
-// src/routes/posts.routes.ts
-
 import { Router } from "express";
 import { PostController } from "../controllers/posts.controller";
 import authenticate from "../middleware/authenticate-middleware";
 
 const router = Router();
 const postController = new PostController();
-
-// API 명세서 기반 라우트 정의
 
 // GET /posts - 전체 게시판 게시물 목록 조회
 router.get("/", postController.getPosts);

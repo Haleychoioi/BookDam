@@ -104,7 +104,6 @@ export class AladinApiService {
     }
 
 
-
     // 상품 조회
     async getBookDetail(params: AladinLookupRequest): Promise<AladinApiResponse> {
         try {
@@ -158,9 +157,6 @@ export class AladinApiService {
             throw new Error('Aladin');
         }
     }
-
-
-
 }
 
 export const aladinApiService = new AladinApiService();

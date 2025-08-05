@@ -1,24 +1,20 @@
-// src/zip/repositories/applications.repository.ts
-
 import { ApplicationStatus, TeamApplication, Prisma } from "@prisma/client";
 import prisma from "../utils/prisma";
 
-// ApplicationWithPostInfo 타입 정의는 여기에만 유지됩니다.
 export type ApplicationWithPostInfo = TeamApplication & {
   post: {
     postId: number;
     title: string;
-    userId: number; // Post 작성자 (호스트 ID)
-    maxMembers: number; // Post에 maxMembers 필드가 있음을 명시
+    userId: number;
+    maxMembers: number;
     team: {
       teamId: number;
       status: string;
       postTitle: string;
       postContent: string;
       postAuthor: string;
-      // ✨ 추가: currentMembers와 maxMembers 필드를 여기에 포함 (서비스에서 채워짐) ✨
-      currentMembers?: number; // Service layer will add this
-      maxMembers?: number; // Service layer will add this
+      currentMembers?: number;
+      maxMembers?: number;
     } | null;
   } | null;
   user: { nickname: string } | null;
@@ -40,7 +36,6 @@ export class ApplicationRepository {
       },
       include: {
         post: {
-          // 모집글 상세 정보 포함
           select: {
             postId: true,
             title: true,
@@ -54,7 +49,6 @@ export class ApplicationRepository {
                 postTitle: true,
                 postContent: true,
                 postAuthor: true,
-                // maxMembers: true // ✨ 이 줄을 제거합니다. TeamCommunity에 maxMembers는 없습니다. ✨
               },
             },
           },

@@ -5,6 +5,7 @@ import { CATEGORY_MAPPING } from "../constants/categories";
 import { AladinItemIdType } from "../types/book.type";
 
 export class BookService {
+  
   // 상품 조회
   async getBookDetail(identifier: string) {
     const isISBN13 = /^97[89]\d{10}$/.test(identifier);
@@ -38,11 +39,8 @@ export class BookService {
       const bookData = this.toBookCreateData(aladinBook);
       return await bookRepository.create(bookData);
     } catch (error: any) {
-      // 이미 존재하는 책일 경우 (unique constraint 위반)
+      // 이미 존재하는 책일 경우
       if (error.code === "P2002") {
-        console.log(
-          `📚 [BookService] 책이 이미 존재함, DB에서 조회: ${aladinBook.isbn13}`
-        );
         return await bookRepository.findByIsbn(aladinBook.isbn13);
       }
       throw error;
@@ -67,16 +65,13 @@ export class BookService {
   };
 
   private mapCategory(aladinCategory: string): string {
-    // 반환 타입을 string으로 명시
     const mainCategory = this.extractMainCategory(aladinCategory);
     if (mainCategory) {
-      // CATEGORY_MAPPING에 해당 카테고리가 있으면 매핑된 값을, 없으면 원본 mainCategory를 반환
       return (
         CATEGORY_MAPPING[mainCategory as keyof typeof CATEGORY_MAPPING] ||
         mainCategory
       );
     }
-    // '국내도서>'로 시작하지 않거나 매핑되지 않아 mainCategory가 null인 경우 '기타'를 반환
     return "기타";
   }
 

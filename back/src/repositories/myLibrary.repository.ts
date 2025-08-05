@@ -52,39 +52,7 @@ class MyLibraryRepository {
 
     return { books, totalCount };
   };
-    // findBooksByUserId = async (userId: number, status?: ReadingStatus) => {
-    //     return prisma.myLibrary.findMany({
-    //         where: {
-    //             userId,
-    //             status: status,
-    //         },
-    //         orderBy: {
-    //             updatedAt: 'desc'
-    //         },
-    //         select: {
-    //             libraryId: true,
-    //             status: true,
-    //             myRating: true,
-    //             updatedAt: true,
-    //             book: {
-    //                 select: {
-    //                     isbn13: true,
-    //                     title: true,
-    //                     author: true,
-    //                     publisher: true,
-    //                     cover: true,
-    //                     category: true,
-    //                 },
-    //             },
-    //             user: {
-    //                 select: {
-    //                     nickname: true,
-    //                 },
-    //             },
-    //         },
-    //     });
-    // }
-
+   
     // 서재에 도서가 존재하는지 확인 
     findMyLibraryItemByUniqueKey = async (userId: number, isbn13: string) => {
         return await prisma.myLibrary.findUnique({

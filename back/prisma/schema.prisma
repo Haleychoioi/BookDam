@@ -1,3 +1,4 @@
+// Prisma 스키마 설정
 generator client {
   provider = "prisma-client-js"
 }
@@ -6,6 +7,8 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+// ============ ENUM 정의 ============
 
 // 사용자 역할 (일반 사용자 / 관리자)
 enum UserRole {
@@ -25,6 +28,12 @@ enum CommunityStatus {
 enum PostType {
   GENERAL     // 일반글 (기본값)
   RECRUITMENT // 모집글
+}
+
+// 모집글 상태
+enum RecruitmentStatus {
+  RECRUITING // 모집중
+  CLOSED     // 모집완료
 }
 
 // 팀 내부 게시글 타입 (공지 / 질문 / 토론)
@@ -54,6 +63,8 @@ enum TeamRole {
   MEMBER // 팀원
 }
 
+// ============ 사용자 관련 모델 ============
+
 // 사용자 정보
 model User {
   userId       Int      @id @default(autoincrement()) @map("user_id")
@@ -82,6 +93,8 @@ model User {
   @@map("users")
 }
 
+// ============ 도서 관련 모델 ============
+
 // 책 정보 (ISBN13 기반)
 model Book {
   isbn13      String    @id @map("isbn13")
@@ -91,7 +104,7 @@ model Book {
   pubDate     String?   @map("pub_date")
   description String?   @db.Text @map("description")
   cover       String?   @map("cover")
-  category    String    @map("category")
+  category    String?    @map("category")
   pageCount   Int?      @map("page_count")
   toc         String?   @db.Text @map("toc")
   story       String?   @db.Text @map("story")
@@ -106,6 +119,8 @@ model Book {
   @@map("books")
 }
 
+// ============ 게시글 관련 모델 ============
+
 // 퍼블릭 커뮤니티 게시글 (일반글 + 모집글)
 model Post {
   postId            Int                @id @default(autoincrement()) @map("post_id")
@@ -113,6 +128,7 @@ model Post {
   type              PostType           @default(GENERAL) @map("type")
   title             String             @map("title")
   content           String             @db.Text @map("content")
+  recruitmentStatus RecruitmentStatus? @map("recruitment_status")
   maxMembers        Int?               @map("max_members")
   isbn13            String?            @map("isbn13")
   createdAt         DateTime           @default(now()) @map("created_at")
@@ -127,9 +143,12 @@ model Post {
 
   @@index([userId])
   @@index([type])
+  @@index([recruitmentStatus])
   @@index([isbn13])
   @@map("posts")
 }
+
+// ============ 독서팀 관련 모델 ============
 
 // 독서팀 (Private Community)
 model TeamCommunity {
@@ -208,6 +227,8 @@ model TeamPost {
   @@map("team_posts")
 }
 
+// ============ 댓글 관련 모델 ============
+
 // 퍼블릭 게시글 댓글
 model Comment {
   commentId Int      @id @default(autoincrement()) @map("comment_id")
@@ -251,6 +272,8 @@ model TeamComment {
   @@index([parentId])
   @@map("team_comments")
 }
+
+// ============ 개인 도서 관리 모델 ============
 
 // 개인 도서관 (읽고싶어요, 읽는중, 완료한 책들)
 model MyLibrary {

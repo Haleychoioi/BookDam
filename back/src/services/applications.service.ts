@@ -1,5 +1,3 @@
-// src/zip/services/applications.service.ts
-
 import {
   ApplicationStatus,
   CommunityStatus,
@@ -13,24 +11,24 @@ import { ApplicationWithPostInfo } from "../repositories/applications.repository
 
 import { ApplicationRepository } from "../repositories/applications.repository";
 import { CommunityRepository } from "../repositories/communities.repository";
-import { PostRepository } from "../repositories/posts.repository"; // ✨ 추가 임포트 ✨
-import { TeamMemberRepository } from "../repositories/team-members.repository"; // ✨ 추가 임포트 ✨
+import { PostRepository } from "../repositories/posts.repository";
+import { TeamMemberRepository } from "../repositories/team-members.repository";
 import { TeamPostRepository } from "../repositories/team-posts.repository";
 import { TeamCommentRepository } from "../repositories/team-comments.repository";
 
 export class ApplicationService {
   private applicationRepository: ApplicationRepository;
   private communityRepository: CommunityRepository;
-  private postRepository: PostRepository; // ✨ 추가: PostRepository 인스턴스 ✨
-  private teamMemberRepository: TeamMemberRepository; // ✨ 추가: TeamMemberRepository 인스턴스 ✨
+  private postRepository: PostRepository;
+  private teamMemberRepository: TeamMemberRepository;
   private teamPostRepository: TeamPostRepository;
   private teamCommentRepository: TeamCommentRepository;
 
   constructor() {
     this.applicationRepository = new ApplicationRepository();
     this.communityRepository = new CommunityRepository();
-    this.postRepository = new PostRepository(); // ✨ 초기화 ✨
-    this.teamMemberRepository = new TeamMemberRepository(); // ✨ 초기화 ✨
+    this.postRepository = new PostRepository();
+    this.teamMemberRepository = new TeamMemberRepository();
     this.teamPostRepository = new TeamPostRepository();
     this.teamCommentRepository = new TeamCommentRepository();
   }
@@ -42,34 +40,32 @@ export class ApplicationService {
       userId
     );
 
-    // ✨ 각 신청서에 연결된 커뮤니티의 현재 멤버 수 및 최대 멤버 수 정보를 추가합니다. ✨
     const enrichedApplications = await Promise.all(
       applications.map(async (app) => {
         if (app.post && app.post.team) {
           const communityId = app.post.team.teamId;
-          const postId = app.post.postId; // post ID를 가져옵니다.
+          const postId = app.post.postId;
 
           // 현재 멤버 수 조회
           const currentMembers =
             await this.teamMemberRepository.countMembersByTeamId(communityId);
           // 모집글 (Post)에서 maxMembers 조회
           const recruitmentPost = await this.postRepository.findById(postId);
-          const maxMembers = recruitmentPost?.maxMembers || 0; // maxMembers는 Post에 있습니다.
+          const maxMembers = recruitmentPost?.maxMembers || 0;
 
           return {
             ...app,
             post: {
               ...app.post,
               team: {
-                // team 객체를 확장합니다.
                 ...app.post.team,
-                currentMembers: currentMembers, // 계산된 멤버 수 추가
-                maxMembers: maxMembers, // 조회된 최대 멤버 수 추가
+                currentMembers: currentMembers,
+                maxMembers: maxMembers,
               },
             },
           };
         }
-        return app; // post나 team이 없는 경우 원본 그대로 반환
+        return app;
       })
     );
     return enrichedApplications;
@@ -354,19 +350,15 @@ export class ApplicationService {
         `[ApplicationService.cancelRecruitment] Community deleted count: ${communityDeletedCount}`
       );
 
-      // ✨ 최종 성공 조건 변경 ✨
       const isCommunityNowGone =
         (await this.communityRepository.countCommunitiesById(communityId)) ===
         0;
 
       if (wasCommunityInitiallyPresent && isCommunityNowGone) {
-        // 초기에 커뮤니티가 존재했고, 이제 더 이상 존재하지 않는다면 성공으로 간주
         return true;
       } else if (communityDeletedCount > 0) {
-        // 또는 명시적인 삭제 카운트가 0보다 크다면 성공 (이중 확인)
         return true;
       } else {
-        // 모든 삭제 작업이 0을 반환했고, 커뮤니티가 여전히 존재하거나 애초에 없었던 경우
         throw new CustomError(
           404,
           "모집 취소 실패: 커뮤니티 레코드를 삭제할 수 없습니다. (대상 없음 또는 다른 제약 조건)"

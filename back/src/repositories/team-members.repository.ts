@@ -1,5 +1,3 @@
-// src/zip/repositories/team-members.repository.ts
-
 import prisma from "../utils/prisma";
 import { TeamMember, TeamRole } from "@prisma/client";
 
@@ -120,7 +118,6 @@ export class TeamMemberRepository {
     return memberships as any;
   }
 
-  // ✨ 추가: 특정 팀의 모든 팀 멤버 삭제 ✨
   public async deleteManyByTeamId(teamId: number): Promise<number> {
     const result = await prisma.teamMember.deleteMany({
       where: { teamId: teamId },

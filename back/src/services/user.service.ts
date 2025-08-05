@@ -78,11 +78,12 @@ export default class UserService {
       to: email,
       subject: "bookDam 임시 비밀번호 안내",
       html: `
-                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+                <body style="margin: 0; padding: 20px; background-color: #f5f5f5;">
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 2px;">
-                book<span style="font-weight: 700;">Dam</span>
+        <div style="background-color: #ffbd42; padding: 40px 20px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 500; letter-spacing: 2px;">
+                bookDam
             </h1>
             <p style="color: #ffffff; margin: 10px 0 0 0; opacity: 0.9; font-size: 14px;">
                 당신의 독서 여정을 함께합니다
@@ -96,7 +97,7 @@ export default class UserService {
             </h2>
             
             <p style="color: #666666; line-height: 1.6; margin: 0 0 15px 0; font-size: 16px;">
-                안녕하세요, <strong style="color: #667eea;">${userName}</strong>님.
+                안녕하세요, <strong style="color: #ffbd42;">홍길동</strong>님.
             </p>
             
             <p style="color: #666666; line-height: 1.6; margin: 0 0 30px 0; font-size: 16px;">
@@ -105,29 +106,28 @@ export default class UserService {
             </p>
             
             <!-- Password Box -->
-            <div style="background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%); border: 2px solid #667eea; border-radius: 12px; padding: 25px; text-align: center; margin: 30px 0;">
-                <p style="color: #667eea; margin: 0 0 10px 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+            <div style="background-color: #fffaf5; border: 2px solid #ffbd42; border-radius: 12px; padding: 25px; text-align: center; margin: 30px 0;">
+                <p style="color: #ff9500; margin: 0 0 10px 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
                     임시 비밀번호
                 </p>
                 <p style="font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold; color: #333333; margin: 0; letter-spacing: 3px; word-break: break-all;">
-                    ${temporaryPassword}
+                    AbC123XyZ
                 </p>
             </div>
             
             <!-- Warning Box -->
-            <div style="background-color: #fff8f0; border-left: 4px solid #ff9800; padding: 15px 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
-                <p style="color: #ff9800; margin: 0 0 8px 0; font-weight: 600; font-size: 14px;">
+            <div style="background-color: #fff8f0; border-left: 4px solid #ff9500; padding: 15px 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                <p style="color: #ff9500; margin: 0 0 8px 0; font-weight: 600; font-size: 14px;">
                     ⚠️ 보안 안내
                 </p>
                 <p style="color: #666666; margin: 0; font-size: 14px; line-height: 1.5;">
-                    • 이 비밀번호는 일회성이며, 로그인 후 반드시 변경해주세요<br>
-                    • 개인정보 보호를 위해 이 이메일은 삭제하시기 바랍니다
+                    • 이 비밀번호는 일회성이며, 로그인 후 반드시 변경해주세요
                 </p>
             </div>
             
             <!-- Login Button -->
             <div style="text-align: center; margin: 35px 0;">
-                <a href="https://bookdam.com/login" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
+                <a href="http://localhost:5173/auth/login" style="display: inline-block; background-color: #ffbd42; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(255, 189, 66, 0.4); transition: all 0.3s ease;">
                     로그인하기
                 </a>
             </div>
@@ -144,6 +144,7 @@ export default class UserService {
             </p>
         </div>
     </div>
+</body>
             `,
     };
 

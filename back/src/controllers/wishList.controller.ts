@@ -3,7 +3,8 @@ import wishListService from "../services/wishList.service";
 import { bookService } from "../services/book.service";
 
 class WishListController {
-  // 추가
+
+  // 위시리스트 추가
   addWish = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user!;

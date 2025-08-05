@@ -1,10 +1,8 @@
-// src/zip/controllers/communities.controller.ts
-
 import { Request, Response, NextFunction } from "express";
 import { ApplicationService } from "../services/applications.service";
 import { CommunityService } from "../services/communities.service";
 import { CustomError } from "../middleware/error-handing-middleware";
-import { ApplicationStatus, CommunityStatus } from "@prisma/client"; // ✨ ApplicationStatus 추가 ✨
+import { ApplicationStatus, CommunityStatus } from "@prisma/client";
 
 export class CommunityController {
   private communityService: CommunityService;
@@ -467,7 +465,6 @@ export class CommunityController {
       if (!userId) {
         throw new CustomError(401, "Need login");
       }
-      // ✨추가: 서비스에서 받은 데이터 로그 ✨
       const applications = await this.applicationService.getMyApplications(
         userId
       );
@@ -479,7 +476,7 @@ export class CommunityController {
       res.status(200).json({
         status: "success",
         message: "내가 신청한 커뮤니티 목록 조회 성공",
-        data: applications, // 이 데이터가 그대로 프론트로 전송됩니다.
+        data: applications,
       });
     } catch (err) {
       next(err);

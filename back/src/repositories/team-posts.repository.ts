@@ -1,5 +1,3 @@
-// src/zip/repositories/team-posts.repository.ts
-
 import prisma from "../utils/prisma";
 import { TeamPost, TeamPostType, Prisma } from "@prisma/client";
 
@@ -114,7 +112,6 @@ export class TeamPostRepository {
     return teamPost;
   }
 
-  // ✨ 추가: 특정 팀의 모든 팀 게시물 삭제 ✨
   public async deleteManyByTeamId(teamId: number): Promise<number> {
     const result = await prisma.teamPost.deleteMany({
       where: { teamId: teamId },

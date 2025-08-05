@@ -20,7 +20,6 @@ export const signUpValidator: ValidationChain[] = [
         .withMessage("동의안내서를 체크해주세요.")
 ];
 
-
 export const loginValidator: ValidationChain[] = [
     body('email')
         .notEmpty().withMessage("이메일을 작성해주세요.")

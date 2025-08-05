@@ -15,8 +15,8 @@ class MyLibraryController {
       const userId = req.user!;
       const { isbn13, status, myRating } = req.body;
 
-      if (!isbn13 || !status) {
-        return res.status(400).json({ message: "isbn13과 status는 필수" });
+      if (!isbn13 ) {
+        return res.status(400).json({ message: "isbn13는 필수" });
       }
 
       const upsertBook = await myLibraryService.upsertBookInLibrary(userId, {

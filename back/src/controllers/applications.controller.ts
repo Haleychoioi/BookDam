@@ -1,5 +1,3 @@
-// src/controllers/applications.controller.ts
-
 import { Request, Response, NextFunction } from "express";
 import { ApplicationService } from "../services/applications.service";
 import { ApplicationStatus } from "@prisma/client";

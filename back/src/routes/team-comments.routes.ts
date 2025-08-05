@@ -1,5 +1,3 @@
-// src/routes/team-comments.routes.ts
-
 import { Router } from "express";
 import { TeamCommentController } from "../controllers/team-comments.controller";
 import authenticate from "../middleware/authenticate-middleware";

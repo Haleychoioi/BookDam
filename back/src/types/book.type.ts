@@ -1,4 +1,3 @@
-
 export enum AladinQueryType {
   KEYWORD = 'Keyword',
   TITLE = 'Title', 
@@ -50,28 +49,6 @@ export enum AladinItemIdType {
   ITEM_ID = 'ItemId'
 }
 
-
-// 내부 서비스용 enum들 => constants> categories사용해서 주석처리
-// export enum BookCategory {
-//   NOVEL = '소설',
-//   ESSAY = '에세이',
-//   SELF_DEVELOPMENT = '자기계발',
-//   BUSINESS = '경영',
-//   HUMANITIES = '인문학',
-//   SCIENCE = '과학',
-//   HISTORY = '역사',
-//   PHILOSOPHY = '철학',
-//   PSYCHOLOGY = '심리학',
-//   COMPUTER = '컴퓨터',
-//   LANGUAGE = '외국어',
-//   TRAVEL = '여행',
-//   COOKING = '요리',
-//   HEALTH = '건강',
-//   HOBBY = '취미',
-//   CHILDREN = '아동',
-//   TEEN = '청소년',
-//   TEXTBOOK = '교재'
-// }
 
 // ===== 알라딘 API 요청 타입들 =====
 

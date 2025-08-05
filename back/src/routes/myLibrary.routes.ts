@@ -1,19 +1,16 @@
-// src/routes/myLibrary.routes.ts
-
-import { Router } from "express"; // Router 임포트 확인
+import { Router } from "express";
 import myLibraryController from "../controllers/myLibrary.controller";
 import authenticate from "../middleware/authenticate-middleware";
-// tasteAnalysisController 관련 임포트는 이 파일에서 완전히 제거됩니다.
 
-const router = Router(); // Express 라우터 인스턴스 생성
+const router = Router();
 
-// 서재에 없으면 추가, 있으면 상태변경 (POST /api/mypage/my-library)
+// 서재에 없으면 추가, 있으면 상태변경
 router.post("/", authenticate, myLibraryController.upsertBookInLibrary);
 
-// 서재 목록 보기 (GET /api/mypage/my-library)
+// 서재 목록 보기
 router.get("/", authenticate, myLibraryController.getBooksInLibrary);
 
-// 서재에 잘못추가된 도서 삭제 (DELETE /api/mypage/my-library/:isbn13)
+// 서재에 잘못추가된 도서 삭제
 router.delete(
   "/:isbn13",
   authenticate,

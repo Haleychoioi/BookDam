@@ -1,6 +1,6 @@
-
-import  wishlistRepository  from '../repositories/wishList.repository'
+import wishlistRepository from '../repositories/wishList.repository'
 import { AddWishListRequest, WishListResponse } from '../types/wishList.type';
+import { bookService } from './book.service';
 
 class WishlistService {
 
@@ -11,8 +11,10 @@ class WishlistService {
     );
 
     if (existingWish) {
-      throw new Error('BookNotFound');
+      throw new Error('BookAlreadyInWishlist');
     }
+
+    await bookService.getBookDetail(data.isbn13);
 
     return wishlistRepository.addWish(userId, data);
   };
@@ -24,7 +26,7 @@ class WishlistService {
     );
 
     if (!existingWish) {
-      throw new Error('BookNotFound');
+      throw new Error('WishNotFound');
     }
 
     return wishlistRepository.removeWish(userId, isbn13);
