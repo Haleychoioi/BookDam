@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom"; // 추가
 import { useAuth } from "../../hooks/useAuth";
 import Button from "../common/Button";
 import ApplyToCommunityModal from "../modals/ApplyToCommunityModal";
@@ -14,6 +15,7 @@ const itemsPerPage = 6;
 
 const RecruitingCommunityList: React.FC = () => {
   const { currentUserProfile } = useAuth();
+  const navigate = useNavigate(); // 추가
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(
@@ -55,6 +57,11 @@ const RecruitingCommunityList: React.FC = () => {
     if (hasNextPage) {
       fetchNextPage();
     }
+  };
+
+  // 커뮤니티 제목 클릭 시 해당 커뮤니티의 상세 페이지로 이동
+  const handleCommunityClick = (communityId: string) => {
+    navigate(`/posts/${communityId}`);
   };
 
   const handleJoinClick = (community: Community) => {
@@ -121,8 +128,11 @@ const RecruitingCommunityList: React.FC = () => {
                 key={community.id}
                 className="flex justify-between items-center border-b border-gray-200 pb-4"
               >
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                <div className="flex-1">
+                  <h3 
+                    className="text-xl font-semibold text-gray-800 mb-2 cursor-pointer"
+                    onClick={() => handleCommunityClick(community.id)}
+                  >
                     {community.title}
                   </h3>
                   <p className="text-gray-600 text-sm mb-2">
@@ -137,7 +147,7 @@ const RecruitingCommunityList: React.FC = () => {
                 </div>
                 <Button
                   onClick={() => handleJoinClick(community)}
-                  className="px-6 py-2"
+                  className="px-6 py-2 ml-4"
                   bgColor={hasApplied ? "bg-gray-400" : "bg-apply"}
                   textColor="text-white"
                   hoverBgColor={
