@@ -46,17 +46,19 @@ const PostList: React.FC<PostListProps> = ({ posts, onPostClick }) => {
             className="flex justify-between items-center pl-5 py-4 border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200"
           >
             <div className="flex items-center">
-              {/* 타입 배지 추가 */}
-              <span 
-                className={`inline-block px-2 py-1 rounded-full text-xs font-medium mr-3`}
-                style={
-                  (post as Post).type === "RECRUITMENT" 
-                    ? { backgroundColor: '#fef3cd', color: '#856404' }
-                    : { backgroundColor: '#f3f4f6', color: '#374151' }
-                }
-              >
-                {getTypeLabel(post)}
-              </span>
+              {/* 팀 게시글이 아닐 때만 배지 표시 */}
+              {"postId" in post && (
+                <span 
+                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium mr-3`}
+                  style={
+                    (post as Post).type === "RECRUITMENT" 
+                      ? { backgroundColor: '#fef3cd', color: '#856404' }
+                      : { backgroundColor: '#f3f4f6', color: '#374151' }
+                  }
+                >
+                  {getTypeLabel(post)}
+                </span>
+              )}
               <span className="text-md text-gray-800 font-medium mr-3">
                 {post.title}
               </span>
