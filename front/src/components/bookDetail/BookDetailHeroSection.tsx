@@ -16,6 +16,7 @@ import {
   removeWish,
   upsertBookToMyLibrary,
   fetchMyLibrary,
+  addRatingToMyLibrary
 } from "../../api/mypage";
 
 interface BookDetailHeroSectionProps {
@@ -68,20 +69,17 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
   };
 
   const handleAddToList = useCallback(
-    async (status: "WANT_TO_READ" | "READING" | "COMPLETED") => {
+    async (status: "WANT_TO_READ" | "READING") => {
       if (!isLoggedIn) {
         showToast("내 서재에 추가하려면 로그인이 필요합니다.", "warn");
         return;
       }
-      if (status === "COMPLETED" && selectedRating === 0) {
-        alert("별점을 선택해야 '읽었음'으로 추가할 수 있습니다.");
-        return;
-      }
+
       try {
         await upsertBookToMyLibrary(
           book.isbn13,
           status,
-          selectedRating || null
+          null
         );
 
         setIsAddToListDropdownOpen(false);
@@ -90,7 +88,6 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
       } catch (error: unknown) {
         if (error instanceof AuthRequiredError) {
           showToast(error.message, "error");
-          setSelectedRating(0);
         } else {
           console.error("내 서재 추가/수정 실패:", error);
           let errorMessage = "내 서재 추가/수정 중 오류가 발생했습니다.";
@@ -103,11 +100,34 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
         }
       }
     },
-    [book.isbn13, selectedRating, queryClient, isLoggedIn, showToast]
+    [book.isbn13, queryClient, isLoggedIn, showToast]
   );
 
-  const handleStarClick = (rating: number) => {
-    setSelectedRating(rating);
+  const handleStarClick = async (rating: number) => {
+    if (!isLoggedIn) {
+      showToast("별점을 주려면 로그인이 필요합니다.", "warn");
+      return;
+    }
+
+    try {
+      setSelectedRating(rating);
+      
+      await addRatingToMyLibrary(book.isbn13, rating);
+
+      queryClient.invalidateQueries({ queryKey: ["myLibrary"] });
+      showToast(`내 서재에 성공적으로 추가되었습니다. `, "success");
+    } catch (error: unknown) {
+      console.error("별점 추가 실패:", error);
+      setSelectedRating(0); // 실패 시 별점 초기화
+      
+      let errorMessage = "별점 추가 중 오류가 발생했습니다.";
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.message || error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      showToast(errorMessage, "error");
+    }
   };
 
   const handleWishlistClick = useCallback(
@@ -264,21 +284,6 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
                     hoverTextColor="hover:text-main"
                   >
                     읽는 중
-                  </Button>
-                  <Button
-                    onClick={() => handleAddToList("COMPLETED")}
-                    className={`block w-full text-left px-4 py-2 ${
-                      selectedRating === 0
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
-                    }`}
-                    bgColor="bg-transparent"
-                    textColor="text-gray-700"
-                    hoverBgColor="hover:bg-transparent"
-                    hoverTextColor="hover:text-main"
-                    disabled={selectedRating === 0}
-                  >
-                    읽었음
                   </Button>
                 </div>
               )}

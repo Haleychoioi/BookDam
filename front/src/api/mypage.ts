@@ -151,6 +151,20 @@ export const upsertBookToMyLibrary = async (
   }
 };
 
+export const addRatingToMyLibrary = async (
+  isbn13: string,
+  myRating: number
+) => {
+  try {
+    const requestBody = { isbn13, myRating };
+    const response = await apiClient.post(`/mypage/my-library`, requestBody);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to add rating to my library:", error);
+    throw error;
+  }
+};
+
 export const deleteBookFromMyLibrary = async (isbn13: string) => {
   try {
     const response = await apiClient.delete(`/mypage/my-library/${isbn13}`);
