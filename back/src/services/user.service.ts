@@ -111,7 +111,7 @@ export default class UserService {
                     임시 비밀번호
                 </p>
                 <p style="font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold; color: #333333; margin: 0; letter-spacing: 3px; word-break: break-all;">
-                   ${temporaryPassword}  // ← 실제 생성된 임시 비밀번호
+                   ${temporaryPassword}
                 </p>
             </div>
             
