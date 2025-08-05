@@ -17,14 +17,6 @@ const PostList: React.FC<PostListProps> = ({ posts, onPostClick }) => {
     return postWithType.type === "RECRUITMENT" ? "모집글" : "일반글";
   };
 
-  // 배지 스타일 클래스 계산 함수 (Post만 처리)
-  const getBadgeClass = (post: Post | TeamPost) => {
-    const postWithType = post as Post;
-    return postWithType.type === "RECRUITMENT" 
-      ? "recruitment-badge"  // 모집글 - 커스텀 노랑색
-      : "bg-gray-100 text-gray-800";     // 일반글
-  };
-
   return (
     <div className="border-t border-gray-300">
       {posts.map((post) => {
