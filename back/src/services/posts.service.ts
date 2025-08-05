@@ -108,7 +108,12 @@ export class PostService {
     sort?: string;
   }): Promise<Post[]> {
     const posts = await this.postRepository.findMany(query);
-    return posts;
+
+    // 타입 정보 추가
+    return posts.map(post => ({
+      ...post,
+      typeLabel: post.type === PostType.RECRUITMENT ? '모집글' : '일반글'
+    }));
   }
 
   /**

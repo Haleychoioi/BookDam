@@ -22,27 +22,28 @@ const GeneralBoardPage: React.FC = () => {
     return Math.ceil(totalPosts / itemsPerPage);
   }, [totalPosts, itemsPerPage]);
 
-  const loadPosts = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetchAllPosts(
-        currentPage,
-        itemsPerPage,
-        "latest",
-        "GENERAL"
-      );
-      setPosts(response.posts);
-      setTotalPosts(response.totalResults);
-    } catch (err: unknown) {
-      console.error("일반 게시물 불러오기 실패:", err);
-      setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
-      setPosts([]);
-      setTotalPosts(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, itemsPerPage]);
+
+const loadPosts = useCallback(async () => {
+  setLoading(true);
+  setError(null);
+  try {
+    const response = await fetchAllPosts(
+      currentPage,
+      itemsPerPage,
+      "latest",
+      undefined
+    );
+    setPosts(response.posts);
+    setTotalPosts(response.totalResults);
+  } catch (err: unknown) {
+    console.error("게시물 불러오기 실패:", err);
+    setError(err instanceof Error ? err.message : "알 수 없는 오류 발생");
+    setPosts([]);
+    setTotalPosts(0);
+  } finally {
+    setLoading(false);
+  }
+}, [currentPage, itemsPerPage]);
 
   useEffect(() => {
     loadPosts();
