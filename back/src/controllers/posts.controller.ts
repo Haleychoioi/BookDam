@@ -1,5 +1,3 @@
-// src/controllers/posts.controller.ts
-
 import { Request, Response, NextFunction } from "express";
 import { PostService } from "../services/posts.service";
 import { CustomError } from "../middleware/error-handing-middleware";
@@ -81,7 +79,6 @@ export class PostController {
         throw new CustomError(401, "인증된 사용자 ID는 필수입니다.");
       }
 
-      // ✨ 수정: 필수 필드 유효성 검사 (trim() 추가하여 빈 문자열도 막습니다.) ✨
       if (
         !title ||
         title.trim().length === 0 ||
@@ -106,7 +103,6 @@ export class PostController {
         if (error.message === "User not found") {
           next(new CustomError(404, error.message));
         } else if (error.message === "제목과 내용을 모두 입력해주세요.") {
-          // ✨ 추가: 400 에러 메시지 처리 ✨
           next(new CustomError(400, error.message));
         } else {
           next(error);
