@@ -23,12 +23,13 @@ const MyLibraryPage: React.FC = () => {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
+  // 🔥 수정: 전체 응답 데이터를 저장하도록 변경
   const {
-    data: myLibraryData,
+    data: libraryResponse,
     isLoading,
     isError,
     error,
-  } = useQuery<MyLibraryBook[], Error>({
+  } = useQuery<MyLibraryResponseData, Error>({
     queryKey: ["myLibrary", activeTab, currentPage, itemsPerPage],
     queryFn: async () => {
       const response = await fetchMyLibrary(
@@ -36,39 +37,37 @@ const MyLibraryPage: React.FC = () => {
         itemsPerPage,
         activeTab
       );
-      return response.data.map((item) => ({
-        libraryId: item.libraryId,
-        status: item.status.toLowerCase() as MyLibraryBook["status"],
-        myRating: item.myRating,
-        updatedAt: item.updatedAt,
-        book: {
-          isbn13: item.book.isbn13,
-          title: item.book.title,
-          author: item.book.author,
-          publisher: item.book.publisher,
-          cover: item.book.cover,
-          category: item.book.category,
-        },
-        user: {
-          nickname: item.user.nickname,
-        },
-      }));
+      return response; // 🔥 전체 응답 반환 (pagination 포함)
     },
     enabled: !!currentUserProfile,
     staleTime: 1000 * 60,
   });
 
-  const totalPages = useMemo(() => {
-    if (!myLibraryData) return 1;
+  // 🔥 수정: 책 데이터 변환
+  const myLibraryData = useMemo(() => {
+    if (!libraryResponse?.data) return [];
+    
+    return libraryResponse.data.map((item) => ({
+      libraryId: item.libraryId,
+      status: item.status.toLowerCase() as MyLibraryBook["status"],
+      myRating: item.myRating,
+      updatedAt: item.updatedAt,
+      book: {
+        isbn13: item.book.isbn13,
+        title: item.book.title,
+        author: item.book.author,
+        publisher: item.book.publisher,
+        cover: item.book.cover,
+        category: item.book.category,
+      },
+      user: {
+        nickname: item.user.nickname,
+      },
+    }));
+  }, [libraryResponse]);
 
-    const queryData = queryClient.getQueryData<MyLibraryResponseData>([
-      "myLibrary",
-      activeTab,
-      currentPage,
-      itemsPerPage,
-    ]);
-    return queryData?.pagination?.totalPages || 1;
-  }, [myLibraryData, activeTab, currentPage, itemsPerPage, queryClient]);
+  // 🔥 수정: pagination 정보 직접 사용
+  const totalPages = libraryResponse?.pagination?.totalPages || 1;
 
   const handleTabChange = useCallback((tab: ReadingStatus) => {
     setActiveTab(tab);
