@@ -1,8 +1,8 @@
 // src/components/home/RecruitingCommunityList.tsx
 
 import { useState } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom"; // 추가
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import Button from "../common/Button";
 import ApplyToCommunityModal from "../modals/ApplyToCommunityModal";
@@ -15,7 +15,8 @@ const itemsPerPage = 6;
 
 const RecruitingCommunityList: React.FC = () => {
   const { currentUserProfile } = useAuth();
-  const navigate = useNavigate(); // 추가
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(
@@ -53,13 +54,14 @@ const RecruitingCommunityList: React.FC = () => {
 
   const communities = data?.pages.flatMap((page) => page.communities) || [];
 
+  const totalResults = data?.pages[0].totalResults || 0;
+
   const handleLoadMore = () => {
     if (hasNextPage) {
       fetchNextPage();
     }
   };
 
-  // 커뮤니티 제목 클릭 시 해당 커뮤니티의 상세 페이지로 이동
   const handleCommunityClick = (communityId: string) => {
     navigate(`/posts/${communityId}`);
   };
@@ -85,6 +87,16 @@ const RecruitingCommunityList: React.FC = () => {
   const handleApplyModalError = (message: string) => {
     setListError(message);
     setIsModalOpen(false);
+  };
+
+  const handleApplySuccess = () => {
+    queryClient.invalidateQueries({
+      queryKey: ["allCommunities", currentUserProfile?.userId],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["appliedCommunities"],
+    });
+    handleCloseModal();
   };
 
   return (
@@ -129,7 +141,7 @@ const RecruitingCommunityList: React.FC = () => {
                 className="flex justify-between items-center border-b border-gray-200 pb-4"
               >
                 <div className="flex-1">
-                  <h3 
+                  <h3
                     className="text-xl font-semibold text-gray-800 mb-2 cursor-pointer"
                     onClick={() => handleCommunityClick(community.id)}
                   >
@@ -173,7 +185,7 @@ const RecruitingCommunityList: React.FC = () => {
         </div>
       )}
 
-      {!isLoading && !isError && hasNextPage && (
+      {!isLoading && !isError && hasNextPage && totalResults > itemsPerPage && (
         <div className="text-center mt-10">
           <Button
             onClick={handleLoadMore}
@@ -190,6 +202,7 @@ const RecruitingCommunityList: React.FC = () => {
         onClose={handleCloseModal}
         communityId={selectedCommunityId || ""}
         onError={handleApplyModalError}
+        onSuccess={handleApplySuccess}
       />
     </section>
   );

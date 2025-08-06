@@ -25,7 +25,8 @@ const BookDetailPage: React.FC = () => {
   const { itemId } = useParams<{ itemId: string }>();
 
   const queryClient = useQueryClient();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, currentUserProfile } = useAuth();
+
   const { showToast } = useToast();
 
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
@@ -131,6 +132,18 @@ const BookDetailPage: React.FC = () => {
     setIsApplyModalOpen(false);
   };
 
+  const handleApplySuccess = () => {
+    queryClient.invalidateQueries({
+      queryKey: ["allCommunities", currentUserProfile?.userId],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["bookDetailPageData", itemId, currentUserProfile?.userId],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["appliedCommunities"],
+    });
+  };
+
   const handleCreateCommunityClick = (bookIdentifier: string) => {
     if (!isLoggedIn) {
       showToast("로그인이 필요합니다.", "warn");
@@ -170,7 +183,7 @@ const BookDetailPage: React.FC = () => {
         queryKey: ["bookDetailPageData", bookIdentifier],
       });
       queryClient.invalidateQueries({
-        queryKey: ["allCommunities"],
+        queryKey: ["allCommunities", currentUserProfile?.userId],
       });
       showToast("커뮤니티가 성공적으로 생성되었습니다!", "success");
     } catch (error) {
@@ -277,6 +290,7 @@ const BookDetailPage: React.FC = () => {
           onClose={handleApplyModalClose}
           communityId={selectedCommunityId || ""}
           onError={handleApplyModalError}
+          onSuccess={handleApplySuccess}
         />
 
         {itemId && (

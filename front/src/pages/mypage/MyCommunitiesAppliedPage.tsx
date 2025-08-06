@@ -68,6 +68,8 @@ const MyCommunitiesAppliedPage: React.FC = () => {
     onSuccess: () => {
       showToast("커뮤니티 신청이 성공적으로 취소되었습니다.", "success");
       queryClient.invalidateQueries({ queryKey: ["appliedCommunities"] });
+      queryClient.invalidateQueries({ queryKey: ["allCommunities"] });
+      queryClient.invalidateQueries({ queryKey: ["bookDetailPageData"] });
     },
     onError: (error) => {
       console.error("신청 취소 중 오류 발생:", error);

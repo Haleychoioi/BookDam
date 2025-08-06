@@ -54,7 +54,7 @@ export class CommunityController {
     next: NextFunction
   ) => {
     try {
-      const isbn13 = req.params.isbn13;
+      const isbn13 = req.params.itemId;
       const size = parseInt(req.query.size as string) || 10;
       const userId = req.query.userId
         ? parseInt(req.query.userId as string)

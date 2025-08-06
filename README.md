@@ -1,58 +1,140 @@
-## ✍️ Git 커밋 메시지 규칙 (Convention)
+bookDam: 독서와 사람을 연결하는 플랫폼
+bookDam은 독서 경험을 공유하고 확장하는 데 초점을 맞춘 소셜 커뮤니티 플랫폼입니다. 사용자는 다양한 책을 탐색하고, 관심 있는 커뮤니티에 참여하며, 개인 독서 기록을 관리할 수 있습니다.
 
-팀 프로젝트의 효율적인 협업을 위해 **Conventional Commits** 규칙을 기반으로 커밋 메시지를 작성합니다. 일관된 커밋 메시지는 코드 변경 이력을 명확히 파악하고, 팀원 간의 소통을 원활하게 하는 데 큰 도움이 됩니다.
+📚 기술 스택
+이 프로젝트는 React와 Node.js 기반의 풀스택 애플리케이션으로 구성되어 있습니다.
 
-### 1. 커밋 메시지 형식
+프론트엔드 (Frontend)
 
-모든 커밋 메시지는 다음과 같은 구조를 따릅니다:
+React: UI 개발을 위한 핵심 라이브러리.
 
-- **`<type>` (필수)**: 커밋의 종류를 나타냅니다.
-- **`<scope>` (선택)**: 변경 사항이 영향을 미치는 범위를 나타냅니다. (예: `로그인`, `회원가입`, `결제` 등)
-- **`<subject>` (필수)**: 커밋의 목적을 **50자 이내**로 간결하게 요약합니다.
+TypeScript: 정적 타입 체크를 통한 코드 안정성 확보.
 
-### 2\. `<type>` (커밋 종류)
+Tailwind CSS: 유틸리티 우선의 CSS 프레임워크.
 
-아래 타입 중 하나를 반드시 사용합니다. 이는 커밋의 주요 목적을 명확히 합니다.
+React Query: 서버 상태 관리 및 데이터 캐싱.
 
-- `feat`: **새로운 기능 추가**
-  - 예: `feat: 사용자 로그인 기능 구현`
-- `fix`: **버그 수정**
-  - 예: `fix: 게시글 목록 페이지네이션 오류 수정`
-- `docs`: **문서 변경** (README, 주석 등)
-  - 예: `docs: README.md에 커밋 규칙 추가`
-- `style`: **코드 포맷팅, 세미콜론 누락 등** (코드 동작에 영향 없는 단순 스타일 변경)
-  - 예: `style: eslint 규칙에 따른 코드 포맷팅 적용`
-- `refactor`: **코드 리팩토링** (기능 변경 없이 코드 구조 개선)
-  - 예: `refactor: 사용자 인증 로직 모듈화`
-- `test`: **테스트 코드 추가 또는 수정**
-  - 예: `test: 로그인 API 유닛 테스트 추가`
-- `build`: **빌드 시스템 또는 외부 의존성 변경** (npm, yarn, webpack 등)
-  - 예: `build: webpack 설정 업데이트`
-- `ci`: **CI(Continuous Integration) 설정 파일 변경**
-  - 예: `ci: CI/CD 파이프라인 설정 추가`
-- `chore`: **자잘한 작업, 기타 변경** (코드 빌드나 테스트와 관련 없는 일반적인 유지보수)
-  - 예: `chore: 불필요한 파일 제거`
-- `perf`: **성능 개선**
-  - 예: `perf: 이미지 로딩 속도 최적화`
-- `revert`: **이전 커밋 되돌리기**
-  - 예: `revert: "feat: 관리자 페이지 추가" 커밋 되돌림`
+React Router: 클라이언트 측 라우팅.
 
-### 3\. `<subject>` (제목) 작성 가이드라인
+백엔드 (Backend)
 
-- **명령형 동사**를 사용합니다. (예: `추가`, `수정`, `구현`으로 작성)
-- 문장 끝에 **마침표를 찍지 않습니다.**
-- **과거형을 사용하지 않습니다.** (예: `로그인 기능 구현함` ❌, `로그인 기능 구현` ✅)
+Node.js & Express: 서버 구축 및 API 개발.
 
-### 4\. `<body>` (본문) (선택 사항)
+TypeScript: 서버 측 코드 안정성 확보.
 
-- **`<body>`**: 제목으로 설명하기 어려운 **자세한 설명이나 변경 이유**를 작성할 때 사용합니다.
+Prisma: ORM (Object-Relational Mapper)으로 데이터베이스 접근 관리.
 
-### 5\. 커밋 메시지 예시
+MySQL: 관계형 데이터베이스.
 
-feat(user): 사용자 프로필 조회 기능 구현
+JWT: 사용자 인증 및 권한 관리.
 
-1. 사용자 프로필 조회 API 엔드포인트 추가
+✨ 주요 기능
+도서 검색 및 정보 제공:
 
-2. 프로필 정보를 표시하는 UI 컴포넌트 개발
+알라딘 API를 활용한 도서 검색 기능.
 
-3. JWT 토큰 기반 인증 적용
+베스트셀러, 신간 등 다양한 도서 목록 제공.
+
+커뮤니티 활동:
+
+도서 기반 커뮤니티 생성 및 참여.
+
+커뮤니티 게시판에서 팀 게시물 작성, 댓글 및 대댓글 기능.
+
+커뮤니티 가입 신청 및 관리 (팀장).
+
+마이페이지:
+
+내 서재 관리 (읽고 싶은 책, 읽는 중, 읽은 책).
+
+관심 도서를 모아볼 수 있는 위시리스트.
+
+독서 기록을 분석한 취향 분석 데이터 제공.
+
+자유 게시판:
+
+일반 게시글을 작성하고 모든 사용자와 소통할 수 있는 게시판.
+
+🚀 시작하기 (Setup)
+전제 조건 (Prerequisites)
+Node.js (v18 이상)
+
+MySQL 데이터베이스
+
+Aladin API 키
+
+Gmail 계정 정보 (비밀번호 찾기 기능용)
+
+백엔드 설정
+src.zip 폴더 압축 해제 후, 백엔드 프로젝트 루트 디렉터리로 이동합니다.
+
+필요한 패키지를 설치합니다.
+
+Bash
+
+npm install
+.env 파일을 생성하고 다음 환경 변수를 설정합니다.
+
+코드 스니펫
+
+# DB
+
+DATABASE_URL="mysql://USER:PASSWORD@HOST:PORT/DATABASE"
+
+# JWT
+
+JWT_SECRET="your_jwt_secret_key"
+SALT_ROUNDS=10
+
+# Aladin API
+
+ALADIN_API_KEY="your_aladin_api_key"
+
+# Email
+
+EMAIL_HOST="smtp.gmail.com"
+EMAIL_PORT=587
+EMAIL_USER="your_email@gmail.com"
+EMAIL_PASS="your_email_password" # 앱 비밀번호 사용 권장
+
+# CORS
+
+CORS_ORIGIN="http://localhost:5173"
+데이터베이스 마이그레이션을 실행하여 테이블을 생성합니다.
+
+Bash
+
+npx prisma migrate dev --name init
+백엔드 서버를 시작합니다.
+
+Bash
+
+npm run dev
+프론트엔드 설정
+프론트엔드 프로젝트 루트 디렉터리로 이동합니다.
+
+필요한 패키지를 설치합니다.
+
+Bash
+
+npm install
+.env 파일을 생성하고 백엔드 API 서버 URL을 설정합니다.
+
+코드 스니펫
+
+VITE_API_BASE_URL="http://localhost:3000/api"
+프론트엔드 개발 서버를 시작합니다.
+
+Bash
+
+npm run dev
+브라우저에서 http://localhost:5173에 접속하여 애플리케이션을 확인합니다.
+
+🤝 기여 (Contributors)
+최아름: https://github.com/Haleychoioi
+
+박민재: https://github.com/boonmojae
+
+이하민: https://github.com/haminee01
+
+김가연: https://github.com/gayeon-00

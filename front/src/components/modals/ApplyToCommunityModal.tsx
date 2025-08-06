@@ -12,12 +12,14 @@ interface ApplyToCommunityModalProps {
   onClose: () => void;
   communityId: string;
   onError: (message: string) => void;
+  onSuccess: () => void;
 }
 
 const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
   isOpen,
   onClose,
   communityId,
+  onSuccess,
 }) => {
   const [applicationMessage, setApplicationMessage] = useState("");
   const [internalError, setInternalError] = useState<string | null>(null);
@@ -50,6 +52,8 @@ const ApplyToCommunityModal: React.FC<ApplyToCommunityModalProps> = ({
 
       showToast("커뮤니티 신청이 성공적으로 처리되었습니다.", "success");
       onClose();
+
+      onSuccess();
 
       queryClient.invalidateQueries({ queryKey: ["allCommunities"] });
       queryClient.invalidateQueries({ queryKey: ["bookDetailPageData"] });

@@ -108,9 +108,12 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
   >({
     mutationFn: ({ communityId, updateData }) =>
       updateCommunityDetails(communityId, updateData),
+
     onSuccess: () => {
       showToast("커뮤니티 정보가 성공적으로 업데이트되었습니다.", "success");
       queryClient.invalidateQueries({ queryKey: ["myRecruitingCommunities"] });
+      queryClient.invalidateQueries({ queryKey: ["allCommunities"] });
+      queryClient.invalidateQueries({ queryKey: ["bookDetailPageData"] });
     },
     onError: (err: Error) => {
       const errorMessage =
@@ -124,6 +127,8 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
     onSuccess: () => {
       showToast("커뮤니티 모집이 성공적으로 종료되었습니다.", "success");
       queryClient.invalidateQueries({ queryKey: ["myRecruitingCommunities"] });
+      queryClient.invalidateQueries({ queryKey: ["allCommunities"] });
+      queryClient.invalidateQueries({ queryKey: ["bookDetailPageData"] });
       refetch();
     },
     onError: (err) => {
@@ -143,6 +148,8 @@ const MyCommunitiesRecruitingPage: React.FC = () => {
       showToast("커뮤니티 모집이 성공적으로 취소되었습니다.", "success");
       queryClient.invalidateQueries({ queryKey: ["myRecruitingCommunities"] });
       queryClient.invalidateQueries({ queryKey: ["appliedCommunities"] });
+      queryClient.invalidateQueries({ queryKey: ["allCommunities"] });
+      queryClient.invalidateQueries({ queryKey: ["bookDetailPageData"] });
       refetch();
     },
     onError: (err) => {
