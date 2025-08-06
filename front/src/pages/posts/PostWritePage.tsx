@@ -5,11 +5,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import PostForm from "../../components/posts/PostForm";
-import { createPost } from "../../api/posts";
+import PostWriteTemplate from "../../components/posts/PostWriteTemplate";
+import { createPost, createRecruitmentPost } from "../../api/posts";
 import { createTeamPost } from "../../api/teamPosts";
 
-import type { PostType, TeamPostType } from "../../types";
+import { PostType, TeamPostType } from "../../types";
 
 const PostWritePage: React.FC = () => {
   const { communityId } = useParams<{ communityId?: string }>();
@@ -21,10 +21,15 @@ const PostWritePage: React.FC = () => {
   const isCommunityPost = !!communityId;
 
   const createGeneralPostMutation = useMutation({
-    mutationFn: async (formData: { title: string; content: string }) => {
+    mutationFn: async (formData: {
+      title: string;
+      content: string;
+      type: PostType;
+    }) => {
       const postId = await createPost({
         title: formData.title,
         content: formData.content,
+        type: formData.type as PostType,
       });
       return postId;
     },
@@ -43,11 +48,41 @@ const PostWritePage: React.FC = () => {
     },
   });
 
+  const createRecruitmentPostMutation = useMutation({
+    mutationFn: async (formData: {
+      title: string;
+      content: string;
+      type: PostType;
+      communityId: string;
+    }) => {
+      const postId = await createRecruitmentPost({
+        title: formData.title,
+        content: formData.content,
+        type: formData.type,
+        communityId: formData.communityId,
+      });
+      return postId;
+    },
+    onSuccess: (postId) => {
+      showToast("모집글이 성공적으로 작성되었습니다.", "success");
+      queryClient.invalidateQueries({ queryKey: ["allPosts"] });
+      navigate(`/posts/${postId}`);
+    },
+    onError: (err: Error) => {
+      showToast(
+        `모집글 작성 중 오류가 발생했습니다: ${
+          err.message || "알 수 없는 오류"
+        }`,
+        "error"
+      );
+    },
+  });
+
   const createTeamPostMutation = useMutation({
     mutationFn: async (formData: {
       title: string;
       content: string;
-      type?: PostType | TeamPostType;
+      type?: TeamPostType;
     }) => {
       if (!communityId) {
         throw new Error("커뮤니티 ID가 없습니다.");
@@ -79,6 +114,7 @@ const PostWritePage: React.FC = () => {
       title: string;
       content: string;
       type?: PostType | TeamPostType;
+      communityId?: string;
     }) => {
       if (!currentUserProfile || authLoading) {
         showToast("로그인이 필요합니다.", "warn");
@@ -86,10 +122,30 @@ const PostWritePage: React.FC = () => {
         return;
       }
 
-      if (isCommunityPost) {
-        createTeamPostMutation.mutate(formData);
+      if (formData.type === PostType.RECRUITMENT) {
+        if (!formData.communityId) {
+          showToast("연결할 커뮤니티를 선택해주세요.", "warn");
+          return;
+        }
+        createRecruitmentPostMutation.mutate({
+          title: formData.title,
+          content:
+            formData.content + `\n\n[커뮤니티 ID: ${formData.communityId}]`,
+          type: formData.type,
+          communityId: formData.communityId,
+        });
+      } else if (isCommunityPost) {
+        createTeamPostMutation.mutate({
+          title: formData.title,
+          content: formData.content,
+          type: formData.type as TeamPostType,
+        });
       } else {
-        createGeneralPostMutation.mutate(formData);
+        createGeneralPostMutation.mutate({
+          title: formData.title,
+          content: formData.content,
+          type: formData.type as PostType,
+        });
       }
     },
     [
@@ -98,6 +154,7 @@ const PostWritePage: React.FC = () => {
       isCommunityPost,
       createGeneralPostMutation,
       createTeamPostMutation,
+      createRecruitmentPostMutation,
       showToast,
       navigate,
     ]
@@ -112,20 +169,23 @@ const PostWritePage: React.FC = () => {
   }, [isCommunityPost, navigate, communityId]);
 
   const isLoading =
-    createGeneralPostMutation.isPending || createTeamPostMutation.isPending;
+    createGeneralPostMutation.isPending ||
+    createTeamPostMutation.isPending ||
+    createRecruitmentPostMutation.isPending;
   const error = createGeneralPostMutation.isError
     ? createGeneralPostMutation.error?.message || "오류 발생"
     : createTeamPostMutation.isError
     ? createTeamPostMutation.error?.message || "오류 발생"
+    : createRecruitmentPostMutation.isError
+    ? createRecruitmentPostMutation.error?.message || "오류 발생"
     : null;
 
   return (
-    <PostForm
+    <PostWriteTemplate
       onSubmit={handlePostSubmit}
       onCancel={handleCancel}
       loading={isLoading}
       error={error}
-      pageTitle={communityId ? "팀 게시물 작성" : "새 게시물 작성"}
       submitButtonText={communityId ? "팀 게시물 등록" : "게시물 등록"}
       isCommunityPost={!!communityId}
       initialData={{ title: "", content: "" }}

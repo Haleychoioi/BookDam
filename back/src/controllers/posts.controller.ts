@@ -1,12 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import { PostService } from "../services/posts.service";
+import { CommunityService } from "../services/communities.service";
 import { CustomError } from "../middleware/error-handing-middleware";
+import { PostType } from "@prisma/client";
 
 export class PostController {
   private postService: PostService;
+  private communityService: CommunityService;
 
   constructor() {
     this.postService = new PostService();
+    this.communityService = new CommunityService();
   }
 
   public getMyPosts = async (
@@ -72,9 +76,8 @@ export class PostController {
   ) => {
     try {
       const userId = req.user;
-      const { title, content } = req.body;
+      const { title, content, type } = req.body;
 
-      // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
         throw new CustomError(401, "인증된 사용자 ID는 필수입니다.");
       }
@@ -88,11 +91,50 @@ export class PostController {
         throw new CustomError(400, "제목과 내용을 모두 입력해주세요.");
       }
 
-      const newPost = await this.postService.createPost({
-        userId,
-        title,
-        content,
-      });
+      const postType = (type?.toUpperCase() as PostType) || PostType.GENERAL;
+      if (!Object.values(PostType).includes(postType)) {
+        throw new CustomError(400, "유효하지 않은 게시물 타입입니다.");
+      }
+
+      let newPost;
+
+      if (postType === PostType.RECRUITMENT) {
+        const match = content.match(/\[커뮤니티 ID: (\d+)\]/);
+        const communityId = match ? Number(match[1]) : null;
+
+        if (!communityId) {
+          throw new CustomError(400, "모집글에 커뮤니티 ID가 누락되었습니다.");
+        }
+
+        const communityDetails = await this.communityService.findCommunityById(
+          communityId
+        );
+
+        if (!communityDetails) {
+          throw new CustomError(404, "Community not found");
+        }
+
+        const recruitmentPostDetails = await this.postService.findPostById(
+          communityDetails.postId
+        );
+
+        newPost = await this.postService.createPost({
+          userId,
+          title,
+          content,
+          type: postType,
+          isbn13: recruitmentPostDetails.isbn13 || undefined,
+          maxMembers: recruitmentPostDetails.maxMembers || undefined,
+        });
+      } else {
+        newPost = await this.postService.createPost({
+          userId,
+          title,
+          content,
+          type: postType,
+        });
+      }
+
       res.status(201).json({
         status: "success",
         message: "게시물 작성 완료",
@@ -124,7 +166,6 @@ export class PostController {
     try {
       const { id: rawPostId } = req.params;
 
-      // 필수 필드 및 타입 유효성 검사
       if (rawPostId === undefined) {
         throw new CustomError(400, "게시물 ID가 필요합니다.");
       }
@@ -164,12 +205,10 @@ export class PostController {
       const userId = req.user;
       const { title, content } = req.body;
 
-      // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
         throw new CustomError(401, "인증된 사용자 ID는 필수입니다.");
       }
 
-      // 필수 필드 및 타입 유효성 검사
       if (rawPostId === undefined || (!title && !content)) {
         throw new CustomError(
           400,
@@ -202,7 +241,7 @@ export class PostController {
   };
 
   /**
-   * DELETE /posts/:id - 특정 게시물 삭제
+   * DELETE /posts/:id - 일반 게시물 삭제 (추가된 메서드)
    */
   public deletePost = async (
     req: Request,
@@ -213,12 +252,10 @@ export class PostController {
       const { id: rawPostId } = req.params;
       const userId = req.user;
 
-      // 인증된 사용자 ID가 없는 경우
       if (userId === undefined) {
         throw new CustomError(401, "인증된 사용자 ID는 필수입니다.");
       }
 
-      // 필수 필드 및 타입 유효성 검사
       if (rawPostId === undefined) {
         throw new CustomError(400, "필수 정보(게시물 ID)가 누락되었습니다.");
       }
@@ -239,6 +276,55 @@ export class PostController {
           error.message === "Unauthorized: You can only delete your own posts."
         ) {
           next(new CustomError(403, error.message));
+        } else {
+          next(error);
+        }
+      } else {
+        next(error);
+      }
+    }
+  };
+
+  /**
+   * DELETE /posts/:id - 특정 게시물 삭제
+   */
+  public deleteRecruitmentPost = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const { id: rawPostId } = req.params;
+      const userId = req.user;
+
+      if (userId === undefined) {
+        throw new CustomError(401, "인증된 사용자 ID는 필수입니다.");
+      }
+
+      if (rawPostId === undefined) {
+        throw new CustomError(400, "필수 정보(게시물 ID)가 누락되었습니다.");
+      }
+
+      const postId = Number(rawPostId);
+      if (isNaN(postId)) {
+        throw new CustomError(400, "유효한 게시물 ID가 아닙니다.");
+      }
+
+      await this.postService.deleteRecruitmentPost(postId, userId);
+
+      res
+        .status(200)
+        .json({ status: "success", message: "모집 게시물 삭제 완료" });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "Post not found") {
+          next(new CustomError(404, error.message));
+        } else if (
+          error.message === "Unauthorized: You can only delete your own posts."
+        ) {
+          next(new CustomError(403, error.message));
+        } else if (error.message === "Post is not a recruitment post.") {
+          next(new CustomError(400, error.message));
         } else {
           next(error);
         }

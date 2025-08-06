@@ -60,18 +60,22 @@ const WishlistPage: React.FC = () => {
     window.scrollTo(0, 0);
   };
 
-  const removeWishMutation = useMutation<void, Error, string>({
-    mutationFn: (isbn13: string) => removeWish(isbn13),
-    onSuccess: (_, variables) => {
+  const removeWishMutation = useMutation<
+    void,
+    Error,
+    { isbn13: string; bookTitle: string }
+  >({
+    mutationFn: ({ isbn13 }) => removeWish(isbn13),
+    onSuccess: (_, { bookTitle }) => {
       showToast(
-        `'${variables}'이(가) 위시리스트에서 삭제되었습니다.`,
+        `'${bookTitle}'이(가) 위시리스트에서 삭제되었습니다.`,
         "success"
       );
 
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
 
       queryClient.invalidateQueries({
-        queryKey: ["bookDetail", variables, isLoggedIn],
+        queryKey: ["bookDetail"],
       });
     },
     onError: (error) => {
@@ -85,9 +89,7 @@ const WishlistPage: React.FC = () => {
 
   const handleRemoveFromWishlist = useCallback(
     (isbn13: string, bookTitle: string) => {
-      if (confirm(`'${bookTitle}'을(를) 위시리스트에서 삭제하시겠습니까?`)) {
-        removeWishMutation.mutate(isbn13);
-      }
+      removeWishMutation.mutate({ isbn13, bookTitle });
     },
     [removeWishMutation]
   );

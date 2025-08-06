@@ -23,4 +23,11 @@ router.patch("/:id", authenticate, postController.updatePost);
 // DELETE /posts/:id - 특정 게시물 삭제 (인증 필요)
 router.delete("/:id", authenticate, postController.deletePost);
 
+// DELETE /posts/:id/recruitment-only - 모집 게시물만 삭제
+router.delete(
+  "/:id/recruitment-only",
+  authenticate,
+  postController.deleteRecruitmentPost
+);
+
 export default router;

@@ -64,10 +64,6 @@ export class PostService {
       );
     }
 
-    console.log(
-      `[PostService] combinedPosts total count before pagination: ${combinedPosts.length}`
-    );
-
     combinedPosts.sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
@@ -78,10 +74,6 @@ export class PostService {
     const totalPages = Math.ceil(totalCount / pageSize);
     const skip = (page - 1) * pageSize;
     const paginatedPosts = combinedPosts.slice(skip, skip + pageSize);
-
-    console.log(
-      `[PostService] paginatedPosts count: ${paginatedPosts.length}, TotalCount: ${totalCount}`
-    );
 
     return {
       posts: paginatedPosts,
@@ -109,15 +101,14 @@ export class PostService {
   }): Promise<Post[]> {
     const posts = await this.postRepository.findMany(query);
 
-    // 타입 정보 추가
-    return posts.map(post => ({
+    return posts.map((post) => ({
       ...post,
-      typeLabel: post.type === PostType.RECRUITMENT ? '모집글' : '일반글'
+      typeLabel: post.type === PostType.RECRUITMENT ? "모집글" : "일반글",
     }));
   }
 
   /**
-   * 전체 게시판에 게시물 작성 (일반글)
+   * 전체 게시판에 게시물 작성 (일반글 및 모집글)
    * @param postData
    * @returns
    * @throws
@@ -126,10 +117,15 @@ export class PostService {
     userId: number;
     title: string;
     content: string;
+    type: PostType;
+    maxMembers?: number;
+    isbn13?: string;
   }): Promise<Post> {
     const newPost = await this.postRepository.create({
       ...postData,
-      type: PostType.GENERAL,
+      type: postData.type,
+      maxMembers: postData.maxMembers,
+      isbn13: postData.isbn13,
     });
     return newPost;
   }
@@ -164,7 +160,6 @@ export class PostService {
       throw new CustomError(404, "Post not found");
     }
 
-    // 수정 권한 확인: 요청하는 userId가 게시물 작성자인지 확인
     if (existingPost.userId !== updateData.userId) {
       throw new CustomError(
         403,
@@ -187,13 +182,45 @@ export class PostService {
     postId: number,
     requestingUserId: number
   ): Promise<void> {
-    // 반환 타입을 Promise<void>로 변경
     const existingPost = await this.postRepository.findById(postId);
     if (!existingPost) {
       throw new CustomError(404, "Post not found");
     }
 
-    // 삭제 권한 확인: 요청하는 userId가 게시물 작성자인지 확인
+    if (existingPost.userId !== requestingUserId) {
+      throw new CustomError(
+        403,
+        "Unauthorized: You can only delete your own posts."
+      );
+    }
+
+    try {
+      await this.postRepository.delete(postId);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * 모집 게시글만 삭제 (커뮤니티는 유지)
+   * @param postId
+   * @param requestingUserId
+   * @returns
+   * @throws
+   */
+  public async deleteRecruitmentPost(
+    postId: number,
+    requestingUserId: number
+  ): Promise<void> {
+    const existingPost = await this.postRepository.findById(postId);
+    if (!existingPost) {
+      throw new CustomError(404, "Post not found");
+    }
+
+    if (existingPost.type !== PostType.RECRUITMENT) {
+      throw new CustomError(400, "Post is not a recruitment post.");
+    }
+
     if (existingPost.userId !== requestingUserId) {
       throw new CustomError(
         403,

@@ -1,3 +1,4 @@
+// src/services/communities.service.ts
 import { CommunityRepository } from "../repositories/communities.repository";
 import { PostRepository } from "../repositories/posts.repository";
 import { TeamMemberRepository } from "../repositories/team-members.repository";
@@ -163,66 +164,71 @@ export class CommunityService {
   }
 
   /**
- * 새로운 커뮤니티 생성
- * @param communityData
- * @returns TeamCommunity
- * @throws
- */
-public async createCommunity(communityData: {
-  userId: number;
-  isbn13: string;
-  title: string;
-  content: string;
-  maxMembers: number;
-}): Promise<TeamCommunity> {
-  // 책이 존재하지 않으면 알라딘 API에서 가져와서 저장
-  await bookService.getBookDetail(communityData.isbn13);
-  
-  const newCommunity = await prisma.$transaction(
-    async (prismaTransaction) => {
-      const user = await this.userRepository.findById(communityData.userId);
-      if (!user) {
-        throw new CustomError(404, "User not found.");
-      }
+   * 새로운 커뮤니티 생성
+   * @param communityData
+   * @returns TeamCommunity
+   * @throws
+   */
+  public async createCommunity(communityData: {
+    userId: number;
+    isbn13: string;
+    title: string;
+    content: string;
+    maxMembers: number;
+  }): Promise<TeamCommunity> {
+    await bookService.getBookDetail(communityData.isbn13);
 
-      const recruitmentPost = await prismaTransaction.post.create({
-        data: {
-          userId: communityData.userId,
-          title: communityData.title,
-          content: communityData.content,
-          type: PostType.RECRUITMENT,
-          maxMembers: communityData.maxMembers,
-          recruitmentStatus: RecruitmentStatus.RECRUITING,
-          isbn13: communityData.isbn13,
-        },
-      });
+    const newCommunity = await prisma.$transaction(
+      async (prismaTransaction) => {
+        const user = await this.userRepository.findById(communityData.userId);
+        if (!user) {
+          throw new CustomError(404, "User not found.");
+        }
 
-      const createdCommunityEntry =
-        await prismaTransaction.teamCommunity.create({
+        const recruitmentPost = await prismaTransaction.post.create({
           data: {
-            postId: recruitmentPost.postId,
+            userId: communityData.userId,
+            title: communityData.title,
+            content: communityData.content,
+            type: PostType.RECRUITMENT,
+            maxMembers: communityData.maxMembers,
+            recruitmentStatus: RecruitmentStatus.RECRUITING,
             isbn13: communityData.isbn13,
-            status: CommunityStatus.RECRUITING,
-            postTitle: recruitmentPost.title,
-            postContent: recruitmentPost.content,
-            postAuthor: user.nickname,
           },
         });
 
-      await prismaTransaction.teamMember.create({
-        data: {
-          userId: communityData.userId,
-          teamId: createdCommunityEntry.teamId,
-          role: TeamRole.LEADER,
-        },
-      });
+        const createdCommunityEntry =
+          await prismaTransaction.teamCommunity.create({
+            data: {
+              postId: recruitmentPost.postId,
+              isbn13: communityData.isbn13,
+              status: CommunityStatus.RECRUITING,
+              postTitle: recruitmentPost.title,
+              postContent: recruitmentPost.content,
+              postAuthor: user.nickname,
+            },
+          });
 
-      return createdCommunityEntry;
-    }
-  );
+        const updatedPostContent = `${recruitmentPost.content}\n\n[커뮤니티 ID: ${createdCommunityEntry.teamId}]`;
+        await prismaTransaction.post.update({
+          where: { postId: recruitmentPost.postId },
+          data: { content: updatedPostContent },
+        });
 
-  return newCommunity;
-}
+        await prismaTransaction.teamMember.create({
+          data: {
+            userId: communityData.userId,
+            teamId: createdCommunityEntry.teamId,
+            role: TeamRole.LEADER,
+          },
+        });
+
+        return createdCommunityEntry;
+      }
+    );
+
+    return newCommunity;
+  }
 
   /**
    * 특정 도서 관련 커뮤니티 목록 조회
@@ -456,7 +462,6 @@ public async createCommunity(communityData: {
       );
     }
 
-    // 모집글 정보 가져오기 (maxMembers 확인용)
     const recruitmentPost = await this.postRepository.findById(
       community.postId
     );
@@ -482,7 +487,6 @@ public async createCommunity(communityData: {
       { status: CommunityStatus.ACTIVE }
     );
 
-    // 모집글 상태도 업데이트 (선택 사항: CLOSED로 변경하여 더 이상 노출되지 않도록)
     await this.postRepository.update(community.postId, {
       recruitmentStatus: RecruitmentStatus.CLOSED,
     });

@@ -85,9 +85,7 @@ export class PostRepository {
       findManyOptions.orderBy = { createdAt: "desc" };
     } else if (sort === "oldest") {
       findManyOptions.orderBy = { createdAt: "asc" };
-    }
-
-    else {
+    } else {
       findManyOptions.orderBy = { createdAt: "desc" };
     }
 

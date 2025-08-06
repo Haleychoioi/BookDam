@@ -1,3 +1,5 @@
+// src/components/common/HeartButton.tsx
+
 import { useState } from "react";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 
@@ -14,9 +16,13 @@ const HeartButton: React.FC<HeartButtonProps> = ({
 }) => {
   const [isWishlisted, setIsWishlisted] = useState(initialIsWishlisted);
 
-  const handleClick = () => {
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+
     const newWishlistStatus = !isWishlisted;
     setIsWishlisted(newWishlistStatus);
+
     onClick(newWishlistStatus);
   };
 

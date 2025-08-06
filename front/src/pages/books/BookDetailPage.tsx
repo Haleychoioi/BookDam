@@ -44,34 +44,28 @@ const BookDetailPage: React.FC = () => {
     isError: isErrorBook,
     error: errorBook,
   } = useQuery<BookDetail, Error>({
-    queryKey: ["bookDetail", itemId, isLoggedIn],
+    queryKey: ["bookDetail", itemId],
     queryFn: async () => {
       if (!itemId) {
         throw new Error("도서 ID가 제공되지 않았습니다.");
       }
-      const fetchedBookDetail = await getBookDetail(itemId);
-
-      let isBookWishlisted = false;
-      if (isLoggedIn) {
-        try {
-          const wishlist = await fetchWishlist();
-          isBookWishlisted = wishlist.some(
-            (item) => item.book.isbn13 === itemId
-          );
-        } catch (wishlistError) {
-          console.error("Failed to fetch wishlist:", wishlistError);
-        }
-      }
-
-      return {
-        ...fetchedBookDetail,
-        isWished: isBookWishlisted,
-      };
+      return getBookDetail(itemId);
     },
     enabled: !!itemId,
     staleTime: 1000 * 60 * 5,
     retry: 1,
   });
+
+  const { data: wishlistData } = useQuery({
+    queryKey: ["wishlist"],
+    queryFn: fetchWishlist,
+    enabled: isLoggedIn,
+    staleTime: 1000 * 60,
+  });
+
+  const isBookWishlisted =
+    wishlistData?.some((item) => item.book && item.book.isbn13 === itemId) ||
+    false;
 
   const {
     data: bestsellers,
@@ -220,7 +214,7 @@ const BookDetailPage: React.FC = () => {
 
       <div className="container mx-auto px-4 lg:px-48">
         <BookDetailHeroSection
-          book={book}
+          book={{ ...book, isWished: isBookWishlisted }}
           onCreateCommunityClick={handleCreateCommunityClick}
         />
 

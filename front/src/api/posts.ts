@@ -1,7 +1,7 @@
 // src/api/posts.ts
 
 import apiClient from "./apiClient";
-import type { Post, TeamPost } from "../types";
+import type { Post, PostType, TeamPost } from "../types";
 
 // =========================================================
 // 일반 게시물 관련 API
@@ -10,6 +10,7 @@ import type { Post, TeamPost } from "../types";
 export const createPost = async (postData: {
   title: string;
   content: string;
+  type?: PostType;
 }): Promise<string> => {
   try {
     const response = await apiClient.post<{
@@ -20,6 +21,25 @@ export const createPost = async (postData: {
     return response.data.postId.toString();
   } catch (error) {
     console.error("Failed to create post:", error);
+    throw error;
+  }
+};
+
+export const createRecruitmentPost = async (postData: {
+  title: string;
+  content: string;
+  type: PostType;
+  communityId: string;
+}): Promise<string> => {
+  try {
+    const response = await apiClient.post<{
+      status: string;
+      message: string;
+      postId: number;
+    }>(`/posts/write`, postData);
+    return response.data.postId.toString();
+  } catch (error) {
+    console.error("Failed to create recruitment post:", error);
     throw error;
   }
 };
@@ -111,6 +131,26 @@ export const deletePost = async (
     await apiClient.delete(`/posts/${postId}`, { data: { userId } });
   } catch (error) {
     console.error("Failed to delete post:", error);
+    throw error;
+  }
+};
+
+/**
+ * 특정 모집 게시글만 삭제합니다. (커뮤니티는 유지)
+ * DELETE /api/posts/:postId/recruitment-only
+ * @param postId - 삭제할 게시물 ID (number)
+ * @param userId - 삭제를 요청하는 사용자 ID (권한 확인용)
+ */
+export const deleteRecruitmentPost = async (
+  postId: number,
+  userId: number
+): Promise<void> => {
+  try {
+    await apiClient.delete(`/posts/${postId}/recruitment-only`, {
+      data: { userId },
+    });
+  } catch (error) {
+    console.error("Failed to delete recruitment post:", error);
     throw error;
   }
 };

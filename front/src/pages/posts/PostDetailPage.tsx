@@ -7,13 +7,23 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../../hooks/useToast";
 import PostDetailTemplate from "../../components/posts/PostDetailTemplate";
 import CommentList from "../../components/comments/CommentList";
-
-import type { Post, Comment, TeamPost, TeamComment } from "../../types";
+import type {
+  Post,
+  Comment,
+  TeamPost,
+  TeamComment,
+  Community,
+} from "../../types";
 import CommentInput, {
   type CommentInputRef,
 } from "../../components/comments/CommentInput";
 
-import { fetchPostById, updatePost, deletePost } from "../../api/posts";
+import {
+  fetchPostById,
+  updatePost,
+  deletePost,
+  deleteRecruitmentPost,
+} from "../../api/posts";
 import {
   fetchTeamPostById,
   updateTeamPost,
@@ -31,6 +41,10 @@ import {
   updateTeamComment,
   deleteTeamComment,
 } from "../../api/teamComments";
+import {
+  fetchMyRecruitingCommunities,
+  fetchCommunityById,
+} from "../../api/communities";
 
 const getCommentActualId = (comment: Comment | TeamComment): number | null => {
   if ("commentId" in comment) {
@@ -98,9 +112,6 @@ const PostDetailPage: React.FC = () => {
   const fetchPostDetailQueryFn = useCallback(async (): Promise<
     Post | TeamPost
   > => {
-    if (!currentUserProfile) {
-      throw new Error("로그인이 필요합니다.");
-    }
     if (isNaN(parsedPostId)) {
       throw new Error("유효하지 않은 게시물 ID입니다.");
     }
@@ -113,7 +124,7 @@ const PostDetailPage: React.FC = () => {
     } else {
       return await fetchPostById(parsedPostId);
     }
-  }, [currentUserProfile, parsedPostId, communityId, isTeamPostPageCalculated]);
+  }, [parsedPostId, communityId, isTeamPostPageCalculated]);
 
   const {
     data: post,
@@ -126,7 +137,6 @@ const PostDetailPage: React.FC = () => {
     queryFn: fetchPostDetailQueryFn,
     enabled:
       !authLoading &&
-      !!currentUserProfile &&
       !isNaN(parsedPostId) &&
       (isTeamPostPageCalculated ? !!communityId : true),
     staleTime: 1000 * 60 * 5,
@@ -141,9 +151,6 @@ const PostDetailPage: React.FC = () => {
   } = useQuery<(Comment | TeamComment)[], Error>({
     queryKey: ["comments", parsedPostId, communityId] as const,
     queryFn: async () => {
-      if (!currentUserProfile) {
-        throw new Error("로그인이 필요합니다.");
-      }
       let fetchedComments: (Comment | TeamComment)[];
       if (isTeamPostPageCalculated) {
         if (!communityId) throw new Error("커뮤니티 ID가 유효하지 않습니다.");
@@ -153,12 +160,64 @@ const PostDetailPage: React.FC = () => {
       }
       return recursivelyAssignDepth(fetchedComments);
     },
+    enabled: !isLoadingPost && !isErrorPost && !!post && !authLoading,
+  });
+
+  const isRecruitmentPost = (post as Post)?.type === "RECRUITMENT";
+
+  const recruitmentCommunityId = useMemo(() => {
+    if (isRecruitmentPost) {
+      const match = post?.content.match(/\[커뮤니티 ID: (\d+)\]/);
+      return match ? match[1] : null;
+    }
+    return null;
+  }, [post, isRecruitmentPost]);
+
+  const contentForDisplay = useMemo(() => {
+    if (!post) return "";
+    let content = post.content;
+    if (isRecruitmentPost) {
+      content = content.replace(/\[커뮤니티 ID: (\d+)\]/, "").trim();
+    }
+    return content;
+  }, [post, isRecruitmentPost]);
+
+  const { data: myRecruitingCommunities, isLoading: isLoadingMyCommunities } =
+    useQuery<Community[], Error>({
+      queryKey: ["myRecruitingCommunities", currentUserProfile?.userId],
+      queryFn: fetchMyRecruitingCommunities,
+      enabled: !!recruitmentCommunityId && !!currentUserProfile?.userId,
+      staleTime: 1000 * 60 * 5,
+      retry: false,
+    });
+
+  const { isLoading: isLoadingGeneralCommunity } = useQuery<Community, Error>({
+    queryKey: ["communityDetail", recruitmentCommunityId],
+    queryFn: async () => {
+      if (!recruitmentCommunityId) {
+        throw new Error("커뮤니티 ID가 없습니다.");
+      }
+      const response = await fetchCommunityById(Number(recruitmentCommunityId));
+      return {
+        id: response.teamId.toString(),
+        title: response.postTitle,
+        description: response.postContent,
+        hostName: response.postAuthor,
+        hostId: 0,
+        currentMembers: 0,
+        maxMembers: 0,
+        role: "member",
+        status: "모집중",
+        createdAt: response.createdAt,
+      };
+    },
     enabled:
-      !isLoadingPost &&
-      !isErrorPost &&
-      !!post &&
-      !authLoading &&
-      !!currentUserProfile,
+      isRecruitmentPost &&
+      !!recruitmentCommunityId &&
+      !isLoadingMyCommunities &&
+      !myRecruitingCommunities,
+    staleTime: 1000 * 60 * 5,
+    retry: 1,
   });
 
   useEffect(() => {
@@ -173,7 +232,7 @@ const PostDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (!isLoadingPost && !isErrorPost && post) {
-      setEditedContent(post.content);
+      setEditedContent(contentForDisplay);
     }
     if (isErrorPost) {
       console.error("게시물 불러오기 오류 (useEffect):", errorPost);
@@ -188,6 +247,7 @@ const PostDetailPage: React.FC = () => {
     isErrorPost,
     post,
     errorPost,
+    contentForDisplay,
   ]);
 
   const isPostAuthor = useMemo(
@@ -434,9 +494,9 @@ const PostDetailPage: React.FC = () => {
   const handleCancelEdit = useCallback(() => {
     setIsEditing(false);
     if (post) {
-      setEditedContent(post.content);
+      setEditedContent(contentForDisplay);
     }
-  }, [post]);
+  }, [post, contentForDisplay]);
 
   const handleDeletePost = useCallback(async () => {
     if (!post) return;
@@ -456,7 +516,14 @@ const PostDetailPage: React.FC = () => {
           if (!communityIdFromPath) throw new Error("커뮤니티 ID가 없습니다.");
           await deleteTeamPost(communityIdFromPath, parsedPostId);
         } else {
-          await deletePost(parsedPostId, currentUserProfile.userId);
+          if (isRecruitmentPost) {
+            await deleteRecruitmentPost(
+              parsedPostId,
+              currentUserProfile.userId
+            );
+          } else {
+            await deletePost(parsedPostId, currentUserProfile.userId);
+          }
         }
         showToast("게시물이 성공적으로 삭제되었습니다.", "success");
         navigate(backToBoardPath);
@@ -484,9 +551,13 @@ const PostDetailPage: React.FC = () => {
     backToBoardPath,
     location.pathname,
     showToast,
+    isRecruitmentPost,
   ]);
 
-  if (isLoadingPost) {
+  const isLoadingCombined =
+    isLoadingPost || isLoadingMyCommunities || isLoadingGeneralCommunity;
+
+  if (isLoadingCombined) {
     return (
       <div className="text-center py-12 text-xl text-gray-700">
         게시물 로딩 중...
@@ -523,7 +594,13 @@ const PostDetailPage: React.FC = () => {
       onCancelEdit={handleCancelEdit}
       isPostAuthor={isPostAuthor}
       currentUserProfile={currentUserProfile || undefined}
+      displayContent={contentForDisplay}
     >
+      {/* {shouldRenderRecruitingCard && (
+        <div className="mt-8 px-10">
+          <RecruitingPostCard community={finalRecruitingCommunity} />
+        </div>
+      )} */}
       <div className="mt-12 px-10">
         <h3 className="text-xl font-bold text-gray-800 mb-4">댓글</h3>
         <CommentInput

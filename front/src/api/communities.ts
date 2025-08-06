@@ -288,24 +288,25 @@ export const deleteCommunity = async (communityId: number): Promise<void> => {
 
 /**
  * 커뮤니티 가입을 신청합니다.
- * POST /api/mypage/communities/:communityId/apply
+ * POST /api/communities/:communityId/apply
  * @param communityId - 신청할 커뮤니티 ID
  * @param applicationMessage - 신청 메시지
  */
 export const applyToCommunity = async (
-  communityId: string,
-  applicationMessage: string
-): Promise<void> => {
+  communityId: string, // communityId는 string
+  applicationMessage: string // applicationMessage 추가
+): Promise<string> => {
   try {
-    await apiClient.post(`/mypage/communities/${communityId}/apply`, {
-      applicationMessage,
-    });
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      console.error("Failed to apply to community:", err);
-      throw err;
-    }
-    throw new Error("Unknown error occurred");
+    const response = await apiClient.post(
+      `/mypage/communities/${communityId}/apply`,
+      {
+        applicationMessage,
+      }
+    );
+    return response.data.message;
+  } catch (error) {
+    console.error("Failed to apply to community:", error);
+    throw error;
   }
 };
 

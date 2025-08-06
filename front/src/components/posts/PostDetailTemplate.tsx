@@ -26,6 +26,7 @@ interface PostDetailTemplateProps {
   onCancelEdit: () => void;
   isPostAuthor: boolean;
   currentUserProfile?: UserProfile;
+  displayContent: string;
 }
 
 const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
@@ -42,6 +43,7 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
   onCancelEdit,
   isPostAuthor,
   currentUserProfile,
+  displayContent,
 }) => {
   const DEFAULT_AVATAR_BASE_URL =
     "https://api.dicebear.com/8.x/identicon/svg?seed=";
@@ -75,7 +77,6 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
   const isModified = post?.updatedAt && post.updatedAt !== post.createdAt;
 
   const displayTitle = post?.title || "게시물 없음";
-  const displayContent = post?.content || "";
   const displayCreatedAt = post?.createdAt
     ? formatKoreanDateTime(post.createdAt)
     : "날짜 미상";

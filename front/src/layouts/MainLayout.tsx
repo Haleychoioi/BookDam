@@ -7,7 +7,7 @@ const MainLayout: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-white">
       <Header />
 
-      <main className="flex-grow pt-20">
+      <main className="flex-grow pt-20 pb-20 overflow-x-hidden">
         <Outlet />
       </main>
 
