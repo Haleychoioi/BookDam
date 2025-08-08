@@ -208,11 +208,11 @@ const BookDetailPage: React.FC = () => {
 
   return (
     <div>
-      <div className="py-4 px-4">
+      <div className="py-3">
         <SearchBar placeholder="도서 검색" className="max-w-lg mx-auto" />
       </div>
 
-      <div className="container mx-auto px-4 lg:px-48">
+      <div className="container mx-auto px-4 md:px-20">
         <BookDetailHeroSection
           book={{ ...book, isWished: isBookWishlisted }}
           onCreateCommunityClick={handleCreateCommunityClick}
@@ -229,7 +229,7 @@ const BookDetailPage: React.FC = () => {
           </div>
         )}
 
-        <h2 className="text-2xl text-gray-800 text-center mb-4 mt-16">
+        <h2 className="text-2xl text-gray-800 text-center mt-12">
           모집 중인 커뮤니티
         </h2>
         <div className="p-6">
@@ -245,19 +245,19 @@ const BookDetailPage: React.FC = () => {
           </p>
         ) : isErrorGenreRecommendations ? (
           <p className="text-center text-red-600">
-            오류:{" "}
+            오류:
             {errorGenreRecommendations?.message ||
               "장르별 추천 도서를 불러오는 데 실패했습니다."}
           </p>
         ) : genreRecommendations && genreRecommendations.length > 0 ? (
-          <div className="p-6 mt-16">
+          <div className="p-6 mt-4">
             <BookCarousel
               title={`"${book.category}" 장르에서 당신이 좋아할 만한 책`}
               books={genreRecommendations}
             />
           </div>
         ) : (
-          <div className="p-6 mt-8 text-center text-gray-600">
+          <div className="p-6text-center text-gray-600">
             이 장르에 대한 추천 도서를 찾을 수 없습니다.
           </div>
         )}
@@ -266,12 +266,12 @@ const BookDetailPage: React.FC = () => {
           <p className="text-center text-gray-600">베스트셀러 로딩 중...</p>
         ) : isErrorBestsellers ? (
           <p className="text-center text-red-600">
-            오류:{" "}
+            오류:
             {errorBestsellers?.message ||
               "베스트셀러를 불러오는 데 실패했습니다."}
           </p>
         ) : bestsellers && bestsellers.length > 0 ? (
-          <div className="p-6 mt-16">
+          <div className="p-6 mt-4">
             <BookCarousel
               title="🏆 지금 가장 뜨거운 베스트셀러"
               books={bestsellers}

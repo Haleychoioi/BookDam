@@ -354,7 +354,10 @@ const RegisterPage: React.FC = () => {
             간단한 절차로 회원 가입을 통해 다양한 혜택을 누리실 수 있습니다.
           </h2>
         </div>
-        <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="max-w-sm sm:max-w-md mx-auto space-y-4"
+        >
           <div>
             <label htmlFor="name" className="block text-sm font-semibold mb-1">
               이름

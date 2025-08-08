@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import Button from "../common/Button";
 import ApplyToCommunityModal from "../modals/ApplyToCommunityModal";
 import { FaChevronLeft, FaChevronRight, FaUserFriends } from "react-icons/fa";
@@ -19,6 +20,7 @@ const CommunityCarousel: React.FC<CommunityCarouselProps> = ({
   bookIsbn13,
   onApplyClick,
 }) => {
+  const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
   const itemsPerPage = 3;
   const { currentUserProfile } = useAuth();
@@ -67,6 +69,17 @@ const CommunityCarousel: React.FC<CommunityCarouselProps> = ({
     setIsModalOpen(false);
   };
 
+  const handleApplySuccess = () => {
+    queryClient.invalidateQueries({
+      queryKey: ["allCommunities", currentUserProfile?.userId],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["bookDetailPageData", bookIsbn13, currentUserProfile?.userId],
+    });
+    queryClient.invalidateQueries({ queryKey: ["appliedCommunities"] });
+    handleCloseModal();
+  };
+
   const visibleCommunities = communities
     ? communities.slice(currentIndex, currentIndex + itemsPerPage)
     : [];
@@ -101,7 +114,7 @@ const CommunityCarousel: React.FC<CommunityCarouselProps> = ({
   }
 
   return (
-    <div className="mb-16">
+    <div>
       <div className="flex items-center justify-center space-x-4">
         <button
           onClick={handlePrev}
@@ -113,8 +126,8 @@ const CommunityCarousel: React.FC<CommunityCarouselProps> = ({
           <FaChevronLeft className="w-5 h-5 text-gray-500" />
         </button>
 
-        <div className="flex flex-grow justify-center space-x-8 ">
-          <div className="flex space-x-12 overflow-hidden">
+        <div className="flex flex-grow justify-center space-x-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 overflow-hidden">
             {visibleCommunities.map((community: Community, idx: number) => {
               const isCurrentUserHost =
                 currentUserProfile?.userId === community.hostId;
@@ -123,7 +136,7 @@ const CommunityCarousel: React.FC<CommunityCarouselProps> = ({
               return (
                 <div
                   key={`${community.id}-${currentIndex + idx}`}
-                  className="w-64 h-72 rounded-xl shadow-lg flex-shrink-0 bg-white border border-gray-200 p-6 mb-10 flex flex-col justify-between"
+                  className="w-full rounded-xl flex-shrink-0 border border-gray-200 p-6 flex flex-col justify-between"
                 >
                   <div>
                     <h3 className="font-semibold text-2xl text-gray-800 mb-1 leading-tight">
@@ -175,7 +188,7 @@ const CommunityCarousel: React.FC<CommunityCarouselProps> = ({
                 .map((_, i) => (
                   <div
                     key={`community-placeholder-${i}`}
-                    className="w-64 h-80 flex-shrink-0"
+                    className="w-64 h-64 flex-shrink-0"
                   />
                 ))}
           </div>
@@ -207,6 +220,7 @@ const CommunityCarousel: React.FC<CommunityCarouselProps> = ({
         onClose={handleCloseModal}
         communityId={selectedCommunityId || ""}
         onError={handleApplyModalError}
+        onSuccess={handleApplySuccess}
       />
     </div>
   );

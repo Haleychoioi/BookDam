@@ -46,7 +46,7 @@ const MyLibraryPage: React.FC = () => {
   // 🔥 수정: 책 데이터 변환
   const myLibraryData = useMemo(() => {
     if (!libraryResponse?.data) return [];
-    
+
     return libraryResponse.data.map((item) => ({
       libraryId: item.libraryId,
       status: item.status.toLowerCase() as MyLibraryBook["status"],
@@ -165,7 +165,7 @@ const MyLibraryPage: React.FC = () => {
         {booksToDisplay.length > 0 ? (
           <BookGridDisplay
             books={booksToDisplay}
-            className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3"
+            className="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
             showDeleteButton={true}
             onDeleteFromMyLibrary={handleDeleteBook}
           />

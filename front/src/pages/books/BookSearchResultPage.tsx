@@ -105,7 +105,7 @@ const BookSearchResultPage: React.FC = () => {
 
   return (
     <div className="min-h-screen py-10">
-      <div className="container mx-auto px-4 lg:px-20 xl:px-32 mb-8">
+      <div className="container mx-auto px-4 lg:px-20 xl:px-32 mb-6">
         <SearchBar
           placeholder="검색어를 입력해주세요"
           className="max-w-xl mx-auto"
@@ -114,7 +114,7 @@ const BookSearchResultPage: React.FC = () => {
         />
       </div>
 
-      <div className="container mx-auto px-4 lg:px-20 xl:px-32 mb-16">
+      <div className="container mx-auto px-4 lg:px-20 xl:px-32 mb-8">
         <BookCategoryFilter
           categories={categories}
           activeCategory={activeCategory}

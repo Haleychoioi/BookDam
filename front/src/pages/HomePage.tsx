@@ -49,12 +49,12 @@ const HomePage: React.FC = () => {
       <HomeHeroSection />
       <RecruitingCommunityList />
 
-      <section className="py-8">
+      <section className="my-10 md:my-16">
         {isLoadingBestsellers ? (
           <p className="text-center text-gray-600">베스트셀러 로딩 중...</p>
         ) : isErrorBestsellers ? (
           <p className="text-center text-red-600">
-            오류:{" "}
+            오류:
             {errorBestsellers?.message ||
               "베스트셀러를 불러오는 데 실패했습니다."}
           </p>

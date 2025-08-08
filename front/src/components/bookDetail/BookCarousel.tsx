@@ -44,8 +44,10 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
   };
 
   return (
-    <div className="mb-16">
-      <h2 className="text-2xl text-gray-800 text-center mb-4">{title}</h2>
+    <div>
+      <h2 className="text-xl md:text-2xl text-gray-800 text-center mb-4">
+        {title}
+      </h2>
       <div className="flex items-center justify-center space-x-4 mt-10">
         <button
           onClick={handlePrev}
@@ -57,7 +59,7 @@ const BookCarousel: React.FC<BookCarouselProps> = ({ title, books }) => {
           <FaChevronLeft className="w-5 h-5 text-gray-500" />
         </button>
 
-        <div className="flex justify-center space-x-8 ">
+        <div className="flex overflow-x-auto snap-x snap-mandatory space-x-4 md:grid md:grid-cols-4 md:gap-x-8">
           {visibleBooks.map((book, index) => (
             <Link
               key={book.isbn13 || index}

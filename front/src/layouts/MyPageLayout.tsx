@@ -31,25 +31,25 @@ const MyPageLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen py-10">
+    <div className="flex flex-col md:flex-row">
       <div className="container mx-auto px-4 lg:px-8 xl:px-20">
-        <div className="flex flex-col md:flex-row gap-8">
-          <div className="md:hidden flex justify-center w-full mb-4">
+        <div className="flex flex-col md:flex-row">
+          <div className="md:hidden flex justify-end w-full pr-5 pt-3">
             <button
               onClick={toggleMobileMenu}
-              className="text-gray-600 hover:text-gray-900 focus:outline-none p-2 rounded-md"
+              className="text-gray-600 hover:text-gray-900 focus:outline-none"
               aria-label="Toggle navigation menu"
             >
               {isMobileMenuOpen ? (
-                <FaTimes className="w-6 h-6" />
+                <FaTimes className="w-4 h-4" />
               ) : (
-                <FaBars className="w-6 h-6" />
+                <FaBars className="w-4 h-4" />
               )}
             </button>
           </div>
 
           <nav
-            className={`w-full md:w-1/6 p-4 border-r md:border-r-0 border-gray-200 md:block ${
+            className={`w-full md:w-1/6 border-r md:border-r-0 border-gray-200 md:block ${
               isMobileMenuOpen ? "block" : "hidden"
             }`}
           >

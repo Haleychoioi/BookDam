@@ -117,7 +117,7 @@ const WishlistPage: React.FC = () => {
         description="관심 있는 책들을 한곳에 모아두고 언제든 다시 확인해보세요."
       />
 
-      <div className="container mx-auto px-0">
+      <div className="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {paginatedBooks.length > 0 ? (
           <BookGridDisplay
             books={paginatedBooks}

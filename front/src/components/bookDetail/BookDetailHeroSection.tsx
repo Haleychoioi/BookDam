@@ -16,7 +16,7 @@ import {
   removeWish,
   upsertBookToMyLibrary,
   fetchMyLibrary,
-  addRatingToMyLibrary
+  addRatingToMyLibrary,
 } from "../../api/mypage";
 
 interface BookDetailHeroSectionProps {
@@ -76,11 +76,7 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
       }
 
       try {
-        await upsertBookToMyLibrary(
-          book.isbn13,
-          status,
-          null
-        );
+        await upsertBookToMyLibrary(book.isbn13, status, null);
 
         setIsAddToListDropdownOpen(false);
         queryClient.invalidateQueries({ queryKey: ["myLibrary"] });
@@ -111,7 +107,7 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
 
     try {
       setSelectedRating(rating);
-      
+
       await addRatingToMyLibrary(book.isbn13, rating);
 
       queryClient.invalidateQueries({ queryKey: ["myLibrary"] });
@@ -119,7 +115,7 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
     } catch (error: unknown) {
       console.error("별점 추가 실패:", error);
       setSelectedRating(0); // 실패 시 별점 초기화
-      
+
       let errorMessage = "별점 추가 중 오류가 발생했습니다.";
       if (axios.isAxiosError(error) && error.response) {
         errorMessage = error.response.data.message || error.message;
@@ -188,16 +184,16 @@ const BookDetailHeroSection: React.FC<BookDetailHeroSectionProps> = ({
   }, []);
 
   return (
-    <div className="bg-white p-10 my-8">
+    <div className="bg-white px-10 my-8">
       <div className="flex flex-col md:flex-row items-start gap-8">
-        <div className="flex-shrink-0 mr-10">
+        <div className="flex-shrink-0 mr-0 md:mr-10 w-full md:w-[280px]">
           <img
             src={
               book.cover ||
               "https://via.placeholder.com/200x450/F0F0F0/B0B0B0?text=Book+Cover"
             }
             alt={book.title}
-            className="w-[280px] h-[390px] object-cover rounded-md"
+            className="w-full h-auto object-cover rounded-md"
           />
         </div>
 
