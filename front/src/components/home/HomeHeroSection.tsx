@@ -53,14 +53,22 @@ const HomeHeroSection: React.FC = () => {
   }, []);
 
   return (
-    <section className="bg-category py-12 md:py-20">
-      <div className="container mx-auto px-4">
-        <h1 className="text-3xl md:text-5xl text-gray-600 mb-6">
+    <section className="relative overflow-hidden py-12 md:py-20">
+      {/* 절대 위치로 배경 이미지를 배치하고 블러 효과를 적용 */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: "url('/background.png')",
+          filter: "blur(5px)",
+        }}
+      />
+      <div className="container mx-auto px-4 z-10 relative">
+        <h1 className="text-3xl md:text-5xl text-white mb-6">
           독서와 사람을 연결하는 플랫폼
           <br />
           지금 시작하세요
         </h1>
-        <p className="text-base md:text-lg text-gray-500 mb-8">
+        <p className="text-base md:text-lg text-gray-50 mb-8">
           독서로 연결되고, 닉네임으로 소통하다. 익명으로 더 깊은 대화를
           시작하세요.
         </p>
@@ -70,14 +78,14 @@ const HomeHeroSection: React.FC = () => {
             ref={searchInputRef}
             type="text"
             placeholder="어떤 책을 찾아볼까요?"
-            className="flex-grow h-12 p-3 rounded-l-xl border-none focus:outline-none focus:ring-0 focus:border-transparent"
+            className="flex-grow h-12 p-3 rounded-l-xl border border-gray-300 bg-white bg-opacity-30 backdrop-filter backdrop-blur-md focus:outline-none focus:ring-0 focus:border-white placeholder-gray-200"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={handleSearchOnEnter}
           />
           <button
             onClick={executeSearch}
-            className="h-12 px-4 md:px-6 py-2 bg-main text-white font-medium rounded-r-xl rounded-none focus:outline-none focus:ring-0 focus:border-transparent"
+            className="h-12 px-4 md:px-6 py-2 bg-main bg-opacity-90 text-white font-medium rounded-r-xl rounded-none focus:outline-none focus:ring-0 focus:border-transparent transition-all duration-300 hover:bg-opacity-100"
           >
             검색
           </button>

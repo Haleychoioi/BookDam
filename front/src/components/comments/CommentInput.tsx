@@ -59,8 +59,12 @@ const CommentInput = forwardRef<CommentInputRef, CommentInputProps>(
     };
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.nativeEvent.isComposing) {
+        return;
+      }
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
+        event.stopPropagation();
         handleSubmit();
       } else if (event.key === "Escape") {
         setComment("");

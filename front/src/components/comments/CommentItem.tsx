@@ -122,10 +122,8 @@ const CommentItem: React.FC<CommentItemProps> = memo(
         return;
       }
 
-      if (window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) {
-        const commentActualId = getCommentIdentifier(comment);
-        await onDeleteComment(commentActualId);
-      }
+      const commentActualId = getCommentIdentifier(comment);
+      await onDeleteComment(commentActualId);
     };
 
     const handleKeyDownForEdit = (

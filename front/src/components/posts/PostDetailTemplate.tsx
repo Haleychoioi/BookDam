@@ -85,23 +85,23 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
     : "날짜 미상";
 
   return (
-    <div className="min-h-full py-10 bg-white">
-      <div className="container mx-auto px-4 lg:px-20 xl:px-32">
+    <div className="min-h-full">
+      <div className="container mx-auto px-4 lg:px-20">
         <Link
           to={backToBoardPath}
-          className="text-gray-600 hover:text-gray-800 flex items-center mb-8"
+          className="text-gray-600 hover:text-gray-800 flex items-center"
         >
           <div className="flex items-center">
-            <FaChevronLeft className="w-4 h-4 text-gray-700 mr-1 mt-px" />
+            <FaChevronLeft className="w-4 h-4 text-gray-700 mr-1" />
             <span>{backToBoardText}</span>
           </div>
         </Link>
-        <h1 className="text-3xl font-bold text-gray-800 text-center my-16">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 text-center my-6">
           {displayTitle}
         </h1>
         <div className="text-gray-500 text-sm border-b border-gray-200 pb-2">
-          <div className="flex justify-between items-center mb-3">
-            <span className="flex items-center">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <span className="flex items-center mb-2 md:mb-0">
               <img
                 src={getAuthorProfileImage(post)}
                 alt={String(getAuthorNickname(post))}
@@ -117,7 +117,10 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
         </div>
 
         {isPostAuthor && (
-          <div className="flex justify-end space-x-2">
+          <div
+            className="flex justify-end space-x-2 mt-4"
+            data-color-mode="light"
+          >
             {isEditing ? (
               <>
                 <Button
@@ -168,7 +171,7 @@ const PostDetailTemplate: React.FC<PostDetailTemplateProps> = ({
           </div>
         )}
 
-        <div className="mb-8 py-4 px-16" data-color-mode="light">
+        <div className="px-10" data-color-mode="light">
           {isEditing ? (
             <MDEditor
               value={editedContent}

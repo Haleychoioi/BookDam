@@ -10,9 +10,6 @@ import "@uiw/react-markdown-preview/markdown.css";
 import remarkGfm from "remark-gfm";
 
 import { PostType, TeamPostType } from "../../types";
-import { useQuery } from "@tanstack/react-query";
-import { fetchMyRecruitingCommunities } from "../../api/communities";
-import { useAuth } from "../../hooks/useAuth";
 
 interface PostWriteTemplateProps {
   onSubmit: (formData: {
@@ -48,25 +45,7 @@ const PostWriteTemplate: React.FC<PostWriteTemplateProps> = ({
     isCommunityPost ? TeamPostType.DISCUSSION : PostType.GENERAL
   );
 
-  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(
-    null
-  );
-
   const { showToast } = useToast();
-  const { currentUserProfile } = useAuth();
-  const userId = currentUserProfile?.userId;
-
-  const { data: recruitingCommunities, isLoading: isLoadingCommunities } =
-    useQuery({
-      queryKey: ["myRecruitingCommunities", userId],
-      queryFn: () => {
-        if (!userId) {
-          throw new Error("로그인이 필요합니다.");
-        }
-        return fetchMyRecruitingCommunities();
-      },
-      enabled: !isCommunityPost && postType === PostType.RECRUITMENT,
-    });
 
   useEffect(() => {
     if (initialData) {
@@ -81,18 +60,6 @@ const PostWriteTemplate: React.FC<PostWriteTemplateProps> = ({
       }
     }
   }, [initialData, isCommunityPost]);
-
-  useEffect(() => {
-    if (
-      !isCommunityPost &&
-      postType === PostType.RECRUITMENT &&
-      recruitingCommunities &&
-      recruitingCommunities.length > 0 &&
-      !selectedCommunityId
-    ) {
-      setSelectedCommunityId(recruitingCommunities[0].id);
-    }
-  }, [recruitingCommunities, isCommunityPost, postType, selectedCommunityId]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
@@ -117,16 +84,10 @@ const PostWriteTemplate: React.FC<PostWriteTemplateProps> = ({
       return;
     }
 
-    if (postType === PostType.RECRUITMENT && !selectedCommunityId) {
-      showToast("연결할 모집 커뮤니티를 선택해주세요.", "warn");
-      return;
-    }
-
     onSubmit({
       title,
       content,
       type: postType,
-      communityId: selectedCommunityId || undefined,
     });
   };
 
@@ -160,44 +121,6 @@ const PostWriteTemplate: React.FC<PostWriteTemplateProps> = ({
               <option value={PostType.GENERAL}>일반글</option>
               <option value={PostType.RECRUITMENT}>모집글</option>
             </select>
-          </div>
-        )}
-
-        {!isCommunityPost && postType === PostType.RECRUITMENT && (
-          <div className="mb-6">
-            <label
-              htmlFor="communitySelect"
-              className="block text-lg font-medium text-gray-700 mb-2"
-            >
-              연결할 커뮤니티 선택
-            </label>
-            {isLoadingCommunities ? (
-              <p className="text-gray-500">
-                모집 중인 커뮤니티 목록을 불러오는 중...
-              </p>
-            ) : (
-              <select
-                id="communitySelect"
-                value={selectedCommunityId || ""}
-                onChange={(e) => setSelectedCommunityId(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-main focus:border-transparent"
-              >
-                <option value="" disabled>
-                  커뮤니티를 선택하세요
-                </option>
-                {recruitingCommunities?.map((community) => (
-                  <option key={community.id} value={community.id}>
-                    {community.title}
-                  </option>
-                ))}
-              </select>
-            )}
-            {!isLoadingCommunities && recruitingCommunities?.length === 0 && (
-              <p className="mt-2 text-gray-500">
-                모집 중인 커뮤니티가 없습니다. <br />새 커뮤니티는 도서 상세
-                페이지에서 만들 수 있습니다.
-              </p>
-            )}
           </div>
         )}
 
