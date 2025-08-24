@@ -1,16 +1,15 @@
 // src/components/layout/Header.tsx
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "../../hooks/useToast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuthContext } from "../../contexts/AuthContext";
 import Button from "../common/Button";
 import { FaBars, FaTimes } from "react-icons/fa";
 
 const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    !!localStorage.getItem("accessToken")
-  );
+  const { isLoggedIn, logout } = useAuthContext();
   const location = useLocation();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -22,12 +21,7 @@ const Header: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("userId");
-    setIsLoggedIn(false);
-    showToast("로그아웃 되었습니다.", "success");
-    window.dispatchEvent(new Event("loginStatusChange"));
-    navigate("/");
+    logout();
   };
 
   const handleMyPageClick = (e: React.MouseEvent) => {
@@ -37,18 +31,6 @@ const Header: React.FC = () => {
       navigate("/auth/login");
     }
   };
-
-  useEffect(() => {
-    const handleLoginStatusChange = () => {
-      setIsLoggedIn(!!localStorage.getItem("accessToken"));
-    };
-
-    window.addEventListener("loginStatusChange", handleLoginStatusChange);
-
-    return () => {
-      window.removeEventListener("loginStatusChange", handleLoginStatusChange);
-    };
-  }, []);
 
   return (
     <header className="bg-white py-4 fixed top-0 w-full z-50">

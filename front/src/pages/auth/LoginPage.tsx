@@ -1,14 +1,14 @@
 // src/pages/auth/LoginPage.tsx
 
 import { useState } from "react";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuthContext } from "../../contexts/AuthContext";
 import { Link } from "react-router-dom";
 import Button from "../../components/common/Button";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, loading } = useAuth();
+  const { login, loading } = useAuthContext();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -62,7 +62,7 @@ const HomeHeroSection: React.FC = () => {
           filter: "blur(5px)",
         }}
       />
-      <div className="container mx-auto px-4 z-10 relative">
+      <div className="container mx-auto px-4 z-10 relative pl-16">
         <h1 className="text-3xl md:text-5xl text-white mb-6">
           독서와 사람을 연결하는 플랫폼
           <br />

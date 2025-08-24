@@ -311,6 +311,30 @@ export const applyToCommunity = async (
 };
 
 /**
+ * postId로 커뮤니티를 찾아 신청합니다.
+ * POST /api/communities/apply-by-post/:postId
+ * @param postId - 커뮤니티 모집글의 postId
+ * @param applicationMessage - 신청 메시지
+ */
+export const applyToCommunityByPostId = async (
+  postId: number,
+  applicationMessage: string
+): Promise<string> => {
+  try {
+    const response = await apiClient.post(
+      `/communities/apply-by-post/${postId}`,
+      {
+        applicationMessage,
+      }
+    );
+    return response.data.message;
+  } catch (error) {
+    console.error("Failed to apply to community by postId:", error);
+    throw error;
+  }
+};
+
+/**
  * 특정 모집 커뮤니티의 신청자 목록을 조회합니다 (팀장만 가능).
  * GET /api/mypage/communities/recruiting/:communityId/applicants
  * @param communityId - 커뮤니티 ID
